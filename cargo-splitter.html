@@ -304,8 +304,7 @@ select.field option { background: var(--surface); color: var(--fg); }
 
 /* ================= Config ================= */
 
-const CONTAINER_SIZES = [32, 24, 16, 8, 4, 2, 1]; // largest first
-const CONFIG_URL = "config.json"; // ships and their cargo grids, published beside this page
+const CONFIG_URL = "config.json"; // container sizes, ships and their cargo grids, published beside this page
 /* Position names saved before ships were selectable: the Hull B's loose grid. */
 const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "loose" };
 const LEGACY_POSITIONS = {
@@ -322,8 +321,6 @@ const TEXT_COLUMNS = [
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 const MAX_SCU = 10_000_000;
 const STORE_KEY = "cargo-splitter-v3";
-/* Text columns + SCU + sizes + Left over + Position */
-const COLUMN_COUNT = TEXT_COLUMNS.length + 1 + CONTAINER_SIZES.length + 1 + 1;
 
 /* ================= Helpers ================= */
 
@@ -332,6 +329,7 @@ const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? "" : "s"}`;
 const esc = (s) => String(s).replace(/[&<>"']/g, (ch) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 const hiddenAttr = (show) => (show ? "" : " hidden");
+const list = (value) => (Array.isArray(value) ? value : []);
 
 /* ================= Pure logic ================= */
 
@@ -362,10 +360,15 @@ function compareText(a, b, dir) {
   return dir * collator.compare(a, b);
 }
 
+/* Container sizes in SCU from config.json, largest first, without duplicates. */
+function parseContainerSizes(config) {
+  const sizes = list(config?.containers).map((c) => c?.capacity).filter((n) => Number.isInteger(n) && n > 0);
+  return [...new Set(sizes)].sort((a, b) => b - a);
+}
+
 /* Read the ship list from config.json, skipping anything malformed, sorted by
    name. A position's capacity is its volume in SCU (x × y × z). */
 function parseShips(config) {
-  const list = (value) => (Array.isArray(value) ? value : []);
   const size = (n) => (Number.isFinite(n) && n > 0 ? n : 0);
   return list(config?.ships)
     .map((ship) => ({
@@ -412,7 +415,7 @@ function defaultState() {
   return {
     shipId: "", // "" means the first ship in config.json
     gridId: "", // "" means that ship's first grid
-    enabled: Object.fromEntries(CONTAINER_SIZES.map((s) => [s, true])),
+    enabled: {}, // size → false when unchecked; sizes not listed are on
     sort: null,
     rows: [
       makeRow({ material: "Example A", scu: "57" }),
@@ -432,7 +435,10 @@ function hydrate(saved) {
   } else if (Array.isArray(saved.rows) && saved.rows.some((r) => Object.hasOwn(LEGACY_POSITIONS, String(r?.position)))) {
     Object.assign(result, LEGACY_SHIP); // keep older saves on the grid they were made for
   }
-  for (const size of CONTAINER_SIZES) result.enabled[size] = saved.enabled?.[size] !== false;
+  /* Sizes aren't known until config.json loads, so keep every saved choice. */
+  for (const [size, on] of Object.entries(saved.enabled ?? {})) {
+    if (typeof on === "boolean") result.enabled[size] = on;
+  }
   if (TEXT_KEYS.includes(saved.sort?.key) && [1, -1].includes(saved.sort?.dir)) {
     result.sort = { key: saved.sort.key, dir: saved.sort.dir };
   }
@@ -458,12 +464,20 @@ function saveState() {
   } catch { /* storage unavailable: the table still works for this visit */ }
 }
 
-const enabledSizes = () => CONTAINER_SIZES.filter((s) => state.enabled[s]);
 const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
 
-/* ---- Selected ship ---- */
+/* ---- Loaded from config.json at startup ---- */
 
-let ships = []; // from config.json, loaded at startup
+let containerSizes = []; // SCU, largest first
+let ships = [];
+let configError = ""; // shown in place of the ship summary when config.json can't be used
+
+const isEnabled = (size) => state.enabled[size] !== false;
+const enabledSizes = () => containerSizes.filter(isEnabled);
+/* Text columns + SCU + sizes + Left over + Position */
+const columnCount = () => TEXT_COLUMNS.length + 1 + containerSizes.length + 1 + 1;
+
+/* ---- Selected ship ---- */
 
 const currentShip = () => ships.find((s) => s.id === state.shipId) ?? ships[0];
 function currentGrid() {
@@ -516,14 +530,14 @@ const els = {
 
 /* Look and text for a calculated cell; shared by full renders and live updates. */
 function countCell(size, count) {
-  if (!state.enabled[size]) return { look: "off", text: "–" };
+  if (!isEnabled(size)) return { look: "off", text: "–" };
   return { look: count ? "has" : "zero", text: fmt(count) };
 }
 const leftoverCell = (n) => ({ look: n ? "warn" : "zero", text: fmt(n) });
 
 /* Container counts and Left over for one row (or the total row). */
 function calcCellsHtml(fill, showLeftover) {
-  const counts = CONTAINER_SIZES.map((size, i) => {
+  const counts = containerSizes.map((size, i) => {
     const c = countCell(size, fill.counts[size] ?? 0);
     return `<td class="count${i === 0 ? " sep" : ""}" data-size="${size}" data-state="${c.look}">${c.text}</td>`;
   }).join("");
@@ -554,7 +568,7 @@ function sortHeadHtml({ key, label }) {
 }
 
 function sizeHeadHtml(size, i) {
-  const on = state.enabled[size];
+  const on = isEnabled(size);
   return `<th class="size-toggle${on ? "" : " is-off"}${i === 0 ? " sep" : ""}">
     <label title="${on ? "Uncheck to skip" : "Check to use"} ${size} SCU containers">
       <input type="checkbox" id="size-${size}" data-size="${size}"${on ? " checked" : ""}>
@@ -566,7 +580,7 @@ function cargoHeadHtml(calc) {
   return `<tr>
     ${TEXT_COLUMNS.map(sortHeadHtml).join("")}
     <th class="label num">SCU</th>
-    ${CONTAINER_SIZES.map(sizeHeadHtml).join("")}
+    ${containerSizes.map(sizeHeadHtml).join("")}
     <th class="label num sep leftover"${hiddenAttr(calc.showLeftover)}>Left over</th>
     <th class="label sep">Position</th>
   </tr>`;
@@ -596,7 +610,7 @@ function cargoRowHtml(row, fill, showLeftover) {
 
 function cargoBodyHtml(calc) {
   if (state.rows.length === 0) {
-    return `<tr class="empty-row"><td colspan="${COLUMN_COUNT}">No rows yet. Click <strong>Add row</strong> to start.</td></tr>`;
+    return `<tr class="empty-row"><td colspan="${columnCount()}">No rows yet. Click <strong>Add row</strong> to start.</td></tr>`;
   }
   return state.rows.map((row) => cargoRowHtml(row, calc.byRow.get(row.id), calc.showLeftover)).join("");
 }
@@ -670,7 +684,12 @@ function renderShipPicker() {
   els.ship.disabled = ships.length === 0;
   els.grid.innerHTML = options(ship?.grids ?? [], grid);
   els.gridPicker.hidden = (ship?.grids.length ?? 0) < 2;
-  if (!grid) return; // keep the loading or error message
+  els.shipInfo.classList.toggle("is-error", Boolean(configError));
+  if (configError) {
+    els.shipInfo.textContent = configError;
+    return;
+  }
+  if (!grid) return; // still loading
   const capacities = new Set(grid.positions.map((p) => p.capacity));
   const each = capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "";
   const total = grid.positions.reduce((n, p) => n + p.capacity, 0);
@@ -912,20 +931,21 @@ els.grid.addEventListener("change", () => selectGrid(els.grid.value));
 
 /* ================= Startup ================= */
 
-/* Load the ship list. On failure the cargo table still works; positions are
-   simply unavailable until config.json can be read. */
-async function loadShips() {
+/* Load container sizes and ships. Whatever loads is used: without sizes all
+   cargo shows as Left over, and without ships there are no positions. */
+async function loadConfig() {
   try {
     const response = await fetch(CONFIG_URL, { cache: "no-cache" });
     if (!response.ok) throw new Error(`the server answered ${response.status}`);
-    ships = parseShips(await response.json());
-    if (ships.length === 0) throw new Error("it lists no usable ships");
+    const config = await response.json();
+    containerSizes = parseContainerSizes(config);
+    ships = parseShips(config);
+    const missing = [containerSizes.length ? "" : "container sizes", ships.length ? "" : "ships"].filter(Boolean);
+    if (missing.length) throw new Error(`it lists no usable ${missing.join(" or ")}`);
   } catch (err) {
-    ships = [];
-    els.shipInfo.textContent = `Couldn't load ships from ${CONFIG_URL}: ${err.message}. Positions are unavailable.`;
-    els.shipInfo.classList.add("is-error");
+    configError = `Couldn't read ${CONFIG_URL}: ${err.message}.`;
   }
 }
 
-loadShips().finally(() => render());
+loadConfig().finally(() => render());
 </script>
