@@ -1,0 +1,258 @@
+{
+  "containers": [
+    {
+      "id": "scu-32",
+      "name": "32",
+      "capacity": 32,
+      "x": 16,
+      "y": 2,
+      "z": 2
+    },
+    {
+      "id": "scu-24",
+      "name": "24",
+      "capacity": 24,
+      "x": 6,
+      "y": 2,
+      "z": 2
+    },
+    {
+      "id": "scu-16",
+      "name": "16",
+      "capacity": 16,
+      "x": 4,
+      "y": 2,
+      "z": 2
+    },
+    {
+      "id": "scu-8",
+      "name": "8",
+      "capacity": 8,
+      "x": 2,
+      "y": 2,
+      "z": 2
+    },
+    {
+      "id": "scu-4",
+      "name": "4",
+      "capacity": 4,
+      "x": 2,
+      "y": 2,
+      "z": 1
+    },
+    {
+      "id": "scu-2",
+      "name": "2",
+      "capacity": 2,
+      "x": 2,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "id": "scu-1",
+      "name": "1",
+      "capacity": 1,
+      "x": 1,
+      "y": 1,
+      "z": 1
+    }
+  ],
+  "ships": [
+    {
+      "id": "ship-misc-hull-b",
+      "name": "MISC Hull B",
+      "capacity": 512,
+      "grids": [
+        {
+          "id": "strict",
+          "name": "Strict",
+          "positions": [
+            {
+              "name": "Port - Upper - Fore",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Port - Upper - Aft",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Port - Lower - Fore",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Port - Lower - Aft",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Upper - Fore",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Upper - Aft",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Lower - Fore",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Lower - Aft",
+              "x": 16,
+              "y": 2,
+              "z": 2
+            }
+          ]
+        },
+        {
+          "id": "loose",
+          "name": "Loose",
+          "positions": [
+            {
+              "name": "Port - Upper",
+              "x": 32,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Port - Lower",
+              "x": 32,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Upper",
+              "x": 32,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Starboard - Lower",
+              "x": 32,
+              "y": 2,
+              "z": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ship-misc-hull-c",
+      "name": "MISC Hull C",
+      "capacity": 4608,
+      "grids": [
+        {
+          "id": "default",
+          "name": "Default",
+          "positions": [
+            {
+              "name": "Upper - Fore",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Upper - Aft",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Starboard - Fore",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Starboard - Aft",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Lower - Fore",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Lower - Aft",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Port - Fore",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            },
+            {
+              "name": "Port - Aft",
+              "x": 32,
+              "y": 6,
+              "z": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ship-rsi-hermes",
+      "name": "RSI Hermes",
+      "capacity": 288,
+      "grids": [
+        {
+          "id": "default",
+          "name": "Default",
+          "positions": [
+            {
+              "name": "Port",
+              "x": 18,
+              "y": 4,
+              "z": 2
+            },
+            {
+              "name": "Starboard",
+              "x": 18,
+              "y": 4,
+              "z": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ship-argo-raft",
+      "name": "Argo RAFT",
+      "capacity": 192,
+      "grids": [
+        {
+          "id": "default",
+          "name": "Default",
+          "positions": [
+            {
+              "name": "Grid",
+              "x": 12,
+              "y": 8,
+              "z": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

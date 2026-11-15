@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Hull B Cargo Splitter</title>
+<title>Cargo Splitter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,6 +36,7 @@
 
 /* ---------- Page ---------- */
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* also when opened outside the artifact viewer */
 body {
   background: var(--bg);
   color: var(--fg);
@@ -67,6 +68,34 @@ header p { margin: 0; color: var(--muted); max-width: 70ch; }
   padding: 0 4px;
   background: var(--surface);
 }
+
+/* ---------- Ship picker ---------- */
+.ship-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.picker { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.picker > span { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--label); }
+.picker select {
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-width: 14em;
+  max-width: 100%;
+  cursor: pointer;
+}
+.picker select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ship-info { color: var(--muted); font-size: 13px; padding-bottom: 9px; }
+.ship-info.is-error { color: var(--warn); }
 
 /* ---------- Buttons ---------- */
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -236,9 +265,15 @@ select.field option { background: var(--surface); color: var(--fg); }
 
 <div class="wrap">
   <header>
-    <h1>Hull B Cargo Splitter</h1>
+    <h1>Cargo Splitter</h1>
     <p>Enter the SCU on each row. Each row is filled with the biggest checked container size first, then the next size down, until every SCU is placed. Uncheck a size in the header to skip it.</p>
   </header>
+
+  <div class="ship-bar">
+    <label class="picker"><span>Ship</span><select id="ship"></select></label>
+    <label class="picker" id="grid-picker" hidden><span>Cargo grid</span><select id="grid"></select></label>
+    <span class="ship-info" id="ship-info" aria-live="polite">Loading ships…</span>
+  </div>
 
   <div class="toolbar">
     <button type="button" class="btn primary" id="add-row">Add row</button>
@@ -270,8 +305,15 @@ select.field option { background: var(--surface); color: var(--fg); }
 /* ================= Config ================= */
 
 const CONTAINER_SIZES = [32, 24, 16, 8, 4, 2, 1]; // largest first
-const POSITIONS = ["Left Upper", "Left Lower", "Right Upper", "Right Lower"];
-const POSITION_CAPACITY = 128; // SCU each position can hold
+const CONFIG_URL = "config.json"; // ships and their cargo grids, published beside this page
+/* Position names saved before ships were selectable: the Hull B's loose grid. */
+const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "loose" };
+const LEGACY_POSITIONS = {
+  "Left Upper": "Port - Upper",
+  "Left Lower": "Port - Lower",
+  "Right Upper": "Starboard - Upper",
+  "Right Lower": "Starboard - Lower",
+};
 const TEXT_COLUMNS = [
   { key: "material", label: "Material" },
   { key: "pickup", label: "Pick-up" },
@@ -320,6 +362,29 @@ function compareText(a, b, dir) {
   return dir * collator.compare(a, b);
 }
 
+/* Read the ship list from config.json, skipping anything malformed, sorted by
+   name. A position's capacity is its volume in SCU (x × y × z). */
+function parseShips(config) {
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const size = (n) => (Number.isFinite(n) && n > 0 ? n : 0);
+  return list(config?.ships)
+    .map((ship) => ({
+      id: String(ship.id ?? ""),
+      name: String(ship.name ?? ship.id ?? ""),
+      grids: list(ship.grids)
+        .map((grid) => ({
+          id: String(grid.id ?? ""),
+          name: String(grid.name ?? grid.id ?? ""),
+          positions: list(grid.positions)
+            .map((p) => ({ name: String(p.name ?? ""), capacity: size(p.x) * size(p.y) * size(p.z) }))
+            .filter((p) => p.name && p.capacity > 0),
+        }))
+        .filter((grid) => grid.id && grid.positions.length > 0),
+    }))
+    .filter((ship) => ship.id && ship.grids.length > 0)
+    .sort((a, b) => collator.compare(a.name, b.name));
+}
+
 /* How full `scu` makes a hold of `capacity` SCU. */
 function loadOf(scu, capacity) {
   const free = capacity - scu;
@@ -337,12 +402,16 @@ function makeRow(values = {}) {
   const row = { id: nextId++ };
   for (const key of TEXT_KEYS) row[key] = String(values[key] ?? "");
   row.scu = String(values.scu ?? "");
-  row.position = POSITIONS.includes(values.position) ? values.position : "";
+  /* Kept even when it isn't on the selected grid, so switching back restores it. */
+  const position = String(values.position ?? "");
+  row.position = Object.hasOwn(LEGACY_POSITIONS, position) ? LEGACY_POSITIONS[position] : position;
   return row;
 }
 
 function defaultState() {
   return {
+    shipId: "", // "" means the first ship in config.json
+    gridId: "", // "" means that ship's first grid
     enabled: Object.fromEntries(CONTAINER_SIZES.map((s) => [s, true])),
     sort: null,
     rows: [
@@ -357,6 +426,12 @@ function defaultState() {
 function hydrate(saved) {
   const result = defaultState();
   if (!saved || typeof saved !== "object") return result;
+  if (typeof saved.shipId === "string") {
+    result.shipId = saved.shipId;
+    result.gridId = String(saved.gridId ?? "");
+  } else if (Array.isArray(saved.rows) && saved.rows.some((r) => Object.hasOwn(LEGACY_POSITIONS, String(r?.position)))) {
+    Object.assign(result, LEGACY_SHIP); // keep older saves on the grid they were made for
+  }
   for (const size of CONTAINER_SIZES) result.enabled[size] = saved.enabled?.[size] !== false;
   if (TEXT_KEYS.includes(saved.sort?.key) && [1, -1].includes(saved.sort?.dir)) {
     result.sort = { key: saved.sort.key, dir: saved.sort.dir };
@@ -378,12 +453,26 @@ const state = loadState();
 function saveState() {
   try {
     const rows = state.rows.map(({ id, ...values }) => values);
-    localStorage.setItem(STORE_KEY, JSON.stringify({ enabled: state.enabled, sort: state.sort, rows }));
+    const { shipId, gridId, enabled, sort } = state;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ shipId, gridId, enabled, sort, rows }));
   } catch { /* storage unavailable: the table still works for this visit */ }
 }
 
 const enabledSizes = () => CONTAINER_SIZES.filter((s) => state.enabled[s]);
 const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
+
+/* ---- Selected ship ---- */
+
+let ships = []; // from config.json, loaded at startup
+
+const currentShip = () => ships.find((s) => s.id === state.shipId) ?? ships[0];
+function currentGrid() {
+  const ship = currentShip();
+  return ship?.grids.find((g) => g.id === state.gridId) ?? ship?.grids[0];
+}
+const currentPositions = () => currentGrid()?.positions ?? [];
+/* A row's position, or "" when it isn't one of the selected grid's positions. */
+const positionOf = (row) => (currentPositions().some((p) => p.name === row.position) ? row.position : "");
 
 /* Everything derived from state, computed once per update. */
 function computeTable() {
@@ -391,7 +480,7 @@ function computeTable() {
   const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(sizes.map((s) => [s, 0])) };
   const byRow = new Map();
   /* "" collects cargo with no position chosen. Only rows with SCU count as rows. */
-  const byPosition = new Map(["", ...POSITIONS].map((p) => [p, { rows: 0, scu: 0 }]));
+  const byPosition = new Map(["", ...currentPositions().map((p) => p.name)].map((name) => [name, { rows: 0, scu: 0 }]));
   for (const row of state.rows) {
     const scu = parseScu(row.scu);
     const fill = fillLargestFirst(scu, sizes);
@@ -400,7 +489,7 @@ function computeTable() {
     totals.leftover += fill.leftover;
     for (const s of sizes) totals.counts[s] += fill.counts[s];
     if (scu > 0) {
-      const entry = byPosition.get(row.position);
+      const entry = byPosition.get(positionOf(row));
       entry.rows += 1;
       entry.scu += scu;
     }
@@ -419,6 +508,10 @@ const els = {
   copy: $("copy"),
   copyMarkdown: $("copy-md"),
   clear: $("clear"),
+  ship: $("ship"),
+  grid: $("grid"),
+  gridPicker: $("grid-picker"),
+  shipInfo: $("ship-info"),
 };
 
 /* Look and text for a calculated cell; shared by full renders and live updates. */
@@ -480,8 +573,8 @@ function cargoHeadHtml(calc) {
 }
 
 function positionOptionsHtml(current) {
-  return ["", ...POSITIONS].map((p) =>
-    `<option value="${p}"${p === current ? " selected" : ""}>${p || "—"}</option>`).join("");
+  return ["", ...currentPositions().map((p) => p.name)].map((name) =>
+    `<option value="${esc(name)}"${name === current ? " selected" : ""}>${name ? esc(name) : "—"}</option>`).join("");
 }
 
 function cargoRowHtml(row, fill, showLeftover) {
@@ -497,7 +590,7 @@ function cargoRowHtml(row, fill, showLeftover) {
     ${textCells}
     <td class="edit scu-cell"><input class="field scu" id="r${row.id}-scu" data-field="scu" inputmode="numeric" value="${esc(row.scu)}" placeholder="0" aria-label="SCU"></td>
     ${calcCellsHtml(fill, showLeftover)}
-    <td class="edit sep"><select class="field" id="r${row.id}-position" data-field="position" aria-label="Position">${positionOptionsHtml(row.position)}</select></td>
+    <td class="edit sep"><select class="field" id="r${row.id}-position" data-field="position" aria-label="Position">${positionOptionsHtml(positionOf(row))}</select></td>
   </tr>`;
 }
 
@@ -528,37 +621,60 @@ function loadCellsHtml(scu, capacity) {
     <td class="num avail" data-state="${load.look}">${load.label}</td>`;
 }
 
-/* Read-only SCU-by-position table. The four positions always show; Unassigned
-   shows only when it holds cargo. */
+/* Read-only SCU-by-position table for the selected ship's grid. Every position
+   shows; Unassigned shows only when it holds cargo. */
 function positionsHtml(calc) {
-  const shown = calc.byPosition.get("").scu > 0 ? [...POSITIONS, ""] : POSITIONS;
-  const body = shown.map((pos) => {
-    const e = calc.byPosition.get(pos);
-    const rowClass = !pos ? "is-warn" : e.scu ? "" : "is-empty";
+  const positions = currentPositions();
+  const unassigned = { name: "", capacity: 0 };
+  const shown = calc.byPosition.get("").scu > 0 ? [...positions, unassigned] : positions;
+  const body = shown.map(({ name, capacity }) => {
+    const e = calc.byPosition.get(name);
+    const rowClass = !name ? "is-warn" : e.scu ? "" : "is-empty";
     return `<tr${rowClass ? ` class="${rowClass}"` : ""}>
-      <th scope="row">${pos || "Unassigned"}</th>
+      <th scope="row">${name ? esc(name) : "Unassigned"}</th>
       <td class="num">${fmt(e.rows)}</td>
       <td class="num scu-sum">${fmt(e.scu)}</td>
-      ${loadCellsHtml(e.scu, pos ? POSITION_CAPACITY : 0)}
+      <td class="num">${capacity ? fmt(capacity) : ""}</td>
+      ${loadCellsHtml(e.scu, capacity)}
     </tr>`;
   }).join("");
 
-  const positioned = POSITIONS.reduce((n, p) => n + calc.byPosition.get(p).scu, 0);
-  const rows = shown.reduce((n, p) => n + calc.byPosition.get(p).rows, 0);
+  const sum = (list, pick) => list.reduce((n, p) => n + pick(p), 0);
+  const capacity = sum(positions, (p) => p.capacity);
+  const positioned = sum(positions, (p) => calc.byPosition.get(p.name).scu);
   return `<thead><tr>
       <th class="label">Position</th>
       <th class="label num">Rows</th>
       <th class="label num">SCU</th>
-      <th class="label">Load · ${POSITION_CAPACITY} SCU each</th>
+      <th class="label num">Capacity</th>
+      <th class="label">Load</th>
       <th class="label num">Available</th>
     </tr></thead>
-    <tbody>${body}</tbody>
+    <tbody>${body || `<tr class="empty-row"><td colspan="6">No ship loaded.</td></tr>`}</tbody>
     <tfoot><tr>
       <td class="label">Total</td>
-      <td class="num">${fmt(rows)}</td>
+      <td class="num">${fmt(sum(shown, (p) => calc.byPosition.get(p.name).rows))}</td>
       <td class="num scu-sum">${fmt(calc.totals.scu)}</td>
-      ${loadCellsHtml(positioned, POSITION_CAPACITY * POSITIONS.length)}
+      <td class="num">${capacity ? fmt(capacity) : ""}</td>
+      ${capacity ? loadCellsHtml(positioned, capacity) : "<td></td><td></td>"}
     </tr></tfoot>`;
+}
+
+/* Fill the Ship and Cargo grid pickers and the capacity note beside them. */
+function renderShipPicker() {
+  const ship = currentShip();
+  const grid = currentGrid();
+  const options = (items, selected) => items.map((item) =>
+    `<option value="${esc(item.id)}"${item === selected ? " selected" : ""}>${esc(item.name)}</option>`).join("");
+  els.ship.innerHTML = options(ships, ship);
+  els.ship.disabled = ships.length === 0;
+  els.grid.innerHTML = options(ship?.grids ?? [], grid);
+  els.gridPicker.hidden = (ship?.grids.length ?? 0) < 2;
+  if (!grid) return; // keep the loading or error message
+  const capacities = new Set(grid.positions.map((p) => p.capacity));
+  const each = capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "";
+  const total = grid.positions.reduce((n, p) => n + p.capacity, 0);
+  els.shipInfo.textContent = `${fmt(total)} SCU in ${plural(grid.positions.length, "position")}${each}`;
 }
 
 /* Set bar widths through the CSSOM, which a content security policy allows
@@ -572,9 +688,10 @@ function renderPositions(calc) {
   applyBarWidths(els.positions);
 }
 
-/* Full redraw: used when rows, order or container sizes change. */
+/* Full redraw: used when the ship, rows, order or container sizes change. */
 function render(focusId) {
   const calc = computeTable();
+  renderShipPicker();
   els.cargo.innerHTML = `<thead>${cargoHeadHtml(calc)}</thead>
     <tbody>${cargoBodyHtml(calc)}</tbody>
     <tfoot>${cargoFootHtml(calc)}</tfoot>`;
@@ -633,6 +750,18 @@ function sortBy(key) {
   commit(`sort-${key}`);
 }
 
+/* A new ship starts on its first cargo grid. */
+function selectShip(id) {
+  state.shipId = id;
+  state.gridId = currentShip()?.grids[0]?.id ?? "";
+  commit("ship");
+}
+
+function selectGrid(id) {
+  state.gridId = id;
+  commit("grid");
+}
+
 function setSizeEnabled(size, on) {
   state.enabled[size] = on;
   commit(`size-${size}`);
@@ -665,7 +794,7 @@ function exportTable() {
   ];
   const rows = state.rows.map((row) => {
     const fill = calc.byRow.get(row.id);
-    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s]), ...leftover(fill.leftover), row.position];
+    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s]), ...leftover(fill.leftover), positionOf(row)];
   });
   const totals = [
     "Total", ...TEXT_KEYS.slice(1).map(() => ""), calc.totals.scu,
@@ -778,5 +907,25 @@ els.clear.addEventListener("click", () => {
   showStatus("Table cleared");
 });
 
-render();
+els.ship.addEventListener("change", () => selectShip(els.ship.value));
+els.grid.addEventListener("change", () => selectGrid(els.grid.value));
+
+/* ================= Startup ================= */
+
+/* Load the ship list. On failure the cargo table still works; positions are
+   simply unavailable until config.json can be read. */
+async function loadShips() {
+  try {
+    const response = await fetch(CONFIG_URL, { cache: "no-cache" });
+    if (!response.ok) throw new Error(`the server answered ${response.status}`);
+    ships = parseShips(await response.json());
+    if (ships.length === 0) throw new Error("it lists no usable ships");
+  } catch (err) {
+    ships = [];
+    els.shipInfo.textContent = `Couldn't load ships from ${CONFIG_URL}: ${err.message}. Positions are unavailable.`;
+    els.shipInfo.classList.add("is-error");
+  }
+}
+
+loadShips().finally(() => render());
 </script>
