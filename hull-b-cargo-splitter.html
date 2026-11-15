@@ -242,7 +242,8 @@ select.field option { background: var(--surface); color: var(--fg); }
 
   <div class="toolbar">
     <button type="button" class="btn primary" id="add-row">Add row</button>
-    <button type="button" class="btn" id="copy">Copy table</button>
+    <button type="button" class="btn" id="copy">Copy for Spreadsheet</button>
+    <button type="button" class="btn" id="copy-md">Copy Markdown</button>
     <span class="status" id="status" aria-live="polite"></span>
     <span class="spacer"></span>
     <button type="button" class="btn" id="clear">Clear table</button>
@@ -416,6 +417,7 @@ const els = {
   status: $("status"),
   addRow: $("add-row"),
   copy: $("copy"),
+  copyMarkdown: $("copy-md"),
   clear: $("clear"),
 };
 
@@ -648,17 +650,53 @@ function focusNextScu(id) {
   else addRow();
 }
 
-function tableAsTsv() {
+/* Columns, rows and totals for the copy buttons. Values stay raw (numbers as
+   numbers) so each format can render them its own way. */
+function exportTable() {
   const calc = computeTable();
   const sizes = enabledSizes();
   const leftover = (value) => (calc.showLeftover ? [value] : []);
-  const line = (cells) => cells.map((v) => String(v).replace(/[\t\r\n]+/g, " ")).join("\t");
-  const header = [...TEXT_COLUMNS.map((c) => c.label), "SCU", ...sizes, ...leftover("Left over"), "Position"];
+  const columns = [
+    ...TEXT_COLUMNS.map((c) => ({ label: c.label, numeric: false })),
+    { label: "SCU", numeric: true },
+    ...sizes.map((s) => ({ label: String(s), numeric: true })),
+    ...leftover({ label: "Left over", numeric: true }),
+    { label: "Position", numeric: false },
+  ];
   const rows = state.rows.map((row) => {
     const fill = calc.byRow.get(row.id);
     return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s]), ...leftover(fill.leftover), row.position];
   });
-  return [header, ...rows].map(line).join("\n");
+  const totals = [
+    "Total", ...TEXT_KEYS.slice(1).map(() => ""), calc.totals.scu,
+    ...sizes.map((s) => calc.totals.counts[s]), ...leftover(calc.totals.leftover), "",
+  ];
+  return { columns, rows, totals };
+}
+
+/* Tab-separated, for pasting into a spreadsheet. */
+function tableAsTsv() {
+  const { columns, rows } = exportTable();
+  const line = (cells) => cells.map((v) => String(v).replace(/[\t\r\n]+/g, " ")).join("\t");
+  return [columns.map((c) => c.label), ...rows].map(line).join("\n");
+}
+
+/* GitHub-style Markdown table: numeric columns are right-aligned (`---:`) and
+   padded so the raw text lines up too. The total row is bold. */
+function tableAsMarkdown() {
+  const { columns, rows, totals } = exportTable();
+  const cell = (v, numeric) => (numeric ? fmt(v) : String(v).replace(/\s+/g, " ").trim().replace(/\|/g, "\\|"));
+  const bold = (text) => (text ? `**${text}**` : "");
+  const body = [
+    ...rows.map((r) => r.map((v, i) => cell(v, columns[i].numeric))),
+    totals.map((v, i) => bold(cell(v, columns[i].numeric && v !== ""))),
+  ];
+  const header = columns.map((c) => c.label);
+  const widths = columns.map((_, i) => Math.max(3, header[i].length, ...body.map((r) => r[i].length)));
+  const pad = (text, i) => (columns[i].numeric ? text.padStart(widths[i]) : text.padEnd(widths[i]));
+  const line = (cells) => `| ${cells.map(pad).join(" | ")} |`;
+  const rule = `| ${columns.map((c, i) => (c.numeric ? `${"-".repeat(widths[i] - 1)}:` : "-".repeat(widths[i]))).join(" | ")} |`;
+  return [line(header), rule, ...body.map(line)].join("\n");
 }
 
 let statusTimer;
@@ -727,6 +765,10 @@ els.addRow.addEventListener("click", addRow);
 
 els.copy.addEventListener("click", async () => {
   showStatus(await copyText(tableAsTsv()) ? "Copied. Paste into a spreadsheet." : "Copy isn't available here");
+});
+
+els.copyMarkdown.addEventListener("click", async () => {
+  showStatus(await copyText(tableAsMarkdown()) ? "Copied as a Markdown table." : "Copy isn't available here");
 });
 
 els.clear.addEventListener("click", () => {
