@@ -68,50 +68,98 @@
           "name": "Strict",
           "positions": [
             {
-              "name": "Port - Upper - Fore",
-              "x": 16,
+              "name": "Top Right - Upper - Fore",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Port - Upper - Aft",
-              "x": 16,
+              "name": "Top Right - Upper - Aft",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Port - Lower - Fore",
-              "x": 16,
+              "name": "Top Right - Lower - Fore",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Port - Lower - Aft",
-              "x": 16,
+              "name": "Top Right - Lower - Aft",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Starboard - Upper - Fore",
-              "x": 16,
+              "name": "Bottom Right - Upper - Fore",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Starboard - Upper - Aft",
-              "x": 16,
+              "name": "Bottom Right - Upper - Aft",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Starboard - Lower - Fore",
-              "x": 16,
+              "name": "Bottom Right - Lower - Fore",
+              "x": 8,
               "y": 2,
               "z": 2
             },
             {
-              "name": "Starboard - Lower - Aft",
-              "x": 16,
+              "name": "Bottom Right - Lower - Aft",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Top Left - Upper - Fore",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Top Left - Upper - Aft",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Top Left - Lower - Fore",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Top Left - Lower - Aft",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Bottom Left - Upper - Fore",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Bottom Left - Upper - Aft",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Bottom Left - Lower - Fore",
+              "x": 8,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Bottom Left - Lower - Aft",
+              "x": 8,
               "y": 2,
               "z": 2
             }
