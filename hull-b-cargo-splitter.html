@@ -1,0 +1,740 @@
+<meta charset="utf-8">
+<title>Hull B Cargo Splitter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=Montserrat:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: an editable cargo grid (Material / Pick-up / Drop-off, SCU, one column per
+   container size, an optional Left over column, Position), then a read-only
+   SCU-by-position table. Both scroll sideways inside their own frame on phones.
+   Look: a single dark theme by choice (deep-space navy panels, sky-blue accent,
+   pale-blue uppercase labels, square corners), like a ship's console. */
+:root {
+  --bg: #0a1d29;
+  --surface: #0f2c3e;
+  --surface-2: #0c2535;
+  --fg: #ffffff;
+  --label: #add3eb;
+  --muted: #a8b3bd;
+  --line: #1d4560;
+  --accent: #54adf7;
+  --accent-hover: #7cc1fa;
+  --accent-fg: #00111c;
+  --accent-soft: #15415e;
+  --warn: #f6b25e;
+  --warn-soft: #3a2a14;
+  --off: #0b2130;
+  --off-fg: #4a6779;
+  --font-display: "Montserrat", arial, sans-serif;
+  --font-body: "Bai Jamjuree", arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 0;
+  --del-size: 28px;
+  color-scheme: dark;
+}
+
+/* ---------- Page ---------- */
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+h1, h2 { font-family: var(--font-display); font-weight: 700; margin: 0; text-transform: uppercase; text-wrap: balance; }
+h1 { font-size: 28px; letter-spacing: 0.02em; margin-bottom: 6px; }
+h2 { font-size: 16px; letter-spacing: 0.06em; color: var(--label); }
+header p { margin: 0; color: var(--muted); max-width: 70ch; }
+
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.hint kbd {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  padding: 0 4px;
+  background: var(--surface);
+}
+
+/* ---------- Buttons ---------- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.toolbar .spacer { flex: 1; }
+.status { font-size: 13px; color: var(--muted); }
+.btn {
+  font: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--label);
+}
+.btn:hover { border-color: var(--accent); color: var(--fg); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.is-armed { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+
+/* Small square icon buttons: sort arrows and row delete */
+.icon-btn {
+  flex: none;
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: var(--off-fg);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.sort-btn { font-family: var(--font-mono); font-size: 13px; width: 26px; height: 26px; }
+.sort-btn:hover { color: var(--fg); background: var(--accent-soft); }
+.sort-btn.is-active { color: var(--accent); }
+.row-del { font-size: 16px; line-height: 1; width: var(--del-size); height: var(--del-size); }
+.row-del:hover { color: var(--warn); background: var(--warn-soft); }
+
+.btn:focus-visible, .icon-btn:focus-visible, .size-toggle input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Shared table styles ---------- */
+.frame {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.grid th, .grid td {
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+  vertical-align: middle;
+}
+.grid thead th {
+  background: var(--surface-2);
+  color: var(--label);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.grid .label { padding: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+.grid .num { text-align: right; }
+.grid .sep { border-left: 2px solid var(--line); }
+
+/* Total rows: a heavy rule above (like a sum line) and no cell fills, so a total
+   never reads as another cargo row. */
+.grid tfoot td { background: var(--surface-2); border-top: 2px solid var(--accent); border-bottom: 0; font-weight: 600; }
+.grid tfoot .label { font-size: 12px; color: var(--label); text-align: right; }
+
+/* ---------- Cargo table ---------- */
+.grid .sort-th { padding-block: 4px; }
+.sortable { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 9em; }
+/* Line the Material heading up with the text after each row's delete button. */
+#cargo thead th:first-child { padding-left: calc(var(--del-size) + 10px); }
+
+.size-toggle label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 4px 6px;
+  min-width: 3.4em;
+  cursor: pointer;
+}
+.size-toggle input { margin: 0; width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+.size-toggle .size { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--fg); }
+.grid thead .size-toggle.is-off { background: var(--off); }
+.size-toggle.is-off .size { color: var(--off-fg); text-decoration: line-through; }
+
+.field {
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  width: 100%;
+  min-width: 9em;
+  padding: 9px 10px;
+}
+.field:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.field::placeholder { color: var(--off-fg); }
+.field.scu { font-family: var(--font-mono); font-weight: 600; text-align: right; min-width: 5.5em; }
+select.field { cursor: pointer; padding-inline: 8px; }
+select.field option { background: var(--surface); color: var(--fg); }
+.grid tbody tr:hover .edit, .edit.scu-cell { background: var(--surface-2); }
+.material-cell { display: flex; align-items: center; gap: 2px; padding-left: 4px; }
+.material-cell .field { padding-left: 4px; }
+
+/* Calculated cells: data-state sets the look, so live updates only change data.
+   Prefixed with .grid so they outrank the base `.grid td { padding: 0 }` rule. */
+.grid .count, .grid td.leftover { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+.grid .count { text-align: center; font-size: 15px; padding: 9px 6px; }
+.grid td.leftover { text-align: right; padding: 9px 12px; }
+.count[data-state="has"] { background: var(--accent-soft); }
+.count[data-state="zero"], .leftover[data-state="zero"] { color: var(--off-fg); font-weight: 400; }
+.count[data-state="off"] { background: var(--off); color: var(--off-fg); font-weight: 400; }
+.leftover[data-state="warn"] { background: var(--warn-soft); color: var(--warn); }
+.grid tfoot .count[data-state="has"] { background: transparent; color: var(--accent); font-weight: 700; }
+.grid .foot-scu { padding: 9px 10px; text-align: right; font-family: var(--font-mono); }
+
+.empty-row td { padding: 22px; text-align: center; color: var(--muted); }
+
+/* ---------- SCU by position (read-only) ---------- */
+.summary { display: flex; flex-direction: column; gap: 10px; }
+.summary .frame { max-width: 720px; }
+#positions th, #positions td { padding: 9px 12px; }
+#positions tbody th { text-align: left; font-weight: 600; }
+#positions .num { font-family: var(--font-mono); }
+#positions .scu-sum { font-weight: 600; }
+#positions tbody tr.is-empty > * { color: var(--off-fg); font-weight: 400; }
+#positions tfoot td { color: var(--fg); }
+#positions tbody tr.is-warn > * { background: var(--warn-soft); color: var(--warn); }
+.needs-position { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.warn-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  background: var(--warn);
+  color: var(--warn-soft);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.bar { min-width: 140px; height: 8px; background: var(--off); border: 1px solid var(--line); overflow: hidden; }
+/* The fill width is set from script (CSSOM), not a style="" attribute, which a
+   strict content security policy would ignore. */
+.bar-fill { display: block; width: 0; height: 100%; background: var(--accent); }
+.bar[data-state="over"] .bar-fill { background: var(--warn); }
+.avail { font-weight: 600; white-space: nowrap; }
+.avail[data-state="full"] { color: var(--muted); }
+.avail[data-state="over"] { color: var(--warn); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .icon-btn { transition: background 120ms, border-color 120ms, color 120ms; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Hull B Cargo Splitter</h1>
+    <p>Enter the SCU on each row. Each row is filled with the biggest checked container size first, then the next size down, until every SCU is placed. Uncheck a size in the header to skip it.</p>
+  </header>
+
+  <div class="toolbar">
+    <button type="button" class="btn primary" id="add-row">Add row</button>
+    <button type="button" class="btn" id="copy">Copy table</button>
+    <span class="status" id="status" aria-live="polite"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn" id="clear">Clear table</button>
+  </div>
+
+  <div class="frame">
+    <table class="grid" id="cargo"></table>
+  </div>
+
+  <p class="hint">Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it. Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. Your table is kept in this browser.</p>
+
+  <section class="summary" aria-labelledby="positions-title">
+    <h2 id="positions-title">SCU by position</h2>
+    <div class="frame">
+      <table class="grid" id="positions"></table>
+    </div>
+  </section>
+</div>
+
+
+<script>
+"use strict";
+
+/* ================= Config ================= */
+
+const CONTAINER_SIZES = [32, 24, 16, 8, 4, 2, 1]; // largest first
+const POSITIONS = ["Left Upper", "Left Lower", "Right Upper", "Right Lower"];
+const POSITION_CAPACITY = 128; // SCU each position can hold
+const TEXT_COLUMNS = [
+  { key: "material", label: "Material" },
+  { key: "pickup", label: "Pick-up" },
+  { key: "dropoff", label: "Drop-off" },
+];
+const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
+const MAX_SCU = 10_000_000;
+const STORE_KEY = "cargo-splitter-v3";
+/* Text columns + SCU + sizes + Left over + Position */
+const COLUMN_COUNT = TEXT_COLUMNS.length + 1 + CONTAINER_SIZES.length + 1 + 1;
+
+/* ================= Helpers ================= */
+
+const fmt = (n) => n.toLocaleString("en-US");
+const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? "" : "s"}`;
+const esc = (s) => String(s).replace(/[&<>"']/g, (ch) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+const hiddenAttr = (show) => (show ? "" : " hidden");
+
+/* ================= Pure logic ================= */
+
+/* Fill `scu` using `sizes` (largest first): as many of the biggest as fit,
+   then the next size down. Returns { counts: {size: n}, leftover }. */
+function fillLargestFirst(scu, sizes) {
+  const counts = {};
+  let rest = scu;
+  for (const size of sizes) {
+    counts[size] = Math.floor(rest / size);
+    rest -= counts[size] * size;
+  }
+  return { counts, leftover: rest };
+}
+
+/* Accepts "1,200" or "57"; anything else counts as 0. */
+function parseScu(value) {
+  const n = Math.floor(Number(String(value).replace(/,/g, "")));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_SCU) : 0;
+}
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/* Blank values always sort last, whichever way the sort runs. */
+function compareText(a, b, dir) {
+  a = a.trim(); b = b.trim();
+  if (!a || !b) return (!a) - (!b);
+  return dir * collator.compare(a, b);
+}
+
+/* How full `scu` makes a hold of `capacity` SCU. */
+function loadOf(scu, capacity) {
+  const free = capacity - scu;
+  return {
+    look: free < 0 ? "over" : free === 0 ? "full" : "ok",
+    percent: Math.min(100, (scu / capacity) * 100),
+    label: free < 0 ? `${fmt(-free)} over` : fmt(free),
+  };
+}
+
+/* ================= State and storage ================= */
+
+let nextId = 1;
+function makeRow(values = {}) {
+  const row = { id: nextId++ };
+  for (const key of TEXT_KEYS) row[key] = String(values[key] ?? "");
+  row.scu = String(values.scu ?? "");
+  row.position = POSITIONS.includes(values.position) ? values.position : "";
+  return row;
+}
+
+function defaultState() {
+  return {
+    enabled: Object.fromEntries(CONTAINER_SIZES.map((s) => [s, true])),
+    sort: null,
+    rows: [
+      makeRow({ material: "Example A", scu: "57" }),
+      makeRow({ material: "Example B", scu: "100" }),
+      makeRow({ material: "Example C", scu: "13" }),
+    ],
+  };
+}
+
+/* Build a valid state from whatever was saved, falling back to defaults field by field. */
+function hydrate(saved) {
+  const result = defaultState();
+  if (!saved || typeof saved !== "object") return result;
+  for (const size of CONTAINER_SIZES) result.enabled[size] = saved.enabled?.[size] !== false;
+  if (TEXT_KEYS.includes(saved.sort?.key) && [1, -1].includes(saved.sort?.dir)) {
+    result.sort = { key: saved.sort.key, dir: saved.sort.dir };
+  }
+  if (Array.isArray(saved.rows)) result.rows = saved.rows.map(makeRow);
+  return result;
+}
+
+function loadState() {
+  try {
+    return hydrate(JSON.parse(localStorage.getItem(STORE_KEY)));
+  } catch {
+    return defaultState(); // storage blocked or corrupt: start fresh
+  }
+}
+
+const state = loadState();
+
+function saveState() {
+  try {
+    const rows = state.rows.map(({ id, ...values }) => values);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ enabled: state.enabled, sort: state.sort, rows }));
+  } catch { /* storage unavailable: the table still works for this visit */ }
+}
+
+const enabledSizes = () => CONTAINER_SIZES.filter((s) => state.enabled[s]);
+const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
+
+/* Everything derived from state, computed once per update. */
+function computeTable() {
+  const sizes = enabledSizes();
+  const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(sizes.map((s) => [s, 0])) };
+  const byRow = new Map();
+  /* "" collects cargo with no position chosen. Only rows with SCU count as rows. */
+  const byPosition = new Map(["", ...POSITIONS].map((p) => [p, { rows: 0, scu: 0 }]));
+  for (const row of state.rows) {
+    const scu = parseScu(row.scu);
+    const fill = fillLargestFirst(scu, sizes);
+    byRow.set(row.id, fill);
+    totals.scu += scu;
+    totals.leftover += fill.leftover;
+    for (const s of sizes) totals.counts[s] += fill.counts[s];
+    if (scu > 0) {
+      const entry = byPosition.get(row.position);
+      entry.rows += 1;
+      entry.scu += scu;
+    }
+  }
+  return { byRow, byPosition, totals, showLeftover: totals.leftover > 0 };
+}
+
+/* ================= Rendering ================= */
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  cargo: $("cargo"),
+  positions: $("positions"),
+  status: $("status"),
+  addRow: $("add-row"),
+  copy: $("copy"),
+  clear: $("clear"),
+};
+
+/* Look and text for a calculated cell; shared by full renders and live updates. */
+function countCell(size, count) {
+  if (!state.enabled[size]) return { look: "off", text: "–" };
+  return { look: count ? "has" : "zero", text: fmt(count) };
+}
+const leftoverCell = (n) => ({ look: n ? "warn" : "zero", text: fmt(n) });
+
+/* Container counts and Left over for one row (or the total row). */
+function calcCellsHtml(fill, showLeftover) {
+  const counts = CONTAINER_SIZES.map((size, i) => {
+    const c = countCell(size, fill.counts[size] ?? 0);
+    return `<td class="count${i === 0 ? " sep" : ""}" data-size="${size}" data-state="${c.look}">${c.text}</td>`;
+  }).join("");
+  const l = leftoverCell(fill.leftover);
+  return `${counts}<td class="leftover sep" data-state="${l.look}"${hiddenAttr(showLeftover)}>${l.text}</td>`;
+}
+
+/* Live update of the same cells, so typing never rebuilds the inputs. */
+function updateCalcCells(tr, fill, showLeftover) {
+  const apply = (td, { look, text }) => { td.dataset.state = look; td.textContent = text; };
+  for (const td of tr.querySelectorAll(".count")) {
+    apply(td, countCell(Number(td.dataset.size), fill.counts[td.dataset.size] ?? 0));
+  }
+  const leftover = tr.querySelector(".leftover");
+  apply(leftover, leftoverCell(fill.leftover));
+  leftover.hidden = !showLeftover;
+}
+
+function sortHeadHtml({ key, label }) {
+  const dir = state.sort?.key === key ? state.sort.dir : 0;
+  const ariaSort = dir === 1 ? "ascending" : dir === -1 ? "descending" : "none";
+  const arrow = dir === 1 ? "↑" : dir === -1 ? "↓" : "↕";
+  return `<th class="label sort-th" aria-sort="${ariaSort}">
+    <div class="sortable">${label}
+      <button type="button" class="icon-btn sort-btn${dir ? " is-active" : ""}" id="sort-${key}" data-sort="${key}"
+        aria-label="Sort by ${label}" title="Sort by ${label}">${arrow}</button>
+    </div></th>`;
+}
+
+function sizeHeadHtml(size, i) {
+  const on = state.enabled[size];
+  return `<th class="size-toggle${on ? "" : " is-off"}${i === 0 ? " sep" : ""}">
+    <label title="${on ? "Uncheck to skip" : "Check to use"} ${size} SCU containers">
+      <input type="checkbox" id="size-${size}" data-size="${size}"${on ? " checked" : ""}>
+      <span class="size">${size}</span>
+    </label></th>`;
+}
+
+function cargoHeadHtml(calc) {
+  return `<tr>
+    ${TEXT_COLUMNS.map(sortHeadHtml).join("")}
+    <th class="label num">SCU</th>
+    ${CONTAINER_SIZES.map(sizeHeadHtml).join("")}
+    <th class="label num sep leftover"${hiddenAttr(calc.showLeftover)}>Left over</th>
+    <th class="label sep">Position</th>
+  </tr>`;
+}
+
+function positionOptionsHtml(current) {
+  return ["", ...POSITIONS].map((p) =>
+    `<option value="${p}"${p === current ? " selected" : ""}>${p || "—"}</option>`).join("");
+}
+
+function cargoRowHtml(row, fill, showLeftover) {
+  const textCells = TEXT_COLUMNS.map(({ key, label }, i) => {
+    const input = `<input class="field" id="r${row.id}-${key}" data-field="${key}" value="${esc(row[key])}" aria-label="${label}">`;
+    if (i > 0) return `<td class="edit">${input}</td>`;
+    return `<td class="edit"><div class="material-cell">
+      <button type="button" class="icon-btn row-del" data-delete="${row.id}" aria-label="Delete row" title="Delete row">×</button>${input}
+    </div></td>`;
+  }).join("");
+
+  return `<tr data-row="${row.id}">
+    ${textCells}
+    <td class="edit scu-cell"><input class="field scu" id="r${row.id}-scu" data-field="scu" inputmode="numeric" value="${esc(row.scu)}" placeholder="0" aria-label="SCU"></td>
+    ${calcCellsHtml(fill, showLeftover)}
+    <td class="edit sep"><select class="field" id="r${row.id}-position" data-field="position" aria-label="Position">${positionOptionsHtml(row.position)}</select></td>
+  </tr>`;
+}
+
+function cargoBodyHtml(calc) {
+  if (state.rows.length === 0) {
+    return `<tr class="empty-row"><td colspan="${COLUMN_COUNT}">No rows yet. Click <strong>Add row</strong> to start.</td></tr>`;
+  }
+  return state.rows.map((row) => cargoRowHtml(row, calc.byRow.get(row.id), calc.showLeftover)).join("");
+}
+
+function cargoFootHtml(calc) {
+  return `<tr>
+    <td class="label" colspan="${TEXT_COLUMNS.length}">Total · ${plural(state.rows.length, "row")}</td>
+    <td class="foot-scu">${fmt(calc.totals.scu)}</td>
+    ${calcCellsHtml(calc.totals, calc.showLeftover)}
+    <td class="sep"></td>
+  </tr>`;
+}
+
+/* Bar and Available cells. Unassigned cargo has no hold, so it gets a warning instead.
+   The bar's fill width travels in data-percent and is applied by applyBarWidths(). */
+function loadCellsHtml(scu, capacity) {
+  if (!capacity) {
+    return `<td colspan="2"><span class="needs-position"><span class="warn-badge" aria-hidden="true">!</span>Choose a position for this cargo</span></td>`;
+  }
+  const load = loadOf(scu, capacity);
+  return `<td><div class="bar" data-state="${load.look}" role="presentation"><span class="bar-fill" data-percent="${load.percent.toFixed(2)}"></span></div></td>
+    <td class="num avail" data-state="${load.look}">${load.label}</td>`;
+}
+
+/* Read-only SCU-by-position table. The four positions always show; Unassigned
+   shows only when it holds cargo. */
+function positionsHtml(calc) {
+  const shown = calc.byPosition.get("").scu > 0 ? [...POSITIONS, ""] : POSITIONS;
+  const body = shown.map((pos) => {
+    const e = calc.byPosition.get(pos);
+    const rowClass = !pos ? "is-warn" : e.scu ? "" : "is-empty";
+    return `<tr${rowClass ? ` class="${rowClass}"` : ""}>
+      <th scope="row">${pos || "Unassigned"}</th>
+      <td class="num">${fmt(e.rows)}</td>
+      <td class="num scu-sum">${fmt(e.scu)}</td>
+      ${loadCellsHtml(e.scu, pos ? POSITION_CAPACITY : 0)}
+    </tr>`;
+  }).join("");
+
+  const positioned = POSITIONS.reduce((n, p) => n + calc.byPosition.get(p).scu, 0);
+  const rows = shown.reduce((n, p) => n + calc.byPosition.get(p).rows, 0);
+  return `<thead><tr>
+      <th class="label">Position</th>
+      <th class="label num">Rows</th>
+      <th class="label num">SCU</th>
+      <th class="label">Load · ${POSITION_CAPACITY} SCU each</th>
+      <th class="label num">Available</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr>
+      <td class="label">Total</td>
+      <td class="num">${fmt(rows)}</td>
+      <td class="num scu-sum">${fmt(calc.totals.scu)}</td>
+      ${loadCellsHtml(positioned, POSITION_CAPACITY * POSITIONS.length)}
+    </tr></tfoot>`;
+}
+
+/* Set bar widths through the CSSOM, which a content security policy allows
+   even where it ignores style="" attributes in markup. */
+function applyBarWidths(root) {
+  for (const fill of root.querySelectorAll(".bar-fill")) fill.style.width = `${fill.dataset.percent}%`;
+}
+
+function renderPositions(calc) {
+  els.positions.innerHTML = positionsHtml(calc);
+  applyBarWidths(els.positions);
+}
+
+/* Full redraw: used when rows, order or container sizes change. */
+function render(focusId) {
+  const calc = computeTable();
+  els.cargo.innerHTML = `<thead>${cargoHeadHtml(calc)}</thead>
+    <tbody>${cargoBodyHtml(calc)}</tbody>
+    <tfoot>${cargoFootHtml(calc)}</tfoot>`;
+  renderPositions(calc);
+  if (focusId) $(focusId)?.focus();
+}
+
+/* Light update while editing SCU or Position: inputs are left alone so they keep focus. */
+function refresh() {
+  const calc = computeTable();
+  for (const tr of els.cargo.querySelectorAll("tbody tr[data-row]")) {
+    updateCalcCells(tr, calc.byRow.get(Number(tr.dataset.row)), calc.showLeftover);
+  }
+  const foot = els.cargo.querySelector("tfoot tr");
+  foot.querySelector(".foot-scu").textContent = fmt(calc.totals.scu);
+  updateCalcCells(foot, calc.totals, calc.showLeftover);
+  els.cargo.querySelector("thead .leftover").hidden = !calc.showLeftover;
+  renderPositions(calc);
+}
+
+/* ================= Actions ================= */
+
+function commit(focusId) {
+  saveState();
+  render(focusId);
+}
+
+function addRow() {
+  const row = makeRow();
+  state.rows.push(row);
+  commit(`r${row.id}-material`);
+}
+
+function deleteRow(id) {
+  const index = rowIndex(id);
+  if (index < 0) return;
+  state.rows.splice(index, 1);
+  const next = state.rows[index] ?? state.rows[index - 1];
+  commit(next ? `r${next.id}-material` : "add-row");
+}
+
+function updateField(id, field, value) {
+  const row = state.rows[rowIndex(id)];
+  if (!row) return;
+  row[field] = value;
+  saveState();
+  if (field === "scu" || field === "position") refresh();
+}
+
+/* Sorting reorders the rows once, like a spreadsheet; later edits don't move rows.
+   Clicking the same column again reverses the order. */
+function sortBy(key) {
+  const dir = state.sort?.key === key ? -state.sort.dir : 1;
+  state.sort = { key, dir };
+  state.rows.sort((x, y) => compareText(x[key], y[key], dir));
+  commit(`sort-${key}`);
+}
+
+function setSizeEnabled(size, on) {
+  state.enabled[size] = on;
+  commit(`size-${size}`);
+}
+
+function clearRows() {
+  state.rows = [makeRow()];
+  commit(`r${state.rows[0].id}-material`);
+}
+
+/* Move to the next row's SCU, or add a row when already on the last one. */
+function focusNextScu(id) {
+  const next = state.rows[rowIndex(id) + 1];
+  if (next) $(`r${next.id}-scu`)?.focus();
+  else addRow();
+}
+
+function tableAsTsv() {
+  const calc = computeTable();
+  const sizes = enabledSizes();
+  const leftover = (value) => (calc.showLeftover ? [value] : []);
+  const line = (cells) => cells.map((v) => String(v).replace(/[\t\r\n]+/g, " ")).join("\t");
+  const header = [...TEXT_COLUMNS.map((c) => c.label), "SCU", ...sizes, ...leftover("Left over"), "Position"];
+  const rows = state.rows.map((row) => {
+    const fill = calc.byRow.get(row.id);
+    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s]), ...leftover(fill.leftover), row.position];
+  });
+  return [header, ...rows].map(line).join("\n");
+}
+
+let statusTimer;
+function showStatus(message) {
+  els.status.textContent = message;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { els.status.textContent = ""; }, 2200);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Fallback for views that refuse the async clipboard API.
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { /* not supported */ }
+    ta.remove();
+    return ok;
+  }
+}
+
+/* Two-step clear, since the viewer can't show confirm() dialogs. */
+let disarmTimer;
+function setClearArmed(armed) {
+  els.clear.classList.toggle("is-armed", armed);
+  els.clear.textContent = armed ? "Click again to clear" : "Clear table";
+  clearTimeout(disarmTimer);
+  if (armed) disarmTimer = setTimeout(() => setClearArmed(false), 3000);
+}
+
+/* ================= Events ================= */
+
+const rowIdOf = (el) => Number(el.closest("tr[data-row]")?.dataset.row);
+
+els.cargo.addEventListener("input", (e) => {
+  const { field } = e.target.dataset;
+  if (field) updateField(rowIdOf(e.target), field, e.target.value);
+});
+
+els.cargo.addEventListener("change", (e) => {
+  const { size } = e.target.dataset;
+  if (size) setSizeEnabled(Number(size), e.target.checked);
+});
+
+els.cargo.addEventListener("click", (e) => {
+  const sortBtn = e.target.closest("[data-sort]");
+  if (sortBtn) return sortBy(sortBtn.dataset.sort);
+  const delBtn = e.target.closest("[data-delete]");
+  if (delBtn) deleteRow(Number(delBtn.dataset.delete));
+});
+
+els.cargo.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.target.dataset.field !== "scu") return;
+  e.preventDefault();
+  focusNextScu(rowIdOf(e.target));
+});
+
+els.addRow.addEventListener("click", addRow);
+
+els.copy.addEventListener("click", async () => {
+  showStatus(await copyText(tableAsTsv()) ? "Copied. Paste into a spreadsheet." : "Copy isn't available here");
+});
+
+els.clear.addEventListener("click", () => {
+  if (!els.clear.classList.contains("is-armed")) return setClearArmed(true);
+  setClearArmed(false);
+  clearRows();
+  showStatus("Table cleared");
+});
+
+render();
+</script>
