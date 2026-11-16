@@ -75,9 +75,9 @@ export function CargoTable({
           {TEXT_COLUMNS.map(({ key, label }) => (
             <SortHead key={key} sortKey={key} label={label} sort={state.sort} onSort={onSort} />
           ))}
-          <th className="label num">SCU</th>
+          <th className="label num narrow">SCU</th>
           {/* Δ for Remaining, to keep the column narrow. */}
-          <th className="label num" aria-label="Remaining" title="Remaining: SCU not in a grid yet">
+          <th className="label num narrow" aria-label="Remaining" title="Remaining: SCU not in a grid yet">
             Δ
           </th>
           {sizes.map(({ size, on }, i) => (

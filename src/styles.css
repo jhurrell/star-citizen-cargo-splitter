@@ -320,6 +320,13 @@ header p {
 .grid .num {
   text-align: right;
 }
+/* SCU and Remaining: padded like their cells, and kept to their content's
+   width (a "9,999" field) so spare room goes to the other columns and the
+   two stay the same width. */
+.grid .label.narrow {
+  width: 1px;
+  padding-inline: 5px;
+}
 .grid .sep {
   border-left: 2px solid var(--line);
 }
@@ -393,7 +400,7 @@ header p {
   background: transparent;
   border: 0;
   width: 100%;
-  min-width: 8em;
+  min-width: 7em;
   padding: 9px 10px;
 }
 .field:focus-visible {
@@ -409,7 +416,8 @@ header p {
   text-align: right;
   /* Room for the most a row can have, "9,999", plus padding; the Remaining
      column beside it matches. */
-  min-width: calc(5ch + 20px);
+  min-width: calc(5ch + 10px);
+  padding-inline: 5px;
 }
 select.field {
   cursor: pointer;
@@ -523,8 +531,8 @@ select.field option {
 }
 /* As wide as the SCU field beside it. */
 .grid td.remaining {
-  min-width: calc(5ch + 20px);
-  padding-inline: 10px;
+  min-width: calc(5ch + 10px);
+  padding-inline: 5px;
 }
 .count[data-state="has"] {
   background: var(--accent-soft);
