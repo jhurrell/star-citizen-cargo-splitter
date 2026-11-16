@@ -67,14 +67,20 @@ and publishes `dist/client` to GitHub Pages. To publish without a push, run the 
 
 ### Project layout
 
-| Path                   | What's in it                                                                                  |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `src/config/`          | `containers.json` and `ships.json` (see below)                                                |
-| `src/lib/`             | The logic, as pure functions: reading the config, splitting rows across grids, packing, state |
-| `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`)              |
-| `src/components/ship/` | The 3D ship view's parts, below                                                               |
-| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                        |
-| `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                   |
+| Path                   | What's in it                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `src/config/`          | `containers.json` and `ships.json` (see below)                                                                                      |
+| `src/lib/`             | The logic, as pure functions: reading the config, splitting rows across grids, each grid's free room and the totals, packing, state |
+| `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`), plus the shared pieces below                      |
+| `src/components/ship/` | The 3D ship view's parts, below                                                                                                     |
+| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                              |
+| `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                         |
+
+Two pieces in `src/components/` are shared by the page:
+
+- [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
+  showing Confirm in between. Clear table and the Grids Clear both use it.
+- [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons.
 
 `ShipView.tsx` draws each grid with its containers and loads only when a grid has placements, as three.js is large.
 The rest of the 3D view lives in `src/components/ship/`:
@@ -82,7 +88,8 @@ The rest of the 3D view lives in `src/components/ship/`:
 - [`scene.ts`](src/components/ship/scene.ts): the scene's layout in ship coordinates, as pure functions with no
   three.js: the camera views, the box around the cargo, the axes and the labels' positions. Tested in
   `test/scene.test.ts`.
-- [`SizeMarks.tsx`](src/components/ship/SizeMarks.tsx): each container's SCU on all six of its faces.
+- [`SizeMarks.tsx`](src/components/ship/SizeMarks.tsx): each container's SCU on all six of its faces, kept upright
+  on a grid that hangs under the ship.
 - [`Surroundings.tsx`](src/components/ship/Surroundings.tsx): everything around the cargo: the axes and fore cone,
   the ground, the camera presets and the HTML labels that follow the camera.
 
