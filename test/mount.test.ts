@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
-import config from "../config.json";
+import rawContainers from "../src/config/containers.json";
+import rawShips from "../src/config/ships.json";
 import { parseContainers, parseShips, type Position } from "../src/lib/cargo";
 import { packContainers } from "../src/lib/packing";
 import { foreAxis, mountMatrix, parseMount, rotationOf, toShip, type Mount, type Vec3 } from "../src/lib/mount";
@@ -65,8 +66,8 @@ describe("toShip", () => {
   });
 });
 
-describe("config.json mounts", () => {
-  const containers = parseContainers(config);
+describe("ships.json mounts", () => {
+  const containers = parseContainers(rawContainers);
   const cells = (position: Position) => {
     /* Fill each mounted position with 1 SCU boxes and list the ship cells they cover. */
     const unit = containers.find((c) => c.size === 1)!;
@@ -79,7 +80,7 @@ describe("config.json mounts", () => {
   /* Two unit cells that don't overlap, however turned, have centres at least 1
      apart (their inscribed balls can't overlap), so closer centres mean a clash. */
   test("no two positions of a grid overlap", () => {
-    for (const ship of parseShips(config))
+    for (const ship of parseShips(rawShips))
       for (const grid of ship.grids) {
         const buckets = new Map<string, { point: Vec3; name: string }[]>();
         const key = (p: number[]) => p.map((n) => Math.floor(n)).join();
@@ -104,7 +105,7 @@ describe("config.json mounts", () => {
   });
 
   test("a grid is either fully mounted or not at all", () => {
-    for (const ship of parseShips(config))
+    for (const ship of parseShips(rawShips))
       for (const grid of ship.grids) {
         const mounted = grid.positions.filter((p) => p.mount).length;
         expect([0, grid.positions.length], `${ship.name} / ${grid.name}`).toContain(mounted);

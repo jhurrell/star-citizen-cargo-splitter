@@ -1,0 +1,2489 @@
+[
+  {
+    "id": "ship-misc-hull-b",
+    "name": "MISC Hull B",
+    "capacity": 512,
+    "grids": [
+      {
+        "id": "relaxed",
+        "name": "Relaxed",
+        "positions": [
+          {
+            "name": "Starboard - Upper",
+            "x": 4,
+            "y": 16,
+            "z": 2,
+            "at": { "x": 1.77, "y": 0, "z": 1.77 },
+            "rotate": { "roll": 45 }
+          },
+          {
+            "name": "Starboard - Lower",
+            "x": 4,
+            "y": 16,
+            "z": 2,
+            "at": { "x": 1.77, "y": 0, "z": -1.77 },
+            "rotate": { "roll": 135 }
+          },
+          {
+            "name": "Port - Lower",
+            "x": 4,
+            "y": 16,
+            "z": 2,
+            "at": { "x": -1.77, "y": 0, "z": -1.77 },
+            "rotate": { "roll": -135 }
+          },
+          {
+            "name": "Port - Upper",
+            "x": 4,
+            "y": 16,
+            "z": 2,
+            "at": { "x": -1.77, "y": 0, "z": 1.77 },
+            "rotate": { "roll": -45 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-hull-c",
+    "name": "MISC Hull C",
+    "capacity": 4608,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Upper - Fore",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 0, "y": 2, "z": 10 },
+            "rotate": { "pitch": 90, "yaw": 180 }
+          },
+          {
+            "name": "Upper - Aft",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 0, "y": -2, "z": 10 },
+            "rotate": { "pitch": 90 }
+          },
+          {
+            "name": "Starboard - Fore",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 10, "y": 2, "z": 0 },
+            "rotate": { "roll": -90, "yaw": 90 }
+          },
+          {
+            "name": "Starboard - Aft",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 10, "y": -2, "z": 0 },
+            "rotate": { "roll": 90, "yaw": 90 }
+          },
+          {
+            "name": "Lower - Fore",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 0, "y": 2, "z": -10 },
+            "rotate": { "pitch": -90 }
+          },
+          {
+            "name": "Lower - Aft",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 0, "y": -2, "z": -10 },
+            "rotate": { "pitch": -90, "yaw": 180 }
+          },
+          {
+            "name": "Port - Fore",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": -10, "y": 2, "z": 0 },
+            "rotate": { "roll": 90, "yaw": -90 }
+          },
+          {
+            "name": "Port - Aft",
+            "x": 8,
+            "y": 12,
+            "z": 6,
+            "at": { "x": -10, "y": -2, "z": 0 },
+            "rotate": { "roll": -90, "yaw": -90 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-hermes",
+    "name": "RSI Hermes",
+    "capacity": 288,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 4,
+            "y": 18,
+            "z": 2,
+            "at": { "x": -3.1, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 4,
+            "y": 18,
+            "z": 2,
+            "at": { "x": 3.1, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-raft",
+    "name": "Argo RAFT",
+    "capacity": 192,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 8,
+            "y": 12,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-avenger-titan",
+    "name": "Aegis Avenger Titan",
+    "capacity": 8,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 4,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-hammerhead-tiburon",
+    "name": "Aegis Hammerhead / Tiburon",
+    "capacity": 64,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-idris-m",
+    "name": "Aegis Idris-M",
+    "capacity": 1326,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Hangar",
+            "x": 8,
+            "y": 20,
+            "z": 4,
+            "at": { "x": 6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay",
+            "x": 8,
+            "y": 20,
+            "z": 4,
+            "at": { "x": -6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay - Side Racks",
+            "x": 2,
+            "y": 11,
+            "z": 2,
+            "at": { "x": -11.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay - Small Bin",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": -11.5, "y": 7, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-idris-p",
+    "name": "Aegis Idris-P",
+    "capacity": 1374,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Hangar",
+            "x": 8,
+            "y": 20,
+            "z": 4,
+            "at": { "x": 6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay",
+            "x": 8,
+            "y": 20,
+            "z": 4,
+            "at": { "x": -6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay - Side Racks",
+            "x": 2,
+            "y": 11,
+            "z": 2,
+            "at": { "x": -11.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Cargo Bay - Small Bin",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": -11.5, "y": 7, "z": 0 }
+          },
+          {
+            "name": "Additional Cargo Room",
+            "x": 4,
+            "y": 6,
+            "z": 2,
+            "at": { "x": -6, "y": 14, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-reclaimer",
+    "name": "Aegis Reclaimer",
+    "capacity": 420,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Cargo Hold - Fore Port",
+            "x": 3,
+            "y": 5,
+            "z": 3,
+            "at": { "x": -2.5, "y": 3.5, "z": 0 }
+          },
+          {
+            "name": "Cargo Hold - Fore Starboard",
+            "x": 3,
+            "y": 5,
+            "z": 3,
+            "at": { "x": 2.5, "y": 3.5, "z": 0 }
+          },
+          {
+            "name": "Cargo Hold - Aft Port",
+            "x": 3,
+            "y": 5,
+            "z": 3,
+            "at": { "x": -2.5, "y": -2.5, "z": 0 }
+          },
+          {
+            "name": "Cargo Hold - Aft Starboard",
+            "x": 3,
+            "y": 5,
+            "z": 3,
+            "at": { "x": 2.5, "y": -2.5, "z": 0 }
+          },
+          {
+            "name": "Salvage - Fore Port",
+            "x": 5,
+            "y": 4,
+            "z": 3,
+            "at": { "x": -3.5, "y": -9, "z": 0 }
+          },
+          {
+            "name": "Salvage - Fore Starboard",
+            "x": 5,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 3.5, "y": -9, "z": 0 }
+          },
+          {
+            "name": "Salvage - Aft Port",
+            "x": 5,
+            "y": 4,
+            "z": 3,
+            "at": { "x": -3.5, "y": -14, "z": 0 }
+          },
+          {
+            "name": "Salvage - Aft Starboard",
+            "x": 5,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 3.5, "y": -14, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-redeemer",
+    "name": "Aegis Redeemer",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-aegis-retaliator-cargo-modules",
+    "name": "Aegis Retaliator (Cargo Modules)",
+    "capacity": 74,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Front Module",
+            "x": 3,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": 9, "z": 0 }
+          },
+          {
+            "name": "Rear Module",
+            "x": 3,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": -9, "z": 0 }
+          },
+          {
+            "name": "Rear Module - Small",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": 2.5, "y": -9, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-asgard",
+    "name": "Anvil Asgard",
+    "capacity": 180,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 5,
+            "y": 9,
+            "z": 4,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-carrack",
+    "name": "Anvil Carrack",
+    "capacity": 456,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Bay 1 - Port",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -5, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Bay 1 - Center",
+            "x": 4,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 0, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Bay 1 - Starboard",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 5, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Bay 2 - Port",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Bay 2 - Center",
+            "x": 4,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Bay 2 - Starboard",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Bay 3 - Port",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -5, "y": -6, "z": 0 }
+          },
+          {
+            "name": "Bay 3 - Center",
+            "x": 4,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 0, "y": -6, "z": 0 }
+          },
+          {
+            "name": "Bay 3 - Starboard",
+            "x": 4,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 5, "y": -6, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-hornet-f7c-mk-ii",
+    "name": "Anvil Hornet F7C Mk II",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-liberator",
+    "name": "Anvil Liberator",
+    "capacity": 400,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 8,
+            "y": 10,
+            "z": 4,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Side Bay",
+            "x": 2,
+            "y": 8,
+            "z": 4,
+            "at": { "x": 6, "y": -1, "z": 0 }
+          },
+          {
+            "name": "Side Rack",
+            "x": 1,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 8, "y": -1, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-paladin",
+    "name": "Anvil Paladin",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 4,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-pisces-c8-c8x",
+    "name": "Anvil Pisces C8 / C8X",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": -1, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": 1, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-anvil-valkyrie",
+    "name": "Anvil Valkyrie",
+    "capacity": 90,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 5,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-csv-sm",
+    "name": "Argo CSV-SM",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-moth",
+    "name": "Argo MOTH",
+    "capacity": 224,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 4,
+            "y": 6,
+            "z": 4,
+            "at": { "x": -4, "y": -3, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 4,
+            "y": 6,
+            "z": 4,
+            "at": { "x": 4, "y": -3, "z": 0 }
+          },
+          {
+            "name": "Fore",
+            "x": 4,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 0, "y": 3, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-mpuv-c",
+    "name": "Argo MPUV-C",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-mpuv-t",
+    "name": "Argo MPUV-T",
+    "capacity": 16,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-argo-srv",
+    "name": "Argo SRV",
+    "capacity": 12,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 3,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-consolidated-outland-mustang-alpha",
+    "name": "Consolidated Outland Mustang Alpha",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 4,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-consolidated-outland-nomad",
+    "name": "Consolidated Outland Nomad",
+    "capacity": 24,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 3,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-a2-hercules",
+    "name": "Crusader A2 Hercules",
+    "capacity": 216,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 6,
+            "y": 18,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-c1-spirit",
+    "name": "Crusader C1 Spirit",
+    "capacity": 64,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 2,
+            "y": 8,
+            "z": 2,
+            "at": { "x": -2.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 2,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 2.5, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-c2-hercules",
+    "name": "Crusader C2 Hercules",
+    "capacity": 696,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 9,
+            "y": 14,
+            "z": 4,
+            "at": { "x": 0, "y": 4, "z": 0 }
+          },
+          {
+            "name": "Aft Hold",
+            "x": 6,
+            "y": 8,
+            "z": 4,
+            "at": { "x": 0, "y": -8, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-intrepid",
+    "name": "Crusader Intrepid",
+    "capacity": 8,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 2,
+            "z": 2,
+            "at": { "x": -1.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 1.5, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-m2-hercules",
+    "name": "Crusader M2 Hercules",
+    "capacity": 522,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 9,
+            "y": 14,
+            "z": 3,
+            "at": { "x": 0, "y": 4, "z": 0 }
+          },
+          {
+            "name": "Aft Hold",
+            "x": 6,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 0, "y": -8, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-crusader-mercury-star-runner",
+    "name": "Crusader Mercury Star Runner",
+    "capacity": 114,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 6,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Side Rack",
+            "x": 1,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 4, "y": -1, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-caterpillar",
+    "name": "Drake Caterpillar",
+    "capacity": 576,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Bow",
+            "x": 6,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 0, "y": 20, "z": 0 }
+          },
+          {
+            "name": "Module 1",
+            "x": 7,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": 13.5, "z": 0 }
+          },
+          {
+            "name": "Module 2",
+            "x": 7,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Module 3",
+            "x": 7,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": -1.5, "z": 0 }
+          },
+          {
+            "name": "Module 4",
+            "x": 7,
+            "y": 6,
+            "z": 3,
+            "at": { "x": 0, "y": -9, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-clipper",
+    "name": "Drake Clipper",
+    "capacity": 12,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 3,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-corsair",
+    "name": "Drake Corsair",
+    "capacity": 72,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 9,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-cutlass-black",
+    "name": "Drake Cutlass Black",
+    "capacity": 46,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Hold",
+            "x": 4,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Front Rack",
+            "x": 2,
+            "y": 3,
+            "z": 2,
+            "at": { "x": -1, "y": 4.5, "z": 0 }
+          },
+          {
+            "name": "Small Bin",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": 1, "y": 3.5, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-cutlass-red-blue",
+    "name": "Drake Cutlass Red / Blue",
+    "capacity": 12,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 2,
+            "z": 3,
+            "at": { "x": -2, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 2, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-cutter",
+    "name": "Drake Cutter",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-cutter-scout-rambler",
+    "name": "Drake Cutter Scout / Rambler",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-golem-ox",
+    "name": "Drake Golem OX",
+    "capacity": 64,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-ironclad",
+    "name": "Drake Ironclad",
+    "capacity": 2200,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port Hold",
+            "x": 6,
+            "y": 24,
+            "z": 6,
+            "at": { "x": -4.6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port Rack",
+            "x": 2,
+            "y": 18,
+            "z": 6,
+            "at": { "x": -8.7, "y": -3, "z": 0 }
+          },
+          {
+            "name": "Starboard Hold",
+            "x": 6,
+            "y": 24,
+            "z": 6,
+            "at": { "x": 4.6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard Rack",
+            "x": 2,
+            "y": 18,
+            "z": 6,
+            "at": { "x": 8.7, "y": -3, "z": 0 }
+          },
+          {
+            "name": "Secondary Storage",
+            "x": 4,
+            "y": 5,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 6.5 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-ironclad-assault",
+    "name": "Drake Ironclad Assault",
+    "capacity": 1440,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port Hold",
+            "x": 6,
+            "y": 16,
+            "z": 6,
+            "at": { "x": -4.6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port Rack",
+            "x": 2,
+            "y": 12,
+            "z": 6,
+            "at": { "x": -8.7, "y": -2, "z": 0 }
+          },
+          {
+            "name": "Starboard Hold",
+            "x": 6,
+            "y": 16,
+            "z": 6,
+            "at": { "x": 4.6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard Rack",
+            "x": 2,
+            "y": 12,
+            "z": 6,
+            "at": { "x": 8.7, "y": -2, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-mule",
+    "name": "Drake Mule",
+    "capacity": 1,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-drake-vulture",
+    "name": "Drake Vulture",
+    "capacity": 12,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 3,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-esperia-prowler-utility",
+    "name": "Esperia Prowler Utility",
+    "capacity": 32,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": -2, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 2, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-gatac-hyun",
+    "name": "Gatac Hyun",
+    "capacity": 32,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-gatac-railen",
+    "name": "Gatac Railen",
+    "capacity": 640,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Fore - Port",
+            "x": 4,
+            "y": 8,
+            "z": 4,
+            "at": { "x": -2.5, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Fore - Starboard",
+            "x": 4,
+            "y": 8,
+            "z": 4,
+            "at": { "x": 2.5, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Aft - Port",
+            "x": 2,
+            "y": 16,
+            "z": 4,
+            "at": { "x": -6, "y": -7, "z": 0 }
+          },
+          {
+            "name": "Aft - Center",
+            "x": 2,
+            "y": 16,
+            "z": 4,
+            "at": { "x": 0, "y": -7, "z": 0 }
+          },
+          {
+            "name": "Aft - Starboard",
+            "x": 2,
+            "y": 16,
+            "z": 4,
+            "at": { "x": 6, "y": -7, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-gatac-syulen",
+    "name": "Gatac Syulen",
+    "capacity": 6,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 3,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-gatac-tyilui",
+    "name": "Gatac Tyilui",
+    "capacity": 96,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Lower",
+            "x": 4,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Upper",
+            "x": 4,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 3 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-grey-s-market-shiv",
+    "name": "Grey's Market Shiv",
+    "capacity": 32,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-greycat-utv",
+    "name": "Greycat UTV",
+    "capacity": 1,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-fortune",
+    "name": "MISC Fortune",
+    "capacity": 16,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 2,
+            "y": 2,
+            "z": 2,
+            "at": { "x": -2, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 2,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 2, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-freelancer",
+    "name": "MISC Freelancer",
+    "capacity": 66,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 2,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 0, "y": 2, "z": 0 }
+          },
+          {
+            "name": "Rear Racks",
+            "x": 2,
+            "y": 3,
+            "z": 3,
+            "at": { "x": 0, "y": -4, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-freelancer-dur-mis",
+    "name": "MISC Freelancer DUR / MIS",
+    "capacity": 36,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 2,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 0, "y": 1, "z": 0 }
+          },
+          {
+            "name": "Rear Racks",
+            "x": 2,
+            "y": 2,
+            "z": 3,
+            "at": { "x": 0, "y": -3, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-freelancer-max",
+    "name": "MISC Freelancer MAX",
+    "capacity": 120,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 4,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 0, "y": 2, "z": 0 }
+          },
+          {
+            "name": "Rear Racks",
+            "x": 2,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 0, "y": -5, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-hull-a",
+    "name": "MISC Hull A",
+    "capacity": 64,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port - Lower",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": -1.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard - Lower",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 1.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port - Upper",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": -1.5, "y": 0, "z": 2.5 }
+          },
+          {
+            "name": "Starboard - Upper",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 1.5, "y": 0, "z": 2.5 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-reliant-kore",
+    "name": "MISC Reliant Kore",
+    "capacity": 6,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 3,
+            "z": 1,
+            "at": { "x": -1, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 3,
+            "z": 1,
+            "at": { "x": 1, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-reliant-tana",
+    "name": "MISC Reliant Tana",
+    "capacity": 1,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-starfarer-gemini",
+    "name": "MISC Starfarer / Gemini",
+    "capacity": 291,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Center Hold",
+            "x": 4,
+            "y": 6,
+            "z": 5,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Center Rack",
+            "x": 3,
+            "y": 5,
+            "z": 5,
+            "at": { "x": 3.6, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port Pod",
+            "x": 2,
+            "y": 4,
+            "z": 5,
+            "at": { "x": -8, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port Pod - Front",
+            "x": 2,
+            "y": 2,
+            "z": 2,
+            "at": { "x": -8, "y": 3.5, "z": 0 }
+          },
+          {
+            "name": "Starboard Pod",
+            "x": 2,
+            "y": 4,
+            "z": 5,
+            "at": { "x": 8, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard Pod - Front",
+            "x": 2,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 8, "y": 3.5, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-starlancer-max",
+    "name": "MISC Starlancer MAX",
+    "capacity": 224,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port - Fore",
+            "x": 2,
+            "y": 8,
+            "z": 3,
+            "at": { "x": -2.5, "y": 5, "z": 0 }
+          },
+          {
+            "name": "Port - Aft",
+            "x": 2,
+            "y": 16,
+            "z": 2,
+            "at": { "x": -2.5, "y": -8, "z": 0 }
+          },
+          {
+            "name": "Starboard - Fore",
+            "x": 2,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 2.5, "y": 5, "z": 0 }
+          },
+          {
+            "name": "Starboard - Aft",
+            "x": 2,
+            "y": 16,
+            "z": 2,
+            "at": { "x": 2.5, "y": -8, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-misc-starlancer-tac",
+    "name": "MISC Starlancer TAC",
+    "capacity": 96,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 2,
+            "y": 8,
+            "z": 3,
+            "at": { "x": -2.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 2,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 2.5, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-100i-125a-m80",
+    "name": "Origin 100i / 125a / M80",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-135c",
+    "name": "Origin 135c",
+    "capacity": 6,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 6,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-300i",
+    "name": "Origin 300i",
+    "capacity": 8,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 4,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-315p",
+    "name": "Origin 315p",
+    "capacity": 12,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 6,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-325a-350r",
+    "name": "Origin 325a / 350r",
+    "capacity": 4,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-400i",
+    "name": "Origin 400i",
+    "capacity": 42,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 3,
+            "y": 7,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-600i-explorer",
+    "name": "Origin 600i Explorer",
+    "capacity": 44,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 5,
+            "z": 2,
+            "at": { "x": -3, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Center",
+            "x": 2,
+            "y": 4,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 5,
+            "z": 2,
+            "at": { "x": 3, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-600i-touring",
+    "name": "Origin 600i Touring",
+    "capacity": 20,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 1,
+            "y": 5,
+            "z": 2,
+            "at": { "x": -3, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 1,
+            "y": 5,
+            "z": 2,
+            "at": { "x": 3, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-origin-890-jump",
+    "name": "Origin 890 Jump",
+    "capacity": 388,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 6,
+            "y": 12,
+            "z": 4,
+            "at": { "x": 0, "y": 6, "z": 0 }
+          },
+          {
+            "name": "Port Bay",
+            "x": 4,
+            "y": 4,
+            "z": 2,
+            "at": { "x": -3, "y": -4, "z": 0 }
+          },
+          {
+            "name": "Starboard Bay",
+            "x": 4,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 3, "y": -4, "z": 0 }
+          },
+          {
+            "name": "Rear Rack 1",
+            "x": 1,
+            "y": 3,
+            "z": 3,
+            "at": { "x": -4, "y": -10, "z": 0 }
+          },
+          {
+            "name": "Rear Rack 2",
+            "x": 1,
+            "y": 3,
+            "z": 3,
+            "at": { "x": -2, "y": -10, "z": 0 }
+          },
+          {
+            "name": "Rear Rack 3",
+            "x": 1,
+            "y": 3,
+            "z": 3,
+            "at": { "x": 2, "y": -10, "z": 0 }
+          },
+          {
+            "name": "Rear Rack 4",
+            "x": 1,
+            "y": 3,
+            "z": 3,
+            "at": { "x": 4, "y": -10, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-apollo-triage-medivac",
+    "name": "RSI Apollo Triage / Medivac",
+    "capacity": 32,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": -2.5, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 2,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 2.5, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-aurora-mk-i-cl-se",
+    "name": "RSI Aurora Mk I CL / SE",
+    "capacity": 6,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 6,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-aurora-mk-i-es-ln-lx-mr",
+    "name": "RSI Aurora Mk I ES / LN / LX / MR",
+    "capacity": 3,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 3,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-aurora-mk-ii",
+    "name": "RSI Aurora Mk II",
+    "capacity": 2,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-aurora-mk-ii-ts-module",
+    "name": "RSI Aurora Mk II (TS Module)",
+    "capacity": 8,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 2,
+            "z": 1,
+            "at": { "x": -1, "y": 0, "z": 0 }
+          },
+          {
+            "name": "TS Module",
+            "x": 2,
+            "y": 3,
+            "z": 1,
+            "at": { "x": 1, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-constellation-mk-iv-andromeda-aquila",
+    "name": "RSI Constellation Mk IV Andromeda / Aquila",
+    "capacity": 96,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-constellation-mk-iv-phoenix",
+    "name": "RSI Constellation Mk IV Phoenix",
+    "capacity": 80,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 5,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-constellation-mk-iv-taurus",
+    "name": "RSI Constellation Mk IV Taurus",
+    "capacity": 174,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 4,
+            "y": 14,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Front Rack",
+            "x": 3,
+            "y": 2,
+            "z": 1,
+            "at": { "x": 0, "y": 9, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-constellation-mk-v-centaurus",
+    "name": "RSI Constellation Mk V Centaurus",
+    "capacity": 240,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 6,
+            "y": 10,
+            "z": 4,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-galaxy",
+    "name": "RSI Galaxy",
+    "capacity": 64,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -6, "y": 8, "z": 0 }
+          },
+          {
+            "name": "Starboard Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 6, "y": 8, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-galaxy-cargo-module",
+    "name": "RSI Galaxy (Cargo Module)",
+    "capacity": 720,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -6, "y": 8, "z": 0 }
+          },
+          {
+            "name": "Starboard Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 6, "y": 8, "z": 0 }
+          },
+          {
+            "name": "Cargo Module - Port",
+            "x": 4,
+            "y": 16,
+            "z": 4,
+            "at": { "x": -6, "y": -4, "z": 0 }
+          },
+          {
+            "name": "Cargo Module - Center",
+            "x": 6,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 0, "y": -4, "z": 0 }
+          },
+          {
+            "name": "Cargo Module - Center Upper",
+            "x": 4,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": -4, "z": 2 }
+          },
+          {
+            "name": "Cargo Module - Starboard",
+            "x": 4,
+            "y": 16,
+            "z": 4,
+            "at": { "x": 6, "y": -4, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-galaxy-medical-module",
+    "name": "RSI Galaxy (Medical Module)",
+    "capacity": 68,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": -6, "y": 8, "z": 0 }
+          },
+          {
+            "name": "Starboard Bay",
+            "x": 2,
+            "y": 4,
+            "z": 4,
+            "at": { "x": 6, "y": 8, "z": 0 }
+          },
+          {
+            "name": "Medical Module",
+            "x": 1,
+            "y": 2,
+            "z": 2,
+            "at": { "x": 0, "y": 8, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-perseus",
+    "name": "RSI Perseus",
+    "capacity": 96,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 8,
+            "y": 6,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-polaris",
+    "name": "RSI Polaris",
+    "capacity": 576,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Port",
+            "x": 6,
+            "y": 12,
+            "z": 4,
+            "at": { "x": -4, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard",
+            "x": 6,
+            "y": 12,
+            "z": 4,
+            "at": { "x": 4, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-salvation",
+    "name": "RSI Salvation",
+    "capacity": 6,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 2,
+            "y": 3,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-zeus-mk-ii-cl",
+    "name": "RSI Zeus Mk II CL",
+    "capacity": 128,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Main Hold",
+            "x": 4,
+            "y": 8,
+            "z": 3,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Port Rack",
+            "x": 1,
+            "y": 8,
+            "z": 2,
+            "at": { "x": -3, "y": 0, "z": 0 }
+          },
+          {
+            "name": "Starboard Rack",
+            "x": 1,
+            "y": 8,
+            "z": 2,
+            "at": { "x": 3, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-rsi-zeus-mk-ii-es",
+    "name": "RSI Zeus Mk II ES",
+    "capacity": 32,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 4,
+            "y": 4,
+            "z": 2,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ship-tumbril-cyclone",
+    "name": "Tumbril Cyclone",
+    "capacity": 1,
+    "grids": [
+      {
+        "id": "default",
+        "name": "Default",
+        "positions": [
+          {
+            "name": "Grid",
+            "x": 1,
+            "y": 1,
+            "z": 1,
+            "at": { "x": 0, "y": 0, "z": 0 }
+          }
+        ]
+      }
+    ]
+  }
+]

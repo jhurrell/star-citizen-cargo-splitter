@@ -48,7 +48,7 @@ const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
 const isMounted = (p: Position): p is Mounted => p.mount !== null;
 
 /* Every mounted position of the selected layout in 3D, placed and turned as
-   config.json says, with its containers as packed. */
+   ships.json says, with its containers as packed. */
 export default function ShipView({
   positions,
   loads,

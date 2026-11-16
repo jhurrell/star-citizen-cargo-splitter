@@ -1,15 +1,18 @@
-import raw from "../../config.json";
+import rawContainers from "../config/containers.json";
+import rawShips from "../config/ships.json";
 import { parseContainers, parseShips } from "./cargo";
 
-/* Container sizes and ships, read once from config.json, which is bundled into
-   the app. A JSON syntax error stops the build instead, with its line number.
-   Whatever is usable is used: without sizes all cargo shows as Left over, and
-   without ships there are no positions. */
-export const containers = parseContainers(raw);
-export const ships = parseShips(raw);
+/* Container sizes and ships, read once from containers.json and ships.json,
+   which are bundled into the app. A JSON syntax error stops the build
+   instead, with its line number. Whatever is usable is used: without sizes
+   all cargo shows as Left over, and without ships there are no positions. */
+export const containers = parseContainers(rawContainers);
+export const ships = parseShips(rawShips);
 
-const missing = [containers.length ? "" : "containers", ships.length ? "" : "ships"].filter(Boolean);
-/* Shown in place of the ship summary when config.json can't be used. */
-export const configError = missing.length
-  ? `Couldn't read config.json: it lists no usable ${missing.join(" or ")}.`
-  : "";
+/* Shown in place of the ship summary when either file has nothing usable. */
+export const configError = [
+  containers.length ? "" : "Couldn't read containers.json: it lists no usable containers.",
+  ships.length ? "" : "Couldn't read ships.json: it lists no usable ships.",
+]
+  .filter(Boolean)
+  .join(" ");

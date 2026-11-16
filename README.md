@@ -23,7 +23,9 @@ the ship.
 - **Copy out.** Copy the table for a spreadsheet (tab-separated) or as Markdown.
 - **Kept in your browser.** The table, ship and settings are saved in local storage.
 
-Ships included: MISC Hull B, MISC Hull C, RSI Hermes and Argo RAFT.
+Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
+RAFT are placed to match the ships; the rest have grid sizes and SCU from the ITG Cargo Grid Reference Guide, with
+grids laid out roughly as its drawings show.
 
 ## Running it
 
@@ -47,10 +49,12 @@ vp dev
 
 ## Configuring ships and containers
 
-Everything about ships and containers lives in [`config.json`](config.json), which is bundled into the app at build
-time. Edit it and the dev server reloads.
+Containers and ships live in two JSON files, each a list, bundled into the app at build time. Edit either and the dev
+server reloads.
 
 ### Containers
+
+[`containers.json`](src/config/containers.json) lists the container sizes:
 
 ```json
 { "id": "scu-32", "name": "32", "capacity": 32, "lieFlat": true, "x": 2, "y": 8, "z": 2 }
@@ -61,7 +65,8 @@ horizontal; any other may be turned any way to fit.
 
 ### Ships, layouts and grids
 
-A ship has one or more layouts (`grids`), and each layout has its cargo grids (`positions`):
+[`ships.json`](src/config/ships.json) lists the ships. A ship has one or more layouts (`grids`), and each layout has its cargo
+grids (`positions`). Its `capacity` must equal each layout's total, which the tests check:
 
 ```json
 {

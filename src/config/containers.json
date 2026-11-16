@@ -1,0 +1,63 @@
+[
+  {
+    "id": "scu-32",
+    "name": "32",
+    "capacity": 32,
+    "lieFlat": true,
+    "x": 2,
+    "y": 8,
+    "z": 2
+  },
+  {
+    "id": "scu-24",
+    "name": "24",
+    "capacity": 24,
+    "lieFlat": true,
+    "x": 2,
+    "y": 6,
+    "z": 2
+  },
+  {
+    "id": "scu-16",
+    "name": "16",
+    "capacity": 16,
+    "lieFlat": true,
+    "x": 2,
+    "y": 4,
+    "z": 2
+  },
+  {
+    "id": "scu-8",
+    "name": "8",
+    "capacity": 8,
+    "x": 2,
+    "y": 2,
+    "z": 2
+  },
+  {
+    "id": "scu-4",
+    "name": "4",
+    "capacity": 4,
+    "lieFlat": true,
+    "x": 2,
+    "y": 2,
+    "z": 1
+  },
+  {
+    "id": "scu-2",
+    "name": "2",
+    "capacity": 2,
+    "lieFlat": true,
+    "x": 1,
+    "y": 2,
+    "z": 1
+  },
+  {
+    "id": "scu-1",
+    "name": "1",
+    "capacity": 1,
+    "x": 1,
+    "y": 1,
+    "z": 1
+  }
+]

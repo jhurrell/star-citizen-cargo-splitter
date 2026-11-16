@@ -9,6 +9,7 @@ import { useTimedFlag, useTimedMessage } from "../lib/hooks";
 import { isEnabled, loadState, makeRow, reducer, saveState, type RowField, type TextKey } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { Legend } from "./Legend";
+import { ShipPicker } from "./ShipPicker";
 
 /* three.js is big, so the 3D view loads only when a grid has placements to show. */
 const ShipView = lazy(() => import("./ShipView"));
@@ -102,26 +103,15 @@ export function CargoSplitter() {
   return (
     <>
       <div className="ship-bar">
-        <label className="picker">
-          <span>Ship</span>
-          <select
-            id="ship"
-            value={ship?.id ?? ""}
-            disabled={ships.length === 0}
-            onChange={(e) => {
-              const shipId = e.target.value;
-              /* A new ship starts on its first cargo grid. */
-              const gridId = ships.find((s) => s.id === shipId)?.grids[0]?.id ?? "";
-              dispatch({ type: "selectShip", shipId, gridId });
-            }}
-          >
-            {ships.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ShipPicker
+          ships={ships}
+          value={ship?.id ?? ""}
+          onChange={(shipId) => {
+            /* A new ship starts on its first cargo grid. */
+            const gridId = ships.find((s) => s.id === shipId)?.grids[0]?.id ?? "";
+            dispatch({ type: "selectShip", shipId, gridId });
+          }}
+        />
         <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
           <span>Layout</span>
           <select

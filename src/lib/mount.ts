@@ -1,6 +1,6 @@
 /* Where a cargo grid position sits on its ship, for the ship view.
 
-   In config.json a position may add:
+   In ships.json a position may add:
      "at":     { "x": 0, "y": 4, "z": 2 }                 where the centre of its floor is, in SCU
      "rotate": { "roll": 0, "pitch": 0, "yaw": 0 }        how it is turned, in degrees (optional)
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
-import config from "../config.json";
+import rawContainers from "../src/config/containers.json";
+import rawShips from "../src/config/ships.json";
 import { fitsInside, parseContainers, parseScu, parseShips, placementsOf, type Placement } from "../src/lib/cargo";
 import { container } from "./helpers";
 
@@ -37,46 +38,43 @@ describe("placementsOf", () => {
 
 describe("parseContainers", () => {
   test("sorts largest first, keeps the first of a repeated size and skips bad entries", () => {
-    const containers = parseContainers({
-      containers: [
-        { capacity: 8, x: 2, y: 2, z: 2 },
-        { capacity: 32, x: 2, y: 8, z: 2, lieFlat: true },
-        { capacity: 8, x: 1, y: 1, z: 8 },
-        { capacity: 4, x: 2, y: 2 },
-        { x: 1, y: 1, z: 1 },
-      ],
-    });
+    const containers = parseContainers([
+      { capacity: 8, x: 2, y: 2, z: 2 },
+      { capacity: 32, x: 2, y: 8, z: 2, lieFlat: true },
+      { capacity: 8, x: 1, y: 1, z: 8 },
+      { capacity: 4, x: 2, y: 2 },
+      { x: 1, y: 1, z: 1 },
+    ]);
     expect(containers.map((c) => c.size)).toEqual([32, 8]);
     expect(containers[1].placements).toEqual([[2, 2, 2]]);
   });
 
-  test("copes with a missing or malformed config", () => {
+  test("copes with a missing or malformed list", () => {
     expect(parseContainers(undefined)).toEqual([]);
-    expect(parseContainers({ containers: "nope" })).toEqual([]);
+    expect(parseContainers("nope")).toEqual([]);
+    expect(parseShips({ ships: [] })).toEqual([]);
   });
 });
 
 describe("parseShips", () => {
   test("drops malformed positions, empty grids and gridless ships, sorted by name", () => {
-    const ships = parseShips({
-      ships: [
-        {
-          id: "z",
-          name: "Zeta",
-          grids: [
-            {
-              id: "g",
-              positions: [
-                { name: "Bay", x: 2, y: 2, z: 2 },
-                { name: "Bad", x: 2 },
-              ],
-            },
-          ],
-        },
-        { id: "a", name: "Alpha", grids: [{ id: "g", positions: [{ name: "Hold", x: 4, y: 4, z: 2 }] }] },
-        { id: "e", name: "Empty", grids: [{ id: "g", positions: [] }] },
-      ],
-    });
+    const ships = parseShips([
+      {
+        id: "z",
+        name: "Zeta",
+        grids: [
+          {
+            id: "g",
+            positions: [
+              { name: "Bay", x: 2, y: 2, z: 2 },
+              { name: "Bad", x: 2 },
+            ],
+          },
+        ],
+      },
+      { id: "a", name: "Alpha", grids: [{ id: "g", positions: [{ name: "Hold", x: 4, y: 4, z: 2 }] }] },
+      { id: "e", name: "Empty", grids: [{ id: "g", positions: [] }] },
+    ]);
     expect(ships.map((s) => s.name)).toEqual(["Alpha", "Zeta"]);
     expect(ships[1].grids[0].positions).toEqual([{ name: "Bay", x: 2, y: 2, z: 2, capacity: 8, mount: null }]);
   });
@@ -90,15 +88,15 @@ describe("fitsInside", () => {
   });
 });
 
-describe("config.json", () => {
-  test("lists usable containers and ships", () => {
-    expect(parseContainers(config).length).toBeGreaterThan(0);
-    expect(parseShips(config).length).toBeGreaterThan(0);
+describe("containers.json and ships.json", () => {
+  test("list usable containers and ships", () => {
+    expect(parseContainers(rawContainers).length).toBeGreaterThan(0);
+    expect(parseShips(rawShips).length).toBeGreaterThan(0);
   });
 
   test("every position takes at least one container size", () => {
-    const containers = parseContainers(config);
-    for (const ship of parseShips(config))
+    const containers = parseContainers(rawContainers);
+    for (const ship of parseShips(rawShips))
       for (const grid of ship.grids)
         for (const position of grid.positions)
           expect(
@@ -108,7 +106,7 @@ describe("config.json", () => {
   });
 
   test("each ship's stated capacity matches every grid's volume", () => {
-    for (const ship of config.ships)
+    for (const ship of rawShips)
       for (const grid of ship.grids) {
         const volume = grid.positions.reduce((total, p) => total + p.x * p.y * p.z, 0);
         expect(volume, `${ship.name} / ${grid.name}`).toBe(ship.capacity);

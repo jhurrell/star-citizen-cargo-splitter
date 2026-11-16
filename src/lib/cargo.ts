@@ -1,6 +1,7 @@
 import { parseMount, type Mount } from "./mount";
 
-/* The cargo domain: container and ship shapes, read from config.json, and
+/* The cargo domain: container and ship shapes, read from containers.json and
+   ships.json, and
    the SCU a row asks for. Pure functions, so they can be unit tested. */
 
 const MAX_SCU = 10_000_000;
@@ -15,7 +16,7 @@ export type Position = Shape & { name: string; capacity: number; mount: Mount | 
 export type Grid = { id: string; name: string; positions: Position[] };
 export type Ship = { id: string; name: string; grids: Grid[] };
 
-/* Loosely typed config data, as read from config.json. */
+/* Loosely typed data, as read from containers.json or ships.json. */
 type Raw = Record<string, unknown> | null | undefined;
 
 const list = (value: unknown): Raw[] => (Array.isArray(value) ? value : []);
@@ -56,11 +57,11 @@ export function placementsOf({ x, y, z }: Shape, lieFlat: boolean): Placement[] 
   return unique.sort((a, b) => a[2] - b[2]);
 }
 
-/* Containers from config.json, largest first. A size listed twice keeps its
-   first entry; entries without a size or shape are skipped. */
-export function parseContainers(config: unknown): Container[] {
+/* Containers from containers.json (a list), largest first. A size listed
+   twice keeps its first entry; entries without a size or shape are skipped. */
+export function parseContainers(items: unknown): Container[] {
   const bySize = new Map<number, Container>();
-  for (const item of list((config as Raw)?.containers)) {
+  for (const item of list(items)) {
     const size = positiveInt(item?.capacity);
     const shape = parseShape(item);
     if (size && shape && !bySize.has(size)) {
@@ -77,10 +78,10 @@ function parsePosition(item: Raw): Position | null {
   return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z, mount: parseMount(item) } : null;
 }
 
-/* The ship list from config.json, sorted by name. Malformed positions are
+/* The ships from ships.json (a list), sorted by name. Malformed positions are
    skipped, and so are grids left with no positions and ships with no grids. */
-export function parseShips(config: unknown): Ship[] {
-  return list((config as Raw)?.ships)
+export function parseShips(items: unknown): Ship[] {
+  return list(items)
     .map((ship) => ({
       id: asText(ship?.id),
       name: asText(ship?.name ?? ship?.id),

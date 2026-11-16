@@ -11,7 +11,7 @@ export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
 ];
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 
-/* A grid (config.json position) a row's cargo goes in. `order` says when it
+/* A grid (a ships.json position) a row's cargo goes in. `order` says when it
    was picked: earlier picks, across all rows, fill first. */
 export type GridPick = { name: string; order: number };
 /* `picks` are the grids the row's cargo goes in; several split it across them. */
@@ -20,7 +20,7 @@ export type RowField = TextKey | "scu";
 export type SortDir = 1 | -1;
 export type Sort = { key: TextKey; dir: SortDir } | null;
 export type State = {
-  shipId: string; // "" means the first ship in config.json
+  shipId: string; // "" means the first ship, by name
   gridId: string; // "" means that ship's first grid
   enabled: Record<number, boolean>; // size → false when unchecked; sizes not listed are on
   sort: Sort;
@@ -98,7 +98,7 @@ export function hydrate(saved: unknown): State {
   } else if (rows?.some((r) => Object.hasOwn(LEGACY_POSITIONS, asText(r?.position)))) {
     Object.assign(result, LEGACY_SHIP); // keep older saves on the grid they were made for
   }
-  /* Sizes aren't known until config.json is read, so keep every saved choice. */
+  /* Sizes aren't known until containers.json is read, so keep every saved choice. */
   for (const [size, on] of Object.entries((s.enabled as object) ?? {})) {
     if (typeof on === "boolean") result.enabled[Number(size)] = on;
   }
