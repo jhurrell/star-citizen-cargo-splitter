@@ -325,6 +325,8 @@ const TEXT_COLUMNS = [
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 const MAX_SCU = 10_000_000;
 const STORE_KEY = "cargo-splitter-v3";
+const STATUS_MS = 2200; // how long a copy or clear message stays
+const DISARM_MS = 3000; // how long Clear table waits for the second click
 
 /* ================= Helpers ================= */
 
@@ -335,6 +337,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (ch) =>
 const hiddenAttr = (show) => (show ? "" : " hidden");
 const list = (value) => (Array.isArray(value) ? value : []);
 const positiveInt = (n) => (Number.isInteger(n) && n > 0 ? n : 0);
+const sum = (items, pick) => items.reduce((total, item) => total + pick(item), 0);
 
 /* ================= Pure logic ================= */
 
@@ -383,35 +386,40 @@ function placementsOf({ x, y, z }, lieFlat) {
   return unique.sort((a, b) => a[2] - b[2]);
 }
 
-/* Containers from config.json as { size, x, y, z, placements }, largest first.
-   A size listed twice keeps its first entry; entries without a size or shape are skipped. */
+/* Containers from config.json as { size, placements }, largest first. A size
+   listed twice keeps its first entry; entries without a size or shape are skipped. */
 function parseContainers(config) {
   const bySize = new Map();
   for (const item of list(config?.containers)) {
     const size = positiveInt(item?.capacity);
     const shape = parseShape(item);
     if (size && shape && !bySize.has(size)) {
-      bySize.set(size, { size, ...shape, placements: placementsOf(shape, item.lieFlat === true) });
+      bySize.set(size, { size, placements: placementsOf(shape, item.lieFlat === true) });
     }
   }
   return [...bySize.values()].sort((a, b) => b.size - a.size);
 }
 
-/* Read the ship list from config.json, skipping anything malformed, sorted by
-   name. A position keeps its shape; its capacity is its volume in SCU (x × y × z). */
+/* A cargo grid position as { name, x, y, z, capacity }, or null if malformed.
+   Its capacity is its volume in SCU. */
+function parsePosition(item) {
+  const name = String(item?.name ?? "");
+  const shape = parseShape(item);
+  return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z } : null;
+}
+
+/* The ship list from config.json, sorted by name. Malformed positions are
+   skipped, and so are grids left with no positions and ships with no grids. */
 function parseShips(config) {
   return list(config?.ships)
     .map((ship) => ({
-      id: String(ship.id ?? ""),
-      name: String(ship.name ?? ship.id ?? ""),
-      grids: list(ship.grids)
+      id: String(ship?.id ?? ""),
+      name: String(ship?.name ?? ship?.id ?? ""),
+      grids: list(ship?.grids)
         .map((grid) => ({
-          id: String(grid.id ?? ""),
-          name: String(grid.name ?? grid.id ?? ""),
-          positions: list(grid.positions)
-            .map((p) => ({ name: String(p.name ?? ""), shape: parseShape(p) }))
-            .filter((p) => p.name && p.shape)
-            .map(({ name, shape }) => ({ name, ...shape, capacity: shape.x * shape.y * shape.z })),
+          id: String(grid?.id ?? ""),
+          name: String(grid?.name ?? grid?.id ?? ""),
+          positions: list(grid?.positions).map(parsePosition).filter(Boolean),
         }))
         .filter((grid) => grid.id && grid.positions.length > 0),
     }))
@@ -441,6 +449,10 @@ function packContainers(space, load) {
   };
   const isFree = (x, y, z, w, d, h) => everyCell(x, y, z, w, d, h, (i) => !filled[i]);
   const isSupported = (x, y, z, w, d) => z === 0 || everyCell(x, y, z - 1, w, d, 1, (i) => filled[i]);
+  const occupy = ({ x, y, z, w, d, h }) => everyCell(x, y, z, w, d, h, (i) => {
+    filled[i] = 1;
+    return true;
+  });
 
   function findSpot(box) {
     for (let z = 0; z < Z; z++)
@@ -464,10 +476,16 @@ function packContainers(space, load) {
         unfit[container.size] = count - placed;
         break;
       }
-      everyCell(spot.x, spot.y, spot.z, spot.w, spot.d, spot.h, (i) => (filled[i] = 1));
+      occupy(spot);
     }
   }
   return unfit;
+}
+
+/* Add `extra` ({ size: count }) into `into`, in place. */
+function addCounts(into, extra) {
+  for (const [size, n] of Object.entries(extra)) into[size] = (into[size] ?? 0) + n;
+  return into;
 }
 
 /* How full `scu` makes a hold of `capacity` SCU. */
@@ -550,7 +568,7 @@ const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
 
 /* ---- Loaded from config.json at startup ---- */
 
-let containers = []; // { size, x, y, z }, largest first
+let containers = []; // { size, placements }, largest first
 let ships = [];
 let configError = ""; // shown in place of the ship summary when config.json can't be used
 
@@ -571,21 +589,21 @@ function currentGrid() {
 }
 const currentPositions = () => currentGrid()?.positions ?? [];
 /* A row's position on the selected grid, or undefined when it has none there. */
-const positionFor = (row) => currentPositions().find((p) => p.name === row.position);
-const positionOf = (row) => positionFor(row)?.name ?? "";
+const rowPosition = (row) => currentPositions().find((p) => p.name === row.position);
+const rowPositionName = (row) => rowPosition(row)?.name ?? "";
 
 /* Everything derived from state, computed once per update. A row only uses
    container sizes that fit its position; each position is then packed to find
    any containers that don't fit (`unfit`, as { size: count }). */
 function computeTable() {
-  const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(enabledSizes().map((s) => [s, 0])) };
+  const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(enabledSizes().map((s) => [s, 0])), unfit: {} };
   const byRow = new Map();
   /* "" collects cargo with no position chosen. Only rows with SCU count as rows. */
   const byPosition = new Map(["", ...currentPositions().map((p) => p.name)]
     .map((name) => [name, { rows: 0, scu: 0, counts: {}, unfit: {} }]));
   for (const row of state.rows) {
     const scu = parseScu(row.scu);
-    const position = positionFor(row);
+    const position = rowPosition(row);
     const fill = fillLargestFirst(scu, usableSizes(position));
     byRow.set(row.id, fill);
     totals.scu += scu;
@@ -594,15 +612,14 @@ function computeTable() {
     const entry = byPosition.get(position?.name ?? "");
     entry.rows += 1;
     entry.scu += scu;
-    for (const [size, n] of Object.entries(fill.counts)) {
-      totals.counts[size] += n;
-      entry.counts[size] = (entry.counts[size] ?? 0) + n;
-    }
+    addCounts(entry.counts, fill.counts);
+    addCounts(totals.counts, fill.counts);
   }
   for (const position of currentPositions()) {
     const entry = byPosition.get(position.name);
     const load = containers.map((c) => ({ container: c, count: entry.counts[c.size] ?? 0 })).filter((l) => l.count > 0);
     entry.unfit = packContainers(position, load);
+    addCounts(totals.unfit, entry.unfit);
   }
   return { byRow, byPosition, totals, showLeftover: totals.leftover > 0 };
 }
@@ -624,9 +641,9 @@ const els = {
   shipInfo: $("ship-info"),
 };
 
-/* Look and text for a calculated cell; shared by full renders and live updates. */
-/* `counts` holds only the sizes the row could use: a checked size missing from
-   it is too big for the row's position. */
+/* Look, text and tooltip for a calculated cell; shared by full renders and live
+   updates. `counts` holds only the sizes the row could use, so a checked size
+   missing from it is too big for the row's position. */
 function countCell(size, counts) {
   if (!isEnabled(size)) return { look: "off", text: "–", title: "" };
   if (!Object.hasOwn(counts, size)) return { look: "off", text: "–", title: `${size} SCU containers don't fit this position` };
@@ -702,7 +719,7 @@ function cargoRowHtml(row, fill, showLeftover) {
     ${textCells}
     <td class="edit scu-cell"><input class="field scu" id="r${row.id}-scu" data-field="scu" inputmode="numeric" value="${esc(row.scu)}" placeholder="0" aria-label="SCU"></td>
     ${calcCellsHtml(fill, showLeftover)}
-    <td class="edit sep"><select class="field" id="r${row.id}-position" data-field="position" aria-label="Position">${positionOptionsHtml(positionOf(row))}</select></td>
+    <td class="edit sep"><select class="field" id="r${row.id}-position" data-field="position" aria-label="Position">${positionOptionsHtml(rowPositionName(row))}</select></td>
   </tr>`;
 }
 
@@ -725,30 +742,31 @@ function cargoFootHtml(calc) {
 const warnNoteHtml = (text) =>
   `<span class="warn-note"><span class="warn-badge" aria-hidden="true">!</span>${text}</span>`;
 
+const hasUnfit = (unfit) => Object.keys(unfit).length > 0;
+
 /* Bar and Available cells. The bar turns to a warning when containers don't fit.
    Its fill width travels in data-percent and is applied by applyBarWidths(). */
-function loadCellsHtml(scu, capacity, fits) {
+function loadCellsHtml(scu, capacity, unfit) {
   const load = loadOf(scu, capacity);
-  return `<td><div class="bar" data-state="${fits ? load.look : "over"}" role="presentation"><span class="bar-fill" data-percent="${load.percent.toFixed(2)}"></span></div></td>
+  const barLook = hasUnfit(unfit) ? "over" : load.look;
+  return `<td><div class="bar" data-state="${barLook}" role="presentation"><span class="bar-fill" data-percent="${load.percent.toFixed(2)}"></span></div></td>
     <td class="num avail" data-state="${load.look}">${load.label}</td>`;
 }
 
-/* Fit cell: blank for an empty position, else "Fits" or which containers don't. */
-function fitCellHtml(scu, unfit) {
+/* Fit cell: blank with no cargo, `fitsText` when everything fits, else which
+   containers don't, largest first. */
+function fitCellHtml(scu, unfit, fitsText) {
   if (!scu) return "<td></td>";
+  if (!hasUnfit(unfit)) return `<td class="fit" data-state="ok">${fitsText}</td>`;
   const sizes = Object.keys(unfit).map(Number).sort((a, b) => b - a);
-  if (sizes.length === 0) return `<td class="fit" data-state="ok">Fits</td>`;
-  const list = sizes.map((size) => `${fmt(unfit[size])} × ${size} SCU`).join(", ");
-  return `<td class="fit" data-state="warn">${warnNoteHtml(`${list} won't fit`)}</td>`;
+  const parts = sizes.map((size) => `${fmt(unfit[size])} × ${size} SCU`).join(", ");
+  return `<td class="fit" data-state="warn">${warnNoteHtml(`${parts} won't fit`)}</td>`;
 }
 
 /* Read-only SCU-by-position table for the selected ship's grid. Every position
    shows; Unassigned shows only when it holds cargo, which has no hold to fit. */
 function positionsHtml(calc) {
   const positions = currentPositions();
-  const sum = (items, pick) => items.reduce((n, item) => n + pick(item), 0);
-  const unfitCount = (p) => sum(Object.values(calc.byPosition.get(p.name).unfit), (n) => n);
-
   const rows = positions.map((p) => {
     const e = calc.byPosition.get(p.name);
     return `<tr${e.scu ? "" : ' class="is-empty"'}>
@@ -756,8 +774,8 @@ function positionsHtml(calc) {
       <td class="num">${fmt(e.rows)}</td>
       <td class="num scu-sum">${fmt(e.scu)}</td>
       <td class="num">${fmt(p.capacity)}</td>
-      ${loadCellsHtml(e.scu, p.capacity, unfitCount(p) === 0)}
-      ${fitCellHtml(e.scu, e.unfit)}
+      ${loadCellsHtml(e.scu, p.capacity, e.unfit)}
+      ${fitCellHtml(e.scu, e.unfit, "Fits")}
     </tr>`;
   });
   const unassigned = calc.byPosition.get("");
@@ -773,10 +791,6 @@ function positionsHtml(calc) {
 
   const capacity = sum(positions, (p) => p.capacity);
   const positioned = sum(positions, (p) => calc.byPosition.get(p.name).scu);
-  const unfit = sum(positions, unfitCount);
-  const totalFit = !positioned ? "<td></td>"
-    : unfit ? `<td class="fit" data-state="warn">${warnNoteHtml(`${plural(unfit, "container")} won't fit`)}</td>`
-    : `<td class="fit" data-state="ok">All fit</td>`;
   return `<thead><tr>
       <th class="label">Position</th>
       <th class="label num">Rows</th>
@@ -792,8 +806,8 @@ function positionsHtml(calc) {
       <td class="num">${fmt(sum([...calc.byPosition.values()], (e) => e.rows))}</td>
       <td class="num scu-sum">${fmt(calc.totals.scu)}</td>
       <td class="num">${capacity ? fmt(capacity) : ""}</td>
-      ${capacity ? loadCellsHtml(positioned, capacity, unfit === 0) : "<td></td><td></td>"}
-      ${totalFit}
+      ${capacity ? loadCellsHtml(positioned, capacity, calc.totals.unfit) : "<td></td><td></td>"}
+      ${fitCellHtml(positioned, calc.totals.unfit, "All fit")}
     </tr></tfoot>`;
 }
 
@@ -815,7 +829,7 @@ function renderShipPicker() {
   if (!grid) return; // still loading
   const capacities = new Set(grid.positions.map((p) => p.capacity));
   const each = capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "";
-  const total = grid.positions.reduce((n, p) => n + p.capacity, 0);
+  const total = sum(grid.positions, (p) => p.capacity);
   els.shipInfo.textContent = `${fmt(total)} SCU in ${plural(grid.positions.length, "position")}${each}`;
 }
 
@@ -936,7 +950,7 @@ function exportTable() {
   ];
   const rows = state.rows.map((row) => {
     const fill = calc.byRow.get(row.id);
-    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s] ?? 0), ...leftover(fill.leftover), positionOf(row)];
+    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s] ?? 0), ...leftover(fill.leftover), rowPositionName(row)];
   });
   const totals = [
     "Total", ...TEXT_KEYS.slice(1).map(() => ""), calc.totals.scu,
@@ -974,7 +988,7 @@ let statusTimer;
 function showStatus(message) {
   els.status.textContent = message;
   clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => { els.status.textContent = ""; }, 2200);
+  statusTimer = setTimeout(() => { els.status.textContent = ""; }, STATUS_MS);
 }
 
 async function copyText(text) {
@@ -1002,7 +1016,7 @@ function setClearArmed(armed) {
   els.clear.classList.toggle("is-armed", armed);
   els.clear.textContent = armed ? "Click again to clear" : "Clear table";
   clearTimeout(disarmTimer);
-  if (armed) disarmTimer = setTimeout(() => setClearArmed(false), 3000);
+  if (armed) disarmTimer = setTimeout(() => setClearArmed(false), DISARM_MS);
 }
 
 /* ================= Events ================= */
@@ -1070,5 +1084,5 @@ async function loadConfig() {
   }
 }
 
-loadConfig().finally(() => render());
+loadConfig().then(() => render());
 </script>
