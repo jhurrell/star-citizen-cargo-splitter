@@ -25,6 +25,9 @@ export type State = {
   rows: Row[];
 };
 
+/* Container sizes are on unless unchecked. */
+export const isEnabled = (enabled: State["enabled"], size: number): boolean => enabled[size] !== false;
+
 const STORE_KEY = "cargo-splitter-v3";
 /* Position names saved before ships were selectable: the Hull B's relaxed grid. */
 const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "relaxed" };

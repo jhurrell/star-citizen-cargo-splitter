@@ -2,9 +2,11 @@ import { Line, OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, Vector3, type InstancedMesh } from "three";
-import type { Placed, Position } from "../lib/cargo";
+import type { GridLoad } from "../lib/calc";
+import type { Position } from "../lib/cargo";
+import { OTHER_COLOR, type Cargo } from "../lib/colors";
 import { mountMatrix, toShip, type Mount, type Vec3 } from "../lib/mount";
-import { OTHER_COLOR, type Calc, type Cargo } from "../lib/table";
+import type { Placed } from "../lib/packing";
 
 type Mounted = Position & { mount: Mount };
 /* A text label pinned to a ship point; drawn as HTML over the canvas. */
@@ -30,16 +32,17 @@ const LIT = "#ffffff"; // the grid pointed at in the cargo table
 const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
 const isMounted = (p: Position): p is Mounted => p.mount !== null;
 
-/* Every mounted position of the selected grid in 3D, placed and turned as
-   config.json says, with its containers as packed for the Fit column. */
+/* Every mounted position of the selected layout in 3D, placed and turned as
+   config.json says, with its containers as packed. */
 export default function ShipView({
   positions,
-  calc,
+  loads,
   cargoByRow,
   highlight = null,
 }: {
   positions: Position[];
-  calc: Calc;
+  /* Each position's packed containers, by name. */
+  loads: Map<string, GridLoad>;
   cargoByRow: Map<number, Cargo>;
   /* A grid's name to light up, seen through the others; null for none. */
   highlight?: string | null;
@@ -81,7 +84,7 @@ export default function ShipView({
             <GridMesh
               key={position.name}
               position={position}
-              placed={calc.byPosition.get(position.name)?.placed ?? []}
+              placed={loads.get(position.name)?.placed ?? []}
               cargoByRow={cargoByRow}
               lit={position.name === highlight}
               onHover={setHover}

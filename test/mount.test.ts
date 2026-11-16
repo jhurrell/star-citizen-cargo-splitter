@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 import config from "../config.json";
-import { parseContainers, parseShips, packContainers, type Position } from "../src/lib/cargo";
+import { parseContainers, parseShips, type Position } from "../src/lib/cargo";
+import { packContainers } from "../src/lib/packing";
 import { foreAxis, mountMatrix, parseMount, rotationOf, toShip, type Mount, type Vec3 } from "../src/lib/mount";
 
 const mount = (roll = 0, pitch = 0, yaw = 0, at: Vec3 = [0, 0, 0]): Mount => ({ at, roll, pitch, yaw });

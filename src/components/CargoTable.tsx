@@ -1,12 +1,18 @@
-import type { Container, Counts, Fill, Position } from "../lib/cargo";
-import { TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
-import { fmt, isEnabled, plural, shortText, type Calc, type Split } from "../lib/table";
+import { shortText, type Calc, type Split } from "../lib/calc";
+import type { Container, Position } from "../lib/cargo";
+import type { Cargo } from "../lib/colors";
+import { fmt, initials, plural } from "../lib/format";
+import type { Counts, Fill } from "../lib/packing";
+import { isEnabled, TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
+import { Swatch } from "./Legend";
 
 type Props = {
   state: State;
   calc: Calc;
   containers: Container[];
   positions: Position[];
+  /* Each row's color in the ship view, for its swatch. */
+  cargoByRow: Map<number, Cargo>;
   onUpdate: (id: number, field: RowField, value: string) => void;
   onSetPositions: (id: number, names: string[]) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
@@ -19,10 +25,10 @@ type Props = {
 
 /* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
    container size, Left over (only when some SCU can't be placed), Grid. */
-export function CargoTable({ state, calc, containers, positions, ...actions }: Props) {
+export function CargoTable({ state, calc, containers, positions, cargoByRow, ...actions }: Props) {
   /* SCU still free in each grid (below 0 when over), shown on its buttons. */
   const free = new Map(positions.map((p) => [p.name, p.capacity - calc.byPosition.get(p.name)!.scu]));
-  const tags = gridTags(positions);
+  const tags = initials(positions.map((p) => p.name));
   const columnCount = TEXT_COLUMNS.length + 1 + containers.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
@@ -61,6 +67,7 @@ export function CargoTable({ state, calc, containers, positions, ...actions }: P
               row={row}
               fill={calc.byRow.get(row.id)!}
               split={calc.splits.get(row.id)!}
+              cargo={cargoByRow.get(row.id)}
               free={free}
               tags={tags}
               showLeftover={calc.showLeftover}
@@ -151,6 +158,7 @@ function CargoRow({
   enabled,
   positions,
   split,
+  cargo,
   free,
   tags,
   onUpdate,
@@ -158,10 +166,11 @@ function CargoRow({
   onHighlight,
   onDelete,
   onScuEnter,
-}: Omit<Props, "state" | "calc" | "onSort" | "onToggleSize"> & {
+}: Omit<Props, "state" | "calc" | "cargoByRow" | "onSort" | "onToggleSize"> & {
   row: Row;
   fill: Fill;
   split: Split;
+  cargo: Cargo | undefined;
   free: Map<string, number>;
   tags: string[];
   showLeftover: boolean;
@@ -191,6 +200,10 @@ function CargoRow({
                 >
                   ×
                 </button>
+                {/* The row's color in the ship view; a gap until it has SCU. */}
+                <span className="row-swatch" title={cargo ? "This row's color in the ship view" : undefined}>
+                  {cargo && <Swatch color={cargo.color} />}
+                </span>
                 {input}
               </div>
             )}
@@ -227,21 +240,6 @@ function CargoRow({
       </td>
     </tr>
   );
-}
-
-/* Short names for the grid buttons: each name's initials ("Port - Upper" is
-   PU), or 1, 2, 3… when two grids would share them. */
-export function gridTags(positions: Position[]): string[] {
-  const initials = positions.map((p) =>
-    p.name
-      .split(/[^A-Za-z0-9]+/)
-      .filter(Boolean)
-      .map((word) => word[0].toUpperCase())
-      .join(""),
-  );
-  return new Set(initials).size === initials.length && initials.every(Boolean)
-    ? initials
-    : positions.map((_, i) => String(i + 1));
 }
 
 /* The Grid cell: a toggle button per grid showing the SCU it has available.

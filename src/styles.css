@@ -1,6 +1,6 @@
-/* Layout: an editable cargo grid (Material / Pick-up / Drop-off, SCU, one column per
-   container size, an optional Left over column, Position), then a read-only
-   SCU-by-position table. Both scroll sideways inside their own frame on phones.
+/* Layout: an editable cargo table (Material / Pick-up / Drop-off, SCU, one column
+   per container size, an optional Left over column, Grid), which scrolls
+   sideways inside its frame on phones, then the 3D ship view.
    Look: a single dark theme by choice (deep-space navy panels, sky-blue accent,
    pale-blue uppercase labels, square corners), like a ship's console. */
 :root {
@@ -24,6 +24,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --radius: 0;
   --del-size: 28px;
+  --swatch-room: 16px; /* a row's color swatch and the gap after it */
   color-scheme: dark;
 }
 
@@ -33,7 +34,7 @@
 }
 [hidden] {
   display: none !important;
-} /* also when opened outside the artifact viewer */
+}
 body {
   background: var(--bg);
   color: var(--fg);
@@ -285,11 +286,11 @@ header p {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  min-width: 9em;
+  min-width: 8em;
 }
-/* Line the Material heading up with the text after each row's delete button. */
+/* Line the Material heading up with the text after each row's delete button and swatch. */
 #cargo thead th:first-child {
-  padding-left: calc(var(--del-size) + 10px);
+  padding-left: calc(var(--del-size) + var(--swatch-room) + 10px);
 }
 
 .size-toggle label {
@@ -328,7 +329,7 @@ header p {
   background: transparent;
   border: 0;
   width: 100%;
-  min-width: 9em;
+  min-width: 8em;
   padding: 9px 10px;
 }
 .field:focus-visible {
@@ -425,6 +426,13 @@ select.field option {
   gap: 2px;
   padding-left: 4px;
 }
+.row-swatch {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--swatch-room) - 4px);
+  margin-right: 4px;
+}
 .material-cell .field {
   padding-left: 4px;
 }
@@ -480,99 +488,15 @@ select.field option {
   color: var(--muted);
 }
 
-/* ---------- SCU by position (read-only) ---------- */
-.summary {
+/* ---------- Sections below the table ---------- */
+.section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.summary .frame {
-  max-width: 960px;
-}
-#positions th,
-#positions td {
-  padding: 9px 12px;
-}
-#positions tbody th {
-  text-align: left;
-  font-weight: 600;
-}
-#positions .num {
-  font-family: var(--font-mono);
-}
-#positions .scu-sum {
-  font-weight: 600;
-}
-#positions tbody tr.is-empty > * {
-  color: var(--off-fg);
-  font-weight: 400;
-}
-#positions tfoot td {
-  color: var(--fg);
-}
-#positions tbody tr.is-warn > * {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-.warn-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.fit {
-  white-space: nowrap;
-}
-.fit[data-state="ok"] {
-  color: var(--muted);
-}
-.fit[data-state="warn"] {
-  color: var(--warn);
-}
-.warn-badge {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  background: var(--warn);
-  color: var(--warn-soft);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-.bar {
-  min-width: 140px;
-  height: 8px;
-  background: var(--off);
-  border: 1px solid var(--line);
-  overflow: hidden;
-}
-/* The fill width is set from script (CSSOM), not a style="" attribute, which a
-   strict content security policy would ignore. */
-.bar-fill {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: var(--accent);
-}
-.bar[data-state="over"] .bar-fill {
-  background: var(--warn);
-}
-.avail {
-  font-weight: 600;
-  white-space: nowrap;
-}
-.avail[data-state="full"] {
-  color: var(--muted);
-}
-.avail[data-state="over"] {
-  color: var(--warn);
-}
 
-/* ---------- Load plan (read-only) ---------- */
-.plan-legend {
+/* ---------- Legend: a swatch and name per row ---------- */
+.legend {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 18px;
@@ -582,10 +506,10 @@ select.field option {
   color: var(--label);
   font-size: 13px;
 }
-.plan-legend:empty {
+.legend:empty {
   display: none;
 }
-.plan-legend li {
+.legend li {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -594,80 +518,6 @@ select.field option {
   flex: none;
   width: 12px;
   height: 12px;
-}
-.plan-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-}
-.plan-card {
-  margin: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px 12px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
-.plan-card figcaption {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-weight: 600;
-}
-.plan-card.is-empty figcaption {
-  color: var(--off-fg);
-}
-.plan-meta {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.plan-note {
-  margin: 0;
-  color: var(--warn);
-  font-size: 13px;
-}
-.plan-note .warn-note {
-  white-space: normal;
-}
-.plan-svg {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: auto;
-}
-/* Strokes stay 1px however far the drawing is scaled. */
-.plan-svg polygon,
-.plan-svg polyline {
-  vector-effect: non-scaling-stroke;
-  stroke-width: 1;
-  stroke-linejoin: round;
-}
-.plan-svg .hold {
-  fill: var(--off);
-  stroke: var(--line);
-}
-.plan-svg .hold-edge {
-  fill: none;
-  stroke: var(--off-fg);
-  stroke-dasharray: 3 3;
-}
-.plan-svg .box polygon {
-  stroke: var(--bg);
-}
-.plan-svg .box:hover polygon {
-  stroke: var(--fg);
-}
-.plan-svg .axis-label {
-  font-family: var(--font-body);
-  font-size: 0.75px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  fill: var(--muted);
 }
 
 @media (prefers-reduced-motion: no-preference) {

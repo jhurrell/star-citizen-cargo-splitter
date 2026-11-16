@@ -1,21 +1,14 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { computeTable, selection } from "../lib/calc";
+import { copyText } from "../lib/clipboard";
+import { cargoColors } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
-import { loadState, makeRow, reducer, saveState, type RowField, type TextKey } from "../lib/state";
-import {
-  cargoColors,
-  computeTable,
-  exportTable,
-  fmt,
-  isEnabled,
-  plural,
-  selection,
-  sum,
-  tableAsMarkdown,
-  tableAsTsv,
-} from "../lib/table";
+import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
+import { fmt, plural, sum } from "../lib/format";
+import { useTimedFlag, useTimedMessage } from "../lib/hooks";
+import { isEnabled, loadState, makeRow, reducer, saveState, type RowField, type TextKey } from "../lib/state";
 import { CargoTable } from "./CargoTable";
-import { Legend, LoadPlan } from "./LoadPlan";
-import { PositionsTable } from "./PositionsTable";
+import { Legend } from "./Legend";
 
 /* three.js is big, so the 3D view loads only when a grid has placements to show. */
 const ShipView = lazy(() => import("./ShipView"));
@@ -162,6 +155,7 @@ export function CargoSplitter() {
           calc={calc}
           containers={containers}
           positions={positions}
+          cargoByRow={colors.byRow}
           onUpdate={(id: number, field: RowField, value: string) => dispatch({ type: "updateRow", id, field, value })}
           onSetPositions={(id: number, names: string[]) => dispatch({ type: "setPositions", id, positions: names })}
           onHighlight={setHighlight}
@@ -181,13 +175,13 @@ export function CargoSplitter() {
         is kept in this browser.
       </p>
 
-      <section className="summary" aria-labelledby="ship-title">
+      <section className="section" aria-labelledby="ship-title">
         <h2 id="ship-title">Ship view</h2>
         {isMounted ? (
           <>
-            <Legend materials={colors.materials} />
+            <Legend entries={colors.legend} />
             <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
-              <ShipView positions={positions} calc={calc} cargoByRow={colors.byRow} highlight={highlight} />
+              <ShipView positions={positions} loads={calc.byPosition} cargoByRow={colors.byRow} highlight={highlight} />
             </Suspense>
             <p className="hint">
               Each grid placed on the ship as config.json says. Drag to turn, scroll to zoom, right-drag to pan. The
@@ -202,75 +196,6 @@ export function CargoSplitter() {
           </p>
         )}
       </section>
-
-      <section className="summary" aria-labelledby="positions-title">
-        <h2 id="positions-title">SCU by grid</h2>
-        <div className="frame">
-          <PositionsTable calc={calc} positions={positions} />
-        </div>
-        <p className="hint">
-          Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every
-          container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it
-          says won't fit may still fit by hand.
-        </p>
-      </section>
-
-      <section className="summary" aria-labelledby="plan-title">
-        <h2 id="plan-title">Load plan</h2>
-        <Legend materials={colors.materials} />
-        <LoadPlan calc={calc} positions={positions} colors={colors} />
-        <p className="hint">
-          Each grid as packed for the Fit column, seen from above its fore–starboard corner. Colors follow the material;
-          point at a container to see what it holds.
-        </p>
-      </section>
     </>
   );
-}
-
-/* A message that clears itself `ms` after it was last shown. */
-function useTimedMessage(ms: number): [string, (message: string) => void] {
-  /* `shown` counts showings, so the same message twice restarts the timer. */
-  const [message, setMessage] = useState({ text: "", shown: 0 });
-  useEffect(() => {
-    if (!message.text) return;
-    const timer = setTimeout(() => setMessage((m) => ({ ...m, text: "" })), ms);
-    return () => clearTimeout(timer);
-  }, [message, ms]);
-  return [message.text, (text) => setMessage((m) => ({ text, shown: m.shown + 1 }))];
-}
-
-/* A flag that turns itself off `ms` after it was turned on: the two-step Clear
-   table, since the artifact viewer can't show confirm() dialogs. */
-function useTimedFlag(ms: number): [boolean, (on: boolean) => void] {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    if (!on) return;
-    const timer = setTimeout(() => setOn(false), ms);
-    return () => clearTimeout(timer);
-  }, [on, ms]);
-  return [on, setOn];
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Fallback for views that refuse the async clipboard API.
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try {
-      ok = document.execCommand("copy");
-    } catch {
-      /* not supported */
-    }
-    ta.remove();
-    return ok;
-  }
 }
