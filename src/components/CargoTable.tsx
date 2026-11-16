@@ -69,6 +69,8 @@ export function CargoTable({
     };
   });
   const unassigned = sum([...calc.splits.values()], (s) => s.unassigned);
+  /* Room still free across all the grids. */
+  const unused = sum(grids, (g) => g.free);
   /* Material, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
@@ -123,7 +125,9 @@ export function CargoTable({
           <td className="foot-scu">{fmt(calc.totals.scu)}</td>
           <RemainingCell scu={unassigned} />
           <CalcCells fill={calc.totals} sizes={sizes} showLeftover={calc.showLeftover} />
-          <td className="sep" />
+          <td className="sep foot-free" title={unused ? `${fmt(unused)} SCU of grid space not used yet` : undefined}>
+            {unused > 0 && `${fmt(unused)} free`}
+          </td>
         </tr>
       </tfoot>
     </table>
