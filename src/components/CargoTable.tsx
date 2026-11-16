@@ -144,8 +144,8 @@ function SortHead({
   const dir = sort?.key === sortKey ? sort.dir : 0;
   return (
     <th className="label sort-th" aria-sort={dir === 1 ? "ascending" : dir === -1 ? "descending" : "none"}>
+      {/* The arrow comes first, so it's seen before the label. */}
       <div className="sortable">
-        {label}
         <button
           type="button"
           className={`icon-btn sort-btn${dir ? " is-active" : ""}`}
@@ -156,6 +156,7 @@ function SortHead({
         >
           {dir === 1 ? "↑" : dir === -1 ? "↓" : "↕"}
         </button>
+        {label}
       </div>
     </th>
   );

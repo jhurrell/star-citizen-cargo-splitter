@@ -24,6 +24,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --radius: 0;
   --del-size: 28px;
+  --sort-size: 26px; /* a column's sort button, before its label */
   --swatch-room: 16px; /* a row's color swatch and the gap after it */
   color-scheme: dark;
 }
@@ -257,8 +258,8 @@ header p {
 .sort-btn {
   font-family: var(--font-mono);
   font-size: 13px;
-  width: 26px;
-  height: 26px;
+  width: var(--sort-size);
+  height: var(--sort-size);
 }
 .sort-btn:hover {
   color: var(--fg);
@@ -348,17 +349,18 @@ header p {
 /* ---------- Cargo table ---------- */
 .grid .sort-th {
   padding-block: 4px;
+  padding-left: 4px;
 }
 .sortable {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   min-width: 8em;
 }
-/* Line the Material heading up with the text after each row's delete button and swatch. */
+/* Line the Material heading up with the text after each row's delete button
+   and swatch; its sort button sits over them. */
 #cargo thead th:first-child {
-  padding-left: calc(var(--del-size) + var(--swatch-room) + 10px);
+  padding-left: calc(var(--del-size) + var(--swatch-room) + 10px - var(--sort-size) - 4px);
 }
 
 /* A size's toggle button: filled while its containers are used; struck
