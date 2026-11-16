@@ -1,4 +1,7 @@
-{
+/* Cargo Splitter config: container sizes, ships and their cargo grids.
+   Everything between "= " and the final ";" is JSON. Loaded with a script
+   tag (not fetched) so the page also works when opened straight from disk. */
+window.CARGO_CONFIG = {
   "containers": [
     {
       "id": "scu-32",
@@ -308,4 +311,4 @@
       ]
     }
   ]
-}
+};

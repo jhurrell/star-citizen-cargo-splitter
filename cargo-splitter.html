@@ -5,6 +5,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=Montserrat:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<!-- Container sizes, ships and their cargo grids, as window.CARGO_CONFIG. A script
+     tag rather than a fetch, so the page also works when opened from disk. -->
+<script src="config.js"></script>
 <style>
 /* Layout: an editable cargo grid (Material / Pick-up / Drop-off, SCU, one column per
    container size, an optional Left over column, Position), then a read-only
@@ -329,7 +332,7 @@ select.field option { background: var(--surface); color: var(--fg); }
     <div class="frame">
       <table class="grid" id="positions"></table>
     </div>
-    <p class="hint">Fit packs each position's containers using their shapes from config.json. Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it says won't fit may still fit by hand.</p>
+    <p class="hint">Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it says won't fit may still fit by hand.</p>
   </section>
 
   <section class="summary" aria-labelledby="plan-title">
@@ -346,7 +349,7 @@ select.field option { background: var(--surface); color: var(--fg); }
 
 /* ================= Config ================= */
 
-const CONFIG_URL = "config.json"; // container sizes, ships and their cargo grids, published beside this page
+const CONFIG_FILE = "config.js"; // loaded in the page head; sets window.CARGO_CONFIG
 /* Position names saved before ships were selectable: the Hull B's relaxed grid. */
 const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "relaxed" };
 const LEGACY_POSITIONS = {
@@ -429,7 +432,7 @@ function placementsOf({ x, y, z }, lieFlat) {
   return unique.sort((a, b) => a[2] - b[2]);
 }
 
-/* Containers from config.json as { size, placements }, largest first. A size
+/* Containers from config.js as { size, placements }, largest first. A size
    listed twice keeps its first entry; entries without a size or shape are skipped. */
 function parseContainers(config) {
   const bySize = new Map();
@@ -451,7 +454,7 @@ function parsePosition(item) {
   return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z } : null;
 }
 
-/* The ship list from config.json, sorted by name. Malformed positions are
+/* The ship list from config.js, sorted by name. Malformed positions are
    skipped, and so are grids left with no positions and ships with no grids. */
 function parseShips(config) {
   return list(config?.ships)
@@ -592,7 +595,7 @@ function makeRow(values = {}) {
 
 function defaultState() {
   return {
-    shipId: "", // "" means the first ship in config.json
+    shipId: "", // "" means the first ship in config.js
     gridId: "", // "" means that ship's first grid
     enabled: {}, // size → false when unchecked; sizes not listed are on
     sort: null,
@@ -614,7 +617,7 @@ function hydrate(saved) {
   } else if (Array.isArray(saved.rows) && saved.rows.some((r) => Object.hasOwn(LEGACY_POSITIONS, String(r?.position)))) {
     Object.assign(result, LEGACY_SHIP); // keep older saves on the grid they were made for
   }
-  /* Sizes aren't known until config.json loads, so keep every saved choice. */
+  /* Sizes aren't known until config.js loads, so keep every saved choice. */
   for (const [size, on] of Object.entries(saved.enabled ?? {})) {
     if (typeof on === "boolean") result.enabled[size] = on;
   }
@@ -645,11 +648,11 @@ function saveState() {
 
 const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
 
-/* ---- Loaded from config.json at startup ---- */
+/* ---- Loaded from config.js at startup ---- */
 
 let containers = []; // { size, placements }, largest first
 let ships = [];
-let configError = ""; // shown in place of the ship summary when config.json can't be used
+let configError = ""; // shown in place of the ship summary when config.js can't be used
 
 const isEnabled = (size) => state.enabled[size] !== false;
 const enabledSizes = () => containers.map((c) => c.size).filter(isEnabled);
@@ -1267,19 +1270,19 @@ els.grid.addEventListener("change", () => selectGrid(els.grid.value));
 
 /* Load container sizes and ships. Whatever loads is used: without sizes all
    cargo shows as Left over, and without ships there are no positions. */
-async function loadConfig() {
+function loadConfig() {
   try {
-    const response = await fetch(CONFIG_URL, { cache: "no-cache" });
-    if (!response.ok) throw new Error(`the server answered ${response.status}`);
-    const config = await response.json();
+    const config = window.CARGO_CONFIG;
+    if (!config || typeof config !== "object") throw new Error("it didn't load, or has a mistake in it");
     containers = parseContainers(config);
     ships = parseShips(config);
     const missing = [containers.length ? "" : "containers", ships.length ? "" : "ships"].filter(Boolean);
     if (missing.length) throw new Error(`it lists no usable ${missing.join(" or ")}`);
   } catch (err) {
-    configError = `Couldn't read ${CONFIG_URL}: ${err.message}.`;
+    configError = `Couldn't read ${CONFIG_FILE}: ${err.message}.`;
   }
 }
 
-loadConfig().then(() => render());
+loadConfig();
+render();
 </script>
