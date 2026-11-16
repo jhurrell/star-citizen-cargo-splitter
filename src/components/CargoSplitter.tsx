@@ -79,7 +79,7 @@ export function CargoSplitter() {
 
   async function copy(format: "tsv" | "markdown") {
     const sizes = containers.map((c) => c.size).filter((size) => isEnabled(state.enabled, size));
-    const table = exportTable(state.rows, calc, sizes, positions);
+    const table = exportTable(state.rows, calc, sizes);
     const ok = await copyText(format === "tsv" ? tableAsTsv(table) : tableAsMarkdown(table));
     if (!ok) showStatus("Copy isn't available here");
     else showStatus(format === "tsv" ? "Copied. Paste into a spreadsheet." : "Copied as a Markdown table.");
@@ -161,6 +161,7 @@ export function CargoSplitter() {
           containers={containers}
           positions={positions}
           onUpdate={(id: number, field: RowField, value: string) => dispatch({ type: "updateRow", id, field, value })}
+          onSetPositions={(id: number, names: string[]) => dispatch({ type: "setPositions", id, positions: names })}
           onDelete={deleteRow}
           onSort={(key: TextKey) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size: number, on: boolean) => dispatch({ type: "setSizeEnabled", size, on })}
@@ -170,8 +171,9 @@ export function CargoSplitter() {
 
       <p className="hint">
         Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it. Press{" "}
-        <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. Your table is
-        kept in this browser.
+        <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. To split a big
+        delivery, choose several positions in its Position menu; it fills their free room in order. A row with an amber
+        edge has more SCU than its positions have room for. Your table is kept in this browser.
       </p>
 
       <section className="summary" aria-labelledby="ship-title">

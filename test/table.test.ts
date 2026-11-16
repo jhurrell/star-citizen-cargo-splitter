@@ -1,7 +1,15 @@
 import { describe, expect, test } from "vite-plus/test";
 import { placementsOf, type Container, type Position } from "../src/lib/cargo";
 import { compareRows, defaultState, hydrate, makeRow, reducer } from "../src/lib/state";
-import { cargoColors, computeTable, exportTable, OTHER_COLOR, tableAsMarkdown, tableAsTsv } from "../src/lib/table";
+import {
+  cargoColors,
+  computeTable,
+  exportTable,
+  OTHER_COLOR,
+  splitRows,
+  tableAsMarkdown,
+  tableAsTsv,
+} from "../src/lib/table";
 
 const container = (size: number, x: number, y: number, z: number): Container => ({
   size,
@@ -32,7 +40,12 @@ describe("hydrate", () => {
   test("moves old position names onto the Hull B relaxed grid", () => {
     const state = hydrate({ rows: [{ material: "Gold", scu: "8", position: "Left Upper" }] });
     expect(state).toMatchObject({ shipId: "ship-misc-hull-b", gridId: "relaxed" });
-    expect(state.rows[0]).toMatchObject({ material: "Gold", scu: "8", position: "Port - Upper" });
+    expect(state.rows[0]).toMatchObject({ material: "Gold", scu: "8", positions: ["Port - Upper"] });
+  });
+
+  test("reads a saved list of positions, dropping blanks and repeats", () => {
+    const state = hydrate({ shipId: "x", rows: [{ scu: "8", positions: ["A", "", "B", "A"] }] });
+    expect(state.rows[0].positions).toEqual(["A", "B"]);
   });
 
   test("keeps saved size choices and a valid sort only", () => {
@@ -57,7 +70,7 @@ describe("computeTable", () => {
   const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
 
   test("only uses sizes that fit the row's position, and totals them", () => {
-    const rows = [makeRow({ scu: "40", position: "Small" }), makeRow({ scu: "40", position: "Big" })];
+    const rows = [makeRow({ scu: "40", positions: ["Small"] }), makeRow({ scu: "40", positions: ["Big"] })];
     const calc = computeTable(rows, {}, containers, positions);
     expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 8: 5, 1: 0 }, leftover: 0 });
     expect(calc.byRow.get(rows[1].id)).toEqual({ counts: { 32: 1, 8: 1, 1: 0 }, leftover: 0 });
@@ -76,11 +89,63 @@ describe("computeTable", () => {
   });
 });
 
+describe("splitRows", () => {
+  const positions = [bay("A", 2, 4, 2), bay("B", 2, 4, 2), bay("C", 2, 4, 2)]; // 16 SCU each
+  const parts = (rows: ReturnType<typeof makeRow>[]) => rows.map((r) => splitRows(rows, positions).get(r.id));
+
+  test("one-position rows go in first; split rows fill free room in grid order", () => {
+    const rows = [makeRow({ scu: "20", positions: ["C", "A"] }), makeRow({ scu: "10", positions: ["A"] })];
+    expect(parts(rows)).toEqual([
+      {
+        parts: [
+          { name: "A", scu: 6 },
+          { name: "C", scu: 14 },
+        ],
+        short: 0,
+      },
+      { parts: [{ name: "A", scu: 10 }], short: 0 },
+    ]);
+  });
+
+  test("what there's no room for goes in the last position and counts as short", () => {
+    const rows = [makeRow({ scu: "40", positions: ["A", "B"] }), makeRow({ scu: "20", positions: ["C"] })];
+    expect(parts(rows)).toEqual([
+      {
+        parts: [
+          { name: "A", scu: 16 },
+          { name: "B", scu: 24 },
+        ],
+        short: 8,
+      },
+      { parts: [{ name: "C", scu: 20 }], short: 4 },
+    ]);
+  });
+
+  test("a row with no position is short only when no one position could hold it", () => {
+    const rows = [makeRow({ scu: "16" }), makeRow({ scu: "17" }), makeRow({ scu: "9", positions: ["Elsewhere"] })];
+    expect(parts(rows)).toEqual([
+      { parts: [], short: 0 },
+      { parts: [], short: 1 },
+      { parts: [], short: 0 },
+    ]);
+  });
+
+  test("a split row's containers are packed per position and counted once", () => {
+    const rows = [makeRow({ scu: "32", positions: ["A", "B"] })];
+    const calc = computeTable(rows, {}, containers, positions);
+    expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 8: 4, 1: 0 }, leftover: 0 });
+    expect(calc.byPosition.get("A")).toMatchObject({ rows: 1, scu: 16, unfit: {} });
+    expect(calc.byPosition.get("B")).toMatchObject({ rows: 1, scu: 16, unfit: {} });
+    expect(calc.totals.rows).toBe(1);
+    expect(tableAsTsv(exportTable(rows, calc, [32, 8, 1])).split("\n")[1]).toMatch(/\tA \(16\), B \(16\)$/);
+  });
+});
+
 describe("copy formats", () => {
   const positions = [bay("Bay", 2, 8, 2)];
-  const rows = [makeRow({ material: "Gold | Ore", pickup: "Area18", scu: "1,033", position: "Bay" })];
+  const rows = [makeRow({ material: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
   const calc = computeTable(rows, {}, containers, positions);
-  const table = exportTable(rows, calc, [32, 8, 1], positions);
+  const table = exportTable(rows, calc, [32, 8, 1]);
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([

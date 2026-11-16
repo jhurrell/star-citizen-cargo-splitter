@@ -11,8 +11,10 @@ export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
 ];
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 
-export type Row = Record<TextKey, string> & { id: number; scu: string; position: string };
-export type RowField = Exclude<keyof Row, "id">;
+/* `positions` are the names of the positions the row's cargo goes in; several
+   split it across them. */
+export type Row = Record<TextKey, string> & { id: number; scu: string; positions: string[] };
+export type RowField = TextKey | "scu";
 export type SortDir = 1 | -1;
 export type Sort = { key: TextKey; dir: SortDir } | null;
 export type State = {
@@ -34,17 +36,19 @@ const LEGACY_POSITIONS: Record<string, string> = {
 };
 
 let nextId = 1;
-export function makeRow(values: Partial<Record<RowField, unknown>> = {}): Row {
+/* A row from saved or given values. Older saves have one "position" string. */
+export function makeRow(values: Partial<Record<RowField | "position" | "positions", unknown>> = {}): Row {
   const text = (key: RowField) => asText(values[key]);
-  /* Kept even when it isn't on the selected grid, so switching back restores it. */
-  const position = text("position");
+  const names = Array.isArray(values.positions) ? values.positions.map((n) => asText(n)) : [asText(values.position)];
+  /* Kept even when they aren't on the selected grid, so switching back restores them. */
+  const positions = [...new Set(names.filter(Boolean).map((n) => LEGACY_POSITIONS[n] ?? n))];
   return {
     id: nextId++,
     material: text("material"),
     pickup: text("pickup"),
     dropoff: text("dropoff"),
     scu: text("scu"),
-    position: LEGACY_POSITIONS[position] ?? position,
+    positions,
   };
 }
 
@@ -107,6 +111,7 @@ export type Action =
   | { type: "addRow"; row: Row }
   | { type: "deleteRow"; id: number }
   | { type: "updateRow"; id: number; field: RowField; value: string }
+  | { type: "setPositions"; id: number; positions: string[] }
   | { type: "sortBy"; key: TextKey }
   | { type: "selectShip"; shipId: string; gridId: string }
   | { type: "selectGrid"; gridId: string }
@@ -123,6 +128,11 @@ export function reducer(state: State, action: Action): State {
       return {
         ...state,
         rows: state.rows.map((r) => (r.id === action.id ? { ...r, [action.field]: action.value } : r)),
+      };
+    case "setPositions":
+      return {
+        ...state,
+        rows: state.rows.map((r) => (r.id === action.id ? { ...r, positions: action.positions } : r)),
       };
     case "sortBy": {
       /* Sorting reorders the rows once, like a spreadsheet; later edits don't

@@ -56,7 +56,7 @@ export function PositionsTable({ calc, positions }: { calc: Calc; positions: Pos
       <tfoot>
         <tr>
           <td className="label">Total</td>
-          <td className="num">{fmt(sum([...calc.byPosition.values()], (e) => e.rows))}</td>
+          <td className="num">{fmt(calc.totals.rows)}</td>
           <td className="num scu-sum">{fmt(calc.totals.scu)}</td>
           <td className="num">{capacity ? fmt(capacity) : ""}</td>
           {capacity ? (
