@@ -27,7 +27,8 @@ the ship.
   SCU turn amber; point at the SCU to see why. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
-    stays apart.
+    stays apart. A row's containers sit on the grid's floor or on its own containers while there's room, and on
+    another row's only when there isn't.
   - Each row has its own color, and each container shows its size in SCU. The legend lists the rows in the
     table's order, each by its cargo and drop-off, "Gold (Lorville)", with its row number when another row has the
     same cargo and drop-off.

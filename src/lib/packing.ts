@@ -48,10 +48,13 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Swee
 /* Pack loads one after another, each biggest first, to keep them apart: the
    first from the start of a floor-axis sweep, every later one from its far
    end, so the first sits at one end and the rest build up from the other. A
-   "z" sweep has no far end, so each just takes the next free spots. */
+   "z" sweep has no far end, so each just takes the next free spots. A load's
+   containers go on the floor or on its own containers where they can, and on
+   another load's only when there's nowhere else. */
 export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep = { axis: "z" }): Packing<Tag> {
   const { x: X, y: Y, z: Z } = space;
-  const filled = new Uint8Array(X * Y * Z);
+  /* Each cell's load: its turn + 1, or 0 while empty. */
+  const filled = new Uint16Array(X * Y * Z);
   const cell = (x: number, y: number, z: number) => (z * Y + y) * X + x;
   const everyCell = (box: Box, test: (i: number) => boolean) => {
     for (let z = box.z; z < box.z + box.h; z++)
@@ -60,30 +63,39 @@ export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep
     return true;
   };
   const isFree = (box: Box) => everyCell(box, (i) => !filled[i]);
-  const isSupported = (box: Box) => box.z === 0 || everyCell({ ...box, z: box.z - 1, h: 1 }, (i) => filled[i] === 1);
-  const occupy = (box: Box) =>
+  /* On the floor or wholly on containers; with `turn`, only that load's. */
+  const isSupported = (box: Box, turn?: number) =>
+    box.z === 0 ||
+    everyCell({ ...box, z: box.z - 1, h: 1 }, (i) => (turn === undefined ? filled[i] > 0 : filled[i] === turn + 1));
+  const occupy = (box: Box, turn: number) =>
     everyCell(box, (i) => {
-      filled[i] = 1;
+      filled[i] = turn + 1;
       return true;
     });
-  const fits = (box: Box) =>
+  const fits = (box: Box, onTurn?: number) =>
     box.x >= 0 &&
     box.y >= 0 &&
     box.x + box.w <= X &&
     box.y + box.d <= Y &&
     box.z + box.h <= Z &&
-    isSupported(box) &&
+    isSupported(box, onTurn) &&
     isFree(box);
 
-  /* The first spot that takes a container, in sweep order. For "z": each
-     layer from the floor. For a floor axis: each step along it, then up, then
-     across; from its far end, the container's far edge goes at each step. */
-  function findSpot({ placements }: Container, fromEnd: boolean): Box | null {
+  /* The first spot for a container, in sweep order, on the floor or on its
+     own load's containers; failing that, on any. */
+  const findSpot = (container: Container, turn: number) =>
+    findSpotOn(container, turn > 0, turn) ?? findSpotOn(container, turn > 0);
+
+  /* The first spot that takes a container, in sweep order, resting only on
+     `onTurn`'s containers if given. For "z": each layer from the floor. For a
+     floor axis: each step along it, then up, then across; from its far end,
+     the container's far edge goes at each step. */
+  function findSpotOn({ placements }: Container, fromEnd: boolean, onTurn?: number): Box | null {
     if (sweep.axis === "z") {
       for (let z = 0; z < Z; z++)
         for (let y = 0; y < Y; y++)
           for (let x = 0; x < X; x++)
-            for (const [w, d, h] of placements) if (fits({ x, y, z, w, d, h })) return { x, y, z, w, d, h };
+            for (const [w, d, h] of placements) if (fits({ x, y, z, w, d, h }, onTurn)) return { x, y, z, w, d, h };
       return null;
     }
     const alongX = sweep.axis === "x";
@@ -94,7 +106,7 @@ export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep
           for (const [w, d, h] of placements) {
             const a = fromEnd ? length - step - (alongX ? w : d) : step;
             const box = alongX ? { x: a, y: b, z, w, d, h } : { x: b, y: a, z, w, d, h };
-            if (fits(box)) return box;
+            if (fits(box, onTurn)) return box;
           }
     return null;
   }
@@ -108,12 +120,12 @@ export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep
       const { size } = container;
       for (let n = 0; n < count; n++) {
         /* Space only shrinks, so once a size fails, the rest of that size fails too. */
-        const spot = unfit[size] ? null : findSpot(container, turn > 0);
+        const spot = unfit[size] ? null : findSpot(container, turn);
         if (!spot) {
           unfit[size] = (unfit[size] ?? 0) + count - n;
           break;
         }
-        occupy(spot);
+        occupy(spot, turn);
         placed.push({ ...spot, size, tag });
       }
     }

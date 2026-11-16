@@ -89,6 +89,29 @@ describe("packInTurn", () => {
     expect(placed.map(({ tag, y }) => `${tag}@${y}`)).toEqual(["1@0", "2@6", "2@4", "2@2"]);
   });
 
+  test("a load goes on the floor or its own containers before on another load's", () => {
+    const tall = { x: 2, y: 8, z: 4 };
+    const at = ({ tag, y, z }: { tag: number; y: number; z: number }) => `${tag}@${y},${z}`;
+    /* Load 3 has floor at y 4, so it doesn't stack on load 2 at the far end. */
+    expect(packInTurn(tall, [turn(1, 1), turn(2, 1), turn(3, 1)], { axis: "y" }).placed.map(at)).toEqual([
+      "1@0,0",
+      "2@6,0",
+      "3@4,0",
+    ]);
+    /* A load still stacks on its own containers. */
+    expect(packInTurn(tall, [turn(1, 1), turn(2, 2)], { axis: "y" }).placed.map(at)).toEqual([
+      "1@0,0",
+      "2@6,0",
+      "2@6,2",
+    ]);
+    /* With no floor left, it stacks on another load's. */
+    expect(
+      packInTurn(tall, [turn(1, 1), turn(2, 5), turn(3, 1)], { axis: "y" })
+        .placed.map(at)
+        .at(-1),
+    ).toBe("3@2,2");
+  });
+
   test("a z sweep has no far end, so loads just follow on", () => {
     expect(spans({ axis: "z" })).toEqual(["1@0", "2@2", "3@4"]);
   });
