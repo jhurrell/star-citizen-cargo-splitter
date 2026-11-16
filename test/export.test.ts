@@ -12,7 +12,7 @@ describe("copy formats", () => {
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
-      "Material\tPick-up\tDrop-off\tSCU\t32\t8\t1\tGrid",
+      "Material\tPick-up\tDrop-off\tSCU\t32\t8\t1\tGrids",
       "Gold | Ore\tArea18\t\t1033\t32\t1\t1\tBay",
     ]);
   });

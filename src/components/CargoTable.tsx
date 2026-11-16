@@ -31,7 +31,7 @@ type SizeColumn = { size: number; on: boolean };
 type GridButton = { name: string; tag: string; free: number };
 
 /* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
-   container size, Left over (only when some SCU can't be placed), Grid. */
+   container size, Left over (only when some SCU can't be placed), Grids. */
 export function CargoTable({
   state,
   calc,
@@ -49,7 +49,7 @@ export function CargoTable({
     tag: tags[i],
     free: p.capacity - calc.byPosition.get(p.name)!.scu,
   }));
-  /* Material, Pick-up and Drop-off; SCU; the sizes; Left over; Grid. */
+  /* Material, Pick-up and Drop-off; SCU; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 1 + sizes.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
@@ -65,7 +65,7 @@ export function CargoTable({
           <th className="label num sep leftover" hidden={!calc.showLeftover}>
             Left over
           </th>
-          <th className="label sep">Grid</th>
+          <th className="label sep">Grids</th>
         </tr>
       </thead>
       <tbody>
@@ -244,7 +244,7 @@ function CargoRow({
   );
 }
 
-/* The Grid cell: a toggle button per grid showing the SCU it has available.
+/* The Grids cell: a toggle button per grid showing the SCU it has available.
    Pointing at (or tabbing to) a button lights that grid up in the ship view. */
 function GridPicks({
   row,

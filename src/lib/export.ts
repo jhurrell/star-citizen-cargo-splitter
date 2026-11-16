@@ -27,7 +27,7 @@ export function exportTable(rows: Row[], calc: Calc, sizes: number[]): ExportedT
     { label: "SCU", numeric: true },
     ...sizes.map((s) => ({ label: String(s), numeric: true })),
     ...leftover({ label: "Left over", numeric: true }),
-    { label: "Grid", numeric: false },
+    { label: "Grids", numeric: false },
   ];
   const body = rows.map((row) => {
     const fill = calc.byRow.get(row.id)!;
