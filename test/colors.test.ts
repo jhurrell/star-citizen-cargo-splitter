@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
-import { cargoColors, OTHER_COLOR } from "../src/lib/colors";
+import { cargoColors, OTHER_COLOR, rowsToDim } from "../src/lib/colors";
 import { makeRow } from "../src/lib/state";
 
 describe("cargoColors", () => {
@@ -30,9 +30,30 @@ describe("cargoColors", () => {
     expect(names).toEqual(["Gold (Lorville)", "gold (Orison)", "Gold (#3)", "Gold (#4)", "Gold (#5)", "Iron"]);
   });
 
-  test("sorting the table doesn't repaint a row", () => {
+  test("sorting the table doesn't repaint a row, but reorders the legend", () => {
     const rows = ["b", "a"].map((cargo) => makeRow({ cargo, scu: "1" }));
     const before = cargoColors(rows).byRow.get(rows[0].id);
-    expect(cargoColors([...rows].reverse()).byRow.get(rows[0].id)).toEqual(before);
+    const sorted = cargoColors([...rows].reverse());
+    expect(sorted.byRow.get(rows[0].id)).toEqual(before);
+    expect(sorted.legend.map((c) => c.name)).toEqual(["a", "b"]);
+  });
+});
+
+describe("rowsToDim", () => {
+  const rows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  const turnedOff = new Set([2]);
+
+  test("with nothing pointed at, the rows turned off in the legend", () => {
+    expect(rowsToDim(rows, turnedOff, null)).toBe(turnedOff);
+  });
+
+  test("every row but the ones pointed at, turned off or not", () => {
+    expect([...rowsToDim(rows, turnedOff, [2])]).toEqual([1, 3]);
+    expect([...rowsToDim(rows, turnedOff, [1, 3])]).toEqual([2]); // a legend's "Other rows"
+  });
+
+  test("pointed-at rows since deleted don't count", () => {
+    expect(rowsToDim(rows, turnedOff, [9])).toBe(turnedOff);
+    expect([...rowsToDim(rows, turnedOff, [9, 1])]).toEqual([2, 3]);
   });
 });

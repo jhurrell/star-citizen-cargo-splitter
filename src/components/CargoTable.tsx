@@ -6,6 +6,7 @@ import type { Counts, Fill } from "../lib/packing";
 import { isEnabled, TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
 import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
+import { pointHandlers } from "./pointing";
 
 type Props = {
   state: State;
@@ -19,9 +20,9 @@ type Props = {
   onTogglePick: (id: number, name: string) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
   onHighlight: (name: string | null) => void;
-  /* The row whose Cargo, Pick-up or Drop-off the pointer or focus is in,
-     so the ship view can fade the rest; null when none. */
-  onPointRow: (id: number | null) => void;
+  /* The row whose Cargo, Pick-up or Drop-off the pointer or focus is in (as
+     a list of one), so the ship view can fade the rest; null when none. */
+  onPointRows: (ids: number[] | null) => void;
   onDelete: (id: number) => void;
   onSort: (key: TextKey) => void;
   onToggleSize: (size: number, on: boolean) => void;
@@ -29,7 +30,7 @@ type Props = {
   /* Take every row out of its grids (the Grids heading's Clear, once confirmed). */
   onClearGrids: () => void;
 };
-type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRow" | "onDelete" | "onScuEnter">;
+type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
 
 /* A container size's column, on unless turned off in its header. */
 type SizeColumn = { size: number; on: boolean };
@@ -205,7 +206,7 @@ function CargoRow({
   onUpdate,
   onTogglePick,
   onHighlight,
-  onPointRow,
+  onPointRows,
   onDelete,
   onScuEnter,
 }: RowActions & {
@@ -234,14 +235,7 @@ function CargoRow({
         return (
           /* Pointing at (or tabbing to) Cargo, Pick-up or Drop-off picks out
              this row in the ship view. */
-          <td
-            className="edit"
-            key={key}
-            onMouseEnter={() => onPointRow(row.id)}
-            onMouseLeave={() => onPointRow(null)}
-            onFocus={() => onPointRow(row.id)}
-            onBlur={() => onPointRow(null)}
-          >
+          <td className="edit" key={key} {...pointHandlers((on) => onPointRows(on ? [row.id] : null))}>
             {i > 0 ? (
               input
             ) : (
@@ -332,10 +326,7 @@ function GridPicks({
               /* A row that already has this grid can still give it up. */
               disabled={full && !on}
               onClick={() => onTogglePick(row.id, name)}
-              onMouseEnter={() => onHighlight(name)}
-              onMouseLeave={() => onHighlight(null)}
-              onFocus={() => onHighlight(name)}
-              onBlur={() => onHighlight(null)}
+              {...pointHandlers((on) => onHighlight(on ? name : null))}
             >
               <span className="grid-tag">{tag}</span>
               <span className="grid-free">{fmt(free)}</span>

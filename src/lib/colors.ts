@@ -12,9 +12,10 @@ export type Cargo = { name: string; color: string };
 export type CargoColors = { byRow: Map<number, Cargo>; legend: (Cargo & { rowId: number })[] };
 
 /* A color per row with cargo, in the order rows were added, so sorting never
-   repaints a row. Each is named by its cargo. Rows that share a cargo
-   add their drop-off, "Gold (Lorville)", or their row number in the table,
-   "Gold (#3)", when it's blank or another row of that cargo has it too. */
+   repaints a row; the legend lists them in the table's order. Each is named
+   by its cargo. Rows that share a cargo add their drop-off, "Gold (Lorville)",
+   or their row number in the table, "Gold (#3)", when it's blank or another
+   row of that cargo has it too. */
 export function cargoColors(rows: Row[]): CargoColors {
   const loaded = rows.filter((row) => parseScu(row.scu));
   const cargo = (row: Row) => row.cargo.trim() || "No cargo";
@@ -27,7 +28,21 @@ export function cargoColors(rows: Row[]): CargoColors {
       color: CARGO_COLORS[byRow.size] ?? OTHER_COLOR,
     });
   }
-  return { byRow, legend: [...byRow].map(([rowId, cargo]) => ({ ...cargo, rowId })) };
+  const legend = loaded.map((row) => ({ ...byRow.get(row.id)!, rowId: row.id }));
+  return { byRow, legend };
+}
+
+/* The rows to dim in the ship view. While some are pointed at (a table row,
+   or a legend button) every other row is dimmed, so they stand out; otherwise
+   the rows turned off in the legend. Pointed-at rows since deleted don't count. */
+export function rowsToDim(
+  rows: Pick<Row, "id">[],
+  turnedOff: ReadonlySet<number>,
+  pointed: readonly number[] | null,
+): ReadonlySet<number> {
+  const live = rows.filter((row) => pointed?.includes(row.id));
+  if (!live.length) return turnedOff;
+  return new Set(rows.filter((row) => !live.includes(row)).map((row) => row.id));
 }
 
 /* A tag for each row whose cargo another row shares, keyed by row id. */

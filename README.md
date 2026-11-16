@@ -28,9 +28,10 @@ the ship.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
     stays apart.
-  - Each row has its own color, and each container shows its size in SCU.
-  - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row's
-    Cargo, Pick-up or Drop-off in the table to make every other row see-through while you do.
+  - Each row has its own color, and each container shows its size in SCU. The legend lists the rows in the
+    table's order.
+  - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row in the
+    legend, or at its Cargo, Pick-up or Drop-off in the table, to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Kept in your browser.** The table, ship and settings are saved in local storage.
@@ -76,11 +77,13 @@ and publishes `dist/client` to GitHub Pages. To publish without a push, run the 
 | `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                              |
 | `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                         |
 
-Two pieces in `src/components/` are shared by the page:
+Three pieces in `src/components/` are shared by the page:
 
 - [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
   showing Confirm in between. Clear table and the Grids Clear both use it.
 - [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons.
+- [`pointing.ts`](src/components/pointing.ts): pointer and focus handlers for things that react while pointed at,
+  such as the table's rows and grid buttons and the legend's buttons.
 
 `ShipView.tsx` draws each grid with its containers and loads only when a grid has placements, as three.js is large.
 The rest of the 3D view lives in `src/components/ship/`:

@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from
 import type { Grid } from "../lib/cargo";
 import { computeTable, selection } from "../lib/calc";
 import { copyText } from "../lib/clipboard";
-import { cargoColors } from "../lib/colors";
+import { cargoColors, rowsToDim } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
@@ -56,16 +56,10 @@ export function CargoVisualizer() {
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
   /* Rows turned off in the legend, whose containers show dimmed. */
-  const [dimmed, dimRows] = useIdSet();
-  /* The row pointed at in the cargo table. While there is one, every other
-     row's containers show dimmed instead, so its own stand out. */
-  const [pointedRow, setPointedRow] = useState<number | null>(null);
-  const shipDimmed = useMemo(() => {
-    const ids = state.rows.map((r) => r.id);
-    /* A row deleted while pointed at no longer counts. */
-    if (pointedRow === null || !ids.includes(pointedRow)) return dimmed;
-    return new Set(ids.filter((id) => id !== pointedRow));
-  }, [pointedRow, dimmed, state.rows]);
+  const [turnedOff, turnRows] = useIdSet();
+  /* The rows pointed at in the table or legend, which the ship view picks out. */
+  const [pointedRows, setPointedRows] = useState<number[] | null>(null);
+  const shipDimmed = useMemo(() => rowsToDim(state.rows, turnedOff, pointedRows), [state.rows, turnedOff, pointedRows]);
 
   useEffect(() => saveState(state), [state]);
 
@@ -195,7 +189,7 @@ export function CargoVisualizer() {
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
           onTogglePick={(id, name) => dispatch({ type: "togglePick", id, name })}
           onHighlight={setHighlight}
-          onPointRow={setPointedRow}
+          onPointRows={setPointedRows}
           onDelete={deleteRow}
           onSort={(key) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
@@ -208,7 +202,9 @@ export function CargoVisualizer() {
         {/* The heading and the legend share a line. */}
         <div className="section-head">
           <h2 id="ship-title">Ship view</h2>
-          {isMounted && <Legend entries={colors.legend} dimmed={dimmed} onDim={dimRows} />}
+          {isMounted && (
+            <Legend entries={colors.legend} turnedOff={turnedOff} onTurnOff={turnRows} onPointRows={setPointedRows} />
+          )}
         </div>
         {isMounted ? (
           <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>

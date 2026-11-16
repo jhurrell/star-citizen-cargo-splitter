@@ -58,8 +58,8 @@ export function Help() {
           <li>The pale blue face of each grid is its floor; containers stack away from it.</li>
           <li>Point at a container to see what it holds, or at a grid button in the table to light that grid up.</li>
           <li>
-            Click a row in the legend to dim its containers, or point at a row's Cargo, Pick-up or Drop-off in the table
-            to dim all the others.
+            Click a row in the legend to dim its containers. Point at a row in the legend, or at its Cargo, Pick-up or
+            Drop-off in the table, to dim all the others.
           </li>
         </ul>
       </div>
