@@ -4,6 +4,8 @@ A cargo planner for Star Citizen haulers. Enter each delivery's SCU and Cargo Sp
 sizes to use, splits large deliveries across your ship's cargo grids, and shows how it all packs in a 3D view of
 the ship.
 
+**Use it at [jhurrell.github.io/star-citizen-cargo-splitter](https://jhurrell.github.io/star-citizen-cargo-splitter/).**
+
 ## Features
 
 - **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
@@ -50,6 +52,12 @@ vp dev
 | `vp test`  | Runs the unit tests (Vitest)                                 |
 | `vp check` | Formats, lints and type-checks                               |
 | `vp build` | Builds a static site into `dist/client`, for any static host |
+
+### Publishing
+
+Every push to `main` runs [`.github/workflows/pages.yml`](.github/workflows/pages.yml): it checks and tests the
+code, builds it with the repository's name as its base path (Pages serves it at `/star-citizen-cargo-splitter/`),
+and publishes `dist/client` to GitHub Pages. To publish without a push, run the workflow from the Actions tab.
 
 ### Project layout
 
