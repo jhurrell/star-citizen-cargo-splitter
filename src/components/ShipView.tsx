@@ -20,15 +20,18 @@ import type { Placed } from "../lib/packing";
 type Mounted = Position & { mount: Mount };
 /* A text label pinned to a ship point; drawn as HTML over the canvas. */
 type Label = { key: string; text: string; at: Vec3; className: string };
-type View = "3d" | "top" | "port" | "fore";
+type View = "3d" | "top" | "bottom" | "port" | "starboard" | "fore" | "aft";
 
 /* Where the camera looks from, as a direction from the ship's centre. The top
-   view leans a hair aft so "up" on screen is fore. */
+   and bottom views lean a hair aft and fore so "up" on screen is fore. */
 const VIEWS: Record<View, { label: string; from: Vec3 }> = {
   "3d": { label: "3D", from: [-0.9, -0.7, 0.8] }, // from port, aft and above
   top: { label: "Top", from: [0, -0.001, 1] },
+  bottom: { label: "Bottom", from: [0, 0.001, -1] },
   port: { label: "Port side", from: [-1, 0, 0] },
+  starboard: { label: "Starboard side", from: [1, 0, 0] },
   fore: { label: "From fore", from: [0, 1, 0] },
+  aft: { label: "From aft", from: [0, -1, 0] },
 };
 const FOV = 40;
 const GAP = 0.08; // between neighbouring containers, so each one shows
