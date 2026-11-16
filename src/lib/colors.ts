@@ -13,13 +13,12 @@ export type CargoColors = { byRow: Map<number, Cargo>; legend: Cargo[] };
 
 /* A color per row with cargo, in the order rows were added, so sorting never
    repaints a row. Each is named by its material. Rows that share a material
-   add their route, the first letters of pick-up and drop-off, "Gold (A→L)",
-   or their row number in the table, "Gold (#3)", when either is blank or two
-   would read the same. */
+   add their drop-off, "Gold (Lorville)", or their row number in the table,
+   "Gold (#3)", when it's blank or another row of that material has it too. */
 export function cargoColors(rows: Row[]): CargoColors {
   const loaded = rows.filter((row) => parseScu(row.scu));
   const material = (row: Row) => row.material.trim() || "No material";
-  const tags = routeTags(loaded, material, new Map(rows.map((row, i) => [row.id, i + 1])));
+  const tags = dropoffTags(loaded, material, new Map(rows.map((row, i) => [row.id, i + 1])));
   const byRow = new Map<number, Cargo>();
   for (const row of [...loaded].sort((a, b) => a.id - b.id)) {
     const tag = tags.get(row.id);
@@ -32,10 +31,7 @@ export function cargoColors(rows: Row[]): CargoColors {
 }
 
 /* A tag for each row whose material another row shares, keyed by row id. */
-function routeTags(rows: Row[], material: (row: Row) => string, rowNumber: Map<number, number>) {
-  const initial = (text: string) => text.trim().charAt(0).toUpperCase();
-  const route = (row: Row) =>
-    initial(row.pickup) && initial(row.dropoff) ? `${initial(row.pickup)}→${initial(row.dropoff)}` : "";
+function dropoffTags(rows: Row[], material: (row: Row) => string, rowNumber: Map<number, number>) {
   const tags = new Map<number, string>();
   const byMaterial = new Map<string, Row[]>();
   for (const row of rows) {
@@ -44,10 +40,11 @@ function routeTags(rows: Row[], material: (row: Row) => string, rowNumber: Map<n
   }
   for (const group of byMaterial.values()) {
     if (group.length < 2) continue;
-    const routes = group.map(route);
+    const dropoffs = group.map((row) => row.dropoff.trim());
+    const key = (dropoff: string) => dropoff.toLowerCase();
     group.forEach((row, i) => {
-      const unique = routes[i] && routes.indexOf(routes[i]) === routes.lastIndexOf(routes[i]);
-      tags.set(row.id, unique ? routes[i] : `#${rowNumber.get(row.id)}`);
+      const unique = dropoffs[i] && dropoffs.filter((d) => key(d) === key(dropoffs[i])).length === 1;
+      tags.set(row.id, unique ? dropoffs[i] : `#${rowNumber.get(row.id)}`);
     });
   }
   return tags;

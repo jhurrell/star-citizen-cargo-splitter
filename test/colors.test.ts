@@ -16,17 +16,17 @@ describe("cargoColors", () => {
     expect(byRow.has(rows[11].id)).toBe(false);
   });
 
-  test("rows sharing a material show their route, or their row number when it's blank or not unique", () => {
+  test("rows sharing a material show their drop-off, or their row number when it's blank or not unique", () => {
     const rows = [
-      makeRow({ material: "Gold", pickup: "area18", dropoff: "Lorville", scu: "1" }),
+      makeRow({ material: "Gold", pickup: "Area18", dropoff: " Lorville ", scu: "1" }),
       makeRow({ material: "gold ", pickup: "New Babbage", dropoff: "Orison", scu: "1" }),
       makeRow({ material: "Gold", pickup: "Area18", dropoff: "", scu: "1" }),
       makeRow({ material: "Gold", pickup: "Crusader", dropoff: "Hurston", scu: "1" }),
-      makeRow({ material: "Gold", pickup: "Crusader", dropoff: "Hurston", scu: "1" }),
+      makeRow({ material: "Gold", pickup: "ArcCorp", dropoff: "hurston", scu: "1" }),
       makeRow({ material: "Iron", pickup: "Area18", dropoff: "Lorville", scu: "1" }),
     ];
     const names = cargoColors(rows).legend.map((c) => c.name);
-    expect(names).toEqual(["Gold (A→L)", "gold (N→O)", "Gold (#3)", "Gold (#4)", "Gold (#5)", "Iron"]);
+    expect(names).toEqual(["Gold (Lorville)", "gold (Orison)", "Gold (#3)", "Gold (#4)", "Gold (#5)", "Iron"]);
   });
 
   test("sorting the table doesn't repaint a row", () => {

@@ -597,6 +597,24 @@ select.field option {
   color: var(--label);
 }
 /* Labels sit over the canvas; ShipView moves each to its point every frame. */
+.ship-hover {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  max-width: calc(100% - 16px);
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--fg);
+  background: rgba(12, 24, 34, 0.85);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+.ship-hover[hidden] {
+  display: none;
+}
 .ship-labels {
   position: absolute;
   inset: 0;

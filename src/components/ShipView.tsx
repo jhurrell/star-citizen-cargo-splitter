@@ -90,7 +90,6 @@ export default function ShipView({
           <input type="checkbox" checked={showSizes} onChange={(e) => setShowSizes(e.target.checked)} />
           Show sizes
         </label>
-        <span className="status">{hover}</span>
       </div>
       <div className="ship-canvas">
         <Canvas frameloop="demand" camera={{ fov: FOV, up: [0, 0, 1], near: 0.1, far: 2000 }} dpr={[1, 2]}>
@@ -112,6 +111,10 @@ export default function ShipView({
           <CameraRig view={view} bounds={bounds} />
           <LabelTracker labels={labels} elements={labelEls} />
         </Canvas>
+        {/* What's under the pointer, over the canvas so it never moves the diagram. */}
+        <p className="ship-hover" aria-live="polite" hidden={!hover}>
+          {hover}
+        </p>
         {/* With labels off, a lit grid's name still shows. */}
         <div className={`ship-labels${showLabels ? "" : " is-off"}`} aria-hidden="true">
           {labels.map((label) => (
