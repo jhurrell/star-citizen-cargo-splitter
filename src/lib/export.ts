@@ -9,10 +9,13 @@ type Cell = string | number;
 type Column = { label: string; numeric: boolean };
 export type ExportedTable = { columns: Column[]; rows: Cell[][]; totals: Cell[] };
 
-/* "Port - Upper", or for a split row (fore to aft) "Port - Upper (128), Port - Lower (44)". */
+/* "Port - Upper", or for a split row (in pick order) "Port - Upper (128), Port - Lower (44)".
+   A pick that got nothing, as its grid was already full, is left out. */
 export function gridText({ parts }: Split): string {
-  if (parts.length < 2) return parts[0]?.name ?? "";
-  return parts.map((p) => `${p.name} (${fmt(p.scu)})`).join(", ");
+  const used = parts.filter((p) => p.scu > 0);
+  const shown = used.length ? used : parts.slice(-1);
+  if (shown.length < 2) return shown[0]?.name ?? "";
+  return shown.map((p) => `${p.name} (${fmt(p.scu)})`).join(", ");
 }
 
 /* Columns, rows and totals for the copy buttons. Values stay raw (numbers as

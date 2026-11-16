@@ -4,7 +4,7 @@
 
 import { fitsInside, parseScu, type Container, type Position, type Ship } from "./cargo";
 import { fmt } from "./format";
-import { foreAxis, toShip } from "./mount";
+import { foreAxis } from "./mount";
 import { addCounts, fillLargestFirst, packContainers, type Fill, type Load, type Placed, type Sweep } from "./packing";
 import { isEnabled, type Row, type State } from "./state";
 
@@ -15,48 +15,50 @@ export function selection(ships: Ship[], state: Pick<State, "shipId" | "gridId">
   return { ship, grid, positions: grid?.positions ?? [] };
 }
 
-/* The positions from fore to aft, by the middle of each hold; ties (and
-   positions with no place on the ship) keep config.json's order. */
-export function foreToAft(positions: Position[]): Position[] {
-  const foreness = (p: Position) =>
-    p.mount ? Math.round(toShip(p.mount, [p.x, p.y, p.z], [p.x / 2, p.y / 2, p.z / 2])[1] * 1e6) : 0;
-  return [...positions].sort((a, b) => foreness(b) - foreness(a));
-}
-
-/* How much of a row goes in each of its positions (fore to aft), and
-   `short`: how much of it there's no room for, so it needs splitting further.
-   A row with no position is short by what's more than any one position holds. */
+/* How much of a row goes in each of its grids, in the order it picked them,
+   and `short`: how much of it there's no room for, so it needs splitting
+   further. A row with no grid is short by what's more than any one holds. */
 export type Part = { name: string; scu: number };
 export type Split = { parts: Part[]; short: number };
 
-/* Rows with one position go in first, in table order, as they can go nowhere
-   else. Then each split row, in table order, fills its positions' free room
-   from fore to aft. What's left over still goes in its last position, so that
-   position shows as over capacity. */
+/* Grids fill in the order they were picked, across all rows: each pick takes
+   what it can of its row's remaining SCU from the room its grid has left, so
+   a later pick never takes room from an earlier one. What's left of a row
+   after all its picks still goes in its last-picked grid, so that grid shows
+   as over capacity. Picks for grids not on this layout are ignored. */
 export function splitRows(rows: Row[], positions: Position[]): Map<number, Split> {
-  const ordered = foreToAft(positions);
   const room = new Map(positions.map((p) => [p.name, p.capacity]));
   const largest = Math.max(0, ...positions.map((p) => p.capacity));
-  const chosen = new Map(rows.map((row) => [row.id, ordered.filter((p) => row.positions.includes(p.name))]));
-  const count = (row: Row) => chosen.get(row.id)!.length;
-  const take = (name: string, scu: number) => room.set(name, room.get(name)! - scu);
+  const rest = new Map(rows.map((row) => [row.id, parseScu(row.scu)]));
+  const parts = new Map(rows.map((row) => [row.id, [] as Part[]]));
+  const take = (rowId: number, name: string, scu: number) => {
+    rest.set(rowId, rest.get(rowId)! - scu);
+    room.set(name, room.get(name)! - scu);
+  };
+
+  /* Ties (from older saves) go by table order. The sort is stable. */
+  const picks = rows
+    .flatMap((row) => row.picks.filter((p) => room.has(p.name)).map((p) => ({ ...p, rowId: row.id })))
+    .sort((a, b) => a.order - b.order);
+  for (const { rowId, name } of picks) {
+    const scu = Math.min(rest.get(rowId)!, Math.max(0, room.get(name)!));
+    parts.get(rowId)!.push({ name, scu });
+    take(rowId, name, scu);
+  }
 
   const splits = new Map<number, Split>();
-  for (const row of [...rows.filter((r) => count(r) === 1), ...rows.filter((r) => count(r) > 1)]) {
-    let rest = parseScu(row.scu);
-    const parts = chosen.get(row.id)!.map((p) => {
-      const scu = Math.min(rest, Math.max(0, room.get(p.name)!));
-      rest -= scu;
-      take(p.name, scu);
-      return { name: p.name, scu };
-    });
-    const last = parts[parts.length - 1];
-    last.scu += rest;
-    take(last.name, rest);
-    splits.set(row.id, { parts, short: rest });
+  for (const row of rows) {
+    const rowParts = parts.get(row.id)!;
+    const short = rest.get(row.id)!;
+    const last = rowParts[rowParts.length - 1];
+    if (last) {
+      last.scu += short;
+      take(row.id, last.name, short);
+      splits.set(row.id, { parts: rowParts, short });
+    } else {
+      splits.set(row.id, { parts: [], short: positions.length ? Math.max(0, short - largest) : 0 });
+    }
   }
-  for (const row of rows.filter((r) => count(r) === 0))
-    splits.set(row.id, { parts: [], short: positions.length ? Math.max(0, parseScu(row.scu) - largest) : 0 });
   return splits;
 }
 

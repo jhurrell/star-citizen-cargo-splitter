@@ -67,5 +67,13 @@ describe("gridText", () => {
     };
     expect(gridText(split)).toBe("A (1,200), B (16)");
     expect(gridText({ parts: [], short: 0 })).toBe("");
+    const full = {
+      parts: [
+        { name: "A", scu: 0 },
+        { name: "B", scu: 10 },
+      ],
+      short: 0,
+    };
+    expect(gridText(full)).toBe("B"); // A was full when it was picked
   });
 });

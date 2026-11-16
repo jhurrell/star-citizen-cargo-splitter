@@ -11,9 +11,11 @@ export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
 ];
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 
-/* `positions` are the names of the positions the row's cargo goes in; several
-   split it across them. */
-export type Row = Record<TextKey, string> & { id: number; scu: string; positions: string[] };
+/* A grid (config.json position) a row's cargo goes in. `order` says when it
+   was picked: earlier picks, across all rows, fill first. */
+export type GridPick = { name: string; order: number };
+/* `picks` are the grids the row's cargo goes in; several split it across them. */
+export type Row = Record<TextKey, string> & { id: number; scu: string; picks: GridPick[] };
 export type RowField = TextKey | "scu";
 export type SortDir = 1 | -1;
 export type Sort = { key: TextKey; dir: SortDir } | null;
@@ -39,21 +41,34 @@ const LEGACY_POSITIONS: Record<string, string> = {
 };
 
 let nextId = 1;
-/* A row from saved or given values. Older saves have one "position" string. */
-export function makeRow(values: Partial<Record<RowField | "position" | "positions", unknown>> = {}): Row {
+/* A row from saved or given values. */
+export function makeRow(values: Partial<Record<RowField | "picks" | "positions" | "position", unknown>> = {}): Row {
   const text = (key: RowField) => asText(values[key]);
-  const names = Array.isArray(values.positions) ? values.positions.map((n) => asText(n)) : [asText(values.position)];
-  /* Kept even when they aren't on the selected grid, so switching back restores them. */
-  const positions = [...new Set(names.filter(Boolean).map((n) => LEGACY_POSITIONS[n] ?? n))];
   return {
     id: nextId++,
     material: text("material"),
     pickup: text("pickup"),
     dropoff: text("dropoff"),
     scu: text("scu"),
-    positions,
+    picks: readPicks(values),
   };
 }
+
+/* A row's picks, each grid once. Kept even when they aren't on the selected
+   ship, so switching back restores them. Older saves list grid names, a
+   "positions" list or one "position", in the order picked within the row. */
+function readPicks({ picks, positions, position }: Partial<Record<"picks" | "positions" | "position", unknown>>) {
+  const saved = Array.isArray(picks)
+    ? picks.map((p: { name?: unknown; order?: unknown } | null) => ({ name: asText(p?.name), order: Number(p?.order) }))
+    : (Array.isArray(positions) ? positions : [position]).map((name, i) => ({ name: asText(name), order: i + 1 }));
+  const seen = new Set<string>();
+  return saved
+    .map((p) => ({ ...p, name: LEGACY_POSITIONS[p.name] ?? p.name }))
+    .filter((p) => p.name && Number.isFinite(p.order) && !seen.has(p.name) && seen.add(p.name));
+}
+
+/* The order for a new pick: after every pick so far. */
+const nextOrder = (rows: Row[]) => 1 + Math.max(0, ...rows.flatMap((r) => r.picks.map((p) => p.order)));
 
 export function defaultState(): State {
   return {
@@ -114,7 +129,8 @@ export type Action =
   | { type: "addRow"; row: Row }
   | { type: "deleteRow"; id: number }
   | { type: "updateRow"; id: number; field: RowField; value: string }
-  | { type: "setPositions"; id: number; positions: string[] }
+  /* Pick a grid for a row, after every earlier pick, or unpick it. */
+  | { type: "togglePick"; id: number; name: string }
   | { type: "sortBy"; key: TextKey }
   | { type: "selectShip"; shipId: string; gridId: string }
   | { type: "selectGrid"; gridId: string }
@@ -132,11 +148,13 @@ export function reducer(state: State, action: Action): State {
         ...state,
         rows: state.rows.map((r) => (r.id === action.id ? { ...r, [action.field]: action.value } : r)),
       };
-    case "setPositions":
-      return {
-        ...state,
-        rows: state.rows.map((r) => (r.id === action.id ? { ...r, positions: action.positions } : r)),
-      };
+    case "togglePick": {
+      const { id, name } = action;
+      const order = nextOrder(state.rows);
+      const toggle = (picks: GridPick[]) =>
+        picks.some((p) => p.name === name) ? picks.filter((p) => p.name !== name) : [...picks, { name, order }];
+      return { ...state, rows: state.rows.map((r) => (r.id === id ? { ...r, picks: toggle(r.picks) } : r)) };
+    }
     case "sortBy": {
       /* Sorting reorders the rows once, like a spreadsheet; later edits don't
          move rows. Sorting the same column again reverses the order. */

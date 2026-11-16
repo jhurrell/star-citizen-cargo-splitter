@@ -16,12 +16,21 @@ describe("hydrate", () => {
   test("moves old position names onto the Hull B relaxed grid", () => {
     const state = hydrate({ rows: [{ material: "Gold", scu: "8", position: "Left Upper" }] });
     expect(state).toMatchObject({ shipId: "ship-misc-hull-b", gridId: "relaxed" });
-    expect(state.rows[0]).toMatchObject({ material: "Gold", scu: "8", positions: ["Port - Upper"] });
+    expect(state.rows[0]).toMatchObject({ material: "Gold", scu: "8", picks: [{ name: "Port - Upper", order: 1 }] });
   });
 
-  test("reads a saved list of positions, dropping blanks and repeats", () => {
+  test("reads an older list of positions in order, dropping blanks and repeats", () => {
     const state = hydrate({ shipId: "x", rows: [{ scu: "8", positions: ["A", "", "B", "A"] }] });
-    expect(state.rows[0].positions).toEqual(["A", "B"]);
+    expect(state.rows[0].picks.map((p) => p.name)).toEqual(["A", "B"]);
+  });
+
+  test("reads saved picks, dropping ones without a grid or order", () => {
+    const picks = [{ name: "A", order: 4 }, { name: "", order: 5 }, { name: "B" }, { name: "C", order: 2 }];
+    const state = hydrate({ shipId: "x", rows: [{ scu: "8", picks }] });
+    expect(state.rows[0].picks).toEqual([
+      { name: "A", order: 4 },
+      { name: "C", order: 2 },
+    ]);
   });
 
   test("keeps saved size choices and a valid sort only", () => {
@@ -46,5 +55,24 @@ describe("isEnabled", () => {
   test("sizes are on unless unchecked", () => {
     expect(isEnabled({ 32: false }, 32)).toBe(false);
     expect(isEnabled({ 32: false }, 8)).toBe(true);
+  });
+});
+
+describe("reducer togglePick", () => {
+  test("a new pick comes after every pick so far, in any row; picking again removes it", () => {
+    const [a, b] = [makeRow(), makeRow()];
+    let state = { ...defaultState(), rows: [a, b] };
+    state = reducer(state, { type: "togglePick", id: a.id, name: "SU" });
+    state = reducer(state, { type: "togglePick", id: b.id, name: "SL" });
+    state = reducer(state, { type: "togglePick", id: a.id, name: "SL" });
+    expect(state.rows.map((r) => r.picks)).toEqual([
+      [
+        { name: "SU", order: 1 },
+        { name: "SL", order: 3 },
+      ],
+      [{ name: "SL", order: 2 }],
+    ]);
+    state = reducer(state, { type: "togglePick", id: a.id, name: "SU" });
+    expect(state.rows[0].picks).toEqual([{ name: "SL", order: 3 }]);
   });
 });

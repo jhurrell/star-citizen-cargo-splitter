@@ -14,7 +14,8 @@ type Props = {
   /* Each row's color in the ship view, for its swatch. */
   cargoByRow: Map<number, Cargo>;
   onUpdate: (id: number, field: RowField, value: string) => void;
-  onSetPositions: (id: number, names: string[]) => void;
+  /* Pick a grid for a row (after every earlier pick), or unpick it. */
+  onTogglePick: (id: number, name: string) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
   onHighlight: (name: string | null) => void;
   onDelete: (id: number) => void;
@@ -162,7 +163,7 @@ function CargoRow({
   free,
   tags,
   onUpdate,
-  onSetPositions,
+  onTogglePick,
   onHighlight,
   onDelete,
   onScuEnter,
@@ -234,7 +235,7 @@ function CargoRow({
           positions={positions}
           free={free}
           tags={tags}
-          onSetPositions={onSetPositions}
+          onTogglePick={onTogglePick}
           onHighlight={onHighlight}
         />
       </td>
@@ -250,7 +251,7 @@ function GridPicks({
   positions,
   free,
   tags,
-  onSetPositions,
+  onTogglePick,
   onHighlight,
 }: {
   row: Row;
@@ -258,12 +259,10 @@ function GridPicks({
   positions: Position[];
   free: Map<string, number>;
   tags: string[];
-  onSetPositions: (id: number, names: string[]) => void;
+  onTogglePick: (id: number, name: string) => void;
   onHighlight: (name: string | null) => void;
 }) {
   const share = new Map(split.parts.map((p) => [p.name, p.scu]));
-  const toggle = (name: string, on: boolean) =>
-    onSetPositions(row.id, on ? [...row.positions, name] : row.positions.filter((n) => n !== name));
   return (
     <div className="grid-cell">
       {/* At most four buttons a line, so a ship with many grids stays narrow. */}
@@ -290,7 +289,7 @@ function GridPicks({
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
               data-over={available < 0 || undefined}
-              onClick={() => toggle(p.name, !on)}
+              onClick={() => onTogglePick(row.id, p.name)}
               onMouseEnter={() => onHighlight(p.name)}
               onMouseLeave={() => onHighlight(null)}
               onFocus={() => onHighlight(p.name)}

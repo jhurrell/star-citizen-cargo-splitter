@@ -157,7 +157,7 @@ export function CargoSplitter() {
           positions={positions}
           cargoByRow={colors.byRow}
           onUpdate={(id: number, field: RowField, value: string) => dispatch({ type: "updateRow", id, field, value })}
-          onSetPositions={(id: number, names: string[]) => dispatch({ type: "setPositions", id, positions: names })}
+          onTogglePick={(id: number, name: string) => dispatch({ type: "togglePick", id, name })}
           onHighlight={setHighlight}
           onDelete={deleteRow}
           onSort={(key: TextKey) => dispatch({ type: "sortBy", key })}
@@ -170,9 +170,9 @@ export function CargoSplitter() {
         Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it. Press{" "}
         <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. Click a grid
         button to put a row in that grid; each button shows the SCU the grid has available. To split a big delivery,
-        turn on several grids and it fills them fore to aft. An amber edge and SCU mean a row has more than its grids
-        have room for; point at the SCU to see how much. Point at a grid button to see it in the ship view. Your table
-        is kept in this browser.
+        turn on several grids: grids fill in the order you pick them, and a later pick only takes the room an earlier
+        one left. An amber edge and SCU mean a row has more than its grids have room for; point at the SCU to see how
+        much. Point at a grid button to see it in the ship view. Your table is kept in this browser.
       </p>
 
       <section className="section" aria-labelledby="ship-title">
