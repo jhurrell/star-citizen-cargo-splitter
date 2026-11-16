@@ -316,6 +316,52 @@ h2 {
   color: var(--warn);
   border-color: var(--warn);
 }
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Wide enough for "Clear table", so turning to "Confirm" moves nothing. */
+.btn.clear-table {
+  width: 10em;
+  white-space: nowrap;
+}
+/* An icon in place of a label; the button's aria-label names it. */
+.btn.icon {
+  padding: 8px 10px;
+  line-height: 0;
+}
+.btn-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* A tooltip from data-tip, below the button, on pointing or keyboard focus. */
+[data-tip] {
+  position: relative;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
 
 /* Small square icon buttons: sort arrows and row delete */
 .icon-btn {
@@ -639,6 +685,19 @@ select.field option {
   color: var(--label);
   text-align: center;
   white-space: nowrap;
+}
+/* The Grids heading, with its Clear button at the right. */
+.grids-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+/* Wide enough for "Confirm", so it doesn't move when it changes. */
+.grids-head .clear-grids {
+  width: 6.4em;
+  padding: 2px 0;
+  font-size: 11px;
 }
 .grid .foot-scu {
   padding: 9px 10px;

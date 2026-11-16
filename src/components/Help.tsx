@@ -45,6 +45,7 @@ export function Help() {
             To split a big delivery, turn on several grids: grids fill in the order you pick them, and a later pick only
             takes the room an earlier one left.
           </li>
+          <li>Clear, in the Grids heading, takes every row out of its grids. Click it again to confirm.</li>
           <li>
             Δ (Remaining) shows the SCU not in a grid yet. While a row has some, its edge and SCU turn amber, and
             pointing at the SCU says why.

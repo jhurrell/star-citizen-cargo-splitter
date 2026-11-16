@@ -134,6 +134,8 @@ export type Action =
   | { type: "updateRow"; id: number; field: RowField; value: string }
   /* Pick a grid for a row, after every earlier pick, or unpick it. */
   | { type: "togglePick"; id: number; name: string }
+  /* Take every row out of these grids (the selected layout's). */
+  | { type: "clearPicks"; names: string[] }
   | { type: "sortBy"; key: TextKey }
   /* A new ship starts on its first layout. */
   | { type: "selectShip"; shipId: string }
@@ -158,6 +160,11 @@ export function reducer(state: State, action: Action): State {
       const toggle = (picks: GridPick[]) =>
         picks.some((p) => p.name === name) ? picks.filter((p) => p.name !== name) : [...picks, { name, order }];
       return { ...state, rows: state.rows.map((r) => (r.id === id ? { ...r, picks: toggle(r.picks) } : r)) };
+    }
+    case "clearPicks": {
+      /* Picks for other ships' grids stay, for switching back. */
+      const names = new Set(action.names);
+      return { ...state, rows: state.rows.map((r) => ({ ...r, picks: r.picks.filter((p) => !names.has(p.name)) })) };
     }
     case "sortBy": {
       /* Sorting reorders the rows once, like a spreadsheet; later edits don't

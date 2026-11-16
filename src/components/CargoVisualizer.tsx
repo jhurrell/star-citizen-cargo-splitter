@@ -65,6 +65,9 @@ export function CargoVisualizer() {
 
   const [status, showStatus] = useTimedMessage(STATUS_MS);
   const [clearArmed, setClearArmed] = useTimedFlag(DISARM_MS);
+  const [gridsArmed, setGridsArmed] = useTimedFlag(DISARM_MS);
+  const gridNames = new Set(positions.map((p) => p.name));
+  const hasPicks = state.rows.some((r) => r.picks.some((p) => gridNames.has(p.name)));
 
   function addRow() {
     const row = makeRow();
@@ -92,6 +95,14 @@ export function CargoVisualizer() {
     focusMaterial(row);
     dispatch({ type: "clearRows", row });
     showStatus("Table cleared");
+  }
+
+  /* Take every row out of this layout's grids, on a second click. */
+  function clearGrids() {
+    if (!gridsArmed) return setGridsArmed(true);
+    setGridsArmed(false);
+    dispatch({ type: "clearPicks", names: [...gridNames] });
+    showStatus("Grids cleared");
   }
 
   async function copy(format: "tsv" | "markdown") {
@@ -141,16 +152,28 @@ export function CargoVisualizer() {
           {/* "Copy for" once, then the formats; screen readers hear the group's name with each button. */}
           <div className="picker" role="group" aria-labelledby="copy-for">
             <span id="copy-for">Copy for</span>
-            <button type="button" className="btn" onClick={() => void copy("tsv")}>
-              Spreadsheet
+            <button
+              type="button"
+              className="btn icon"
+              onClick={() => void copy("tsv")}
+              aria-label="Spreadsheet"
+              data-tip="Copy for a spreadsheet"
+            >
+              <SpreadsheetIcon />
             </button>
-            <button type="button" className="btn" onClick={() => void copy("markdown")}>
-              Markdown
+            <button
+              type="button"
+              className="btn icon"
+              onClick={() => void copy("markdown")}
+              aria-label="Markdown"
+              data-tip="Copy as a Markdown table"
+            >
+              <MarkdownIcon />
             </button>
           </div>
           <button
             type="button"
-            className={`btn${clearArmed ? " is-armed" : ""}`}
+            className={`btn clear-table${clearArmed ? " is-armed" : ""}`}
             onClick={clearTable}
             aria-label={clearArmed ? "Confirm clearing the table" : undefined}
           >
@@ -178,6 +201,9 @@ export function CargoVisualizer() {
           onSort={(key) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
           onScuEnter={focusNextScu}
+          gridsArmed={gridsArmed}
+          canClearGrids={hasPicks}
+          onClearGrids={clearGrids}
         />
       </div>
 
@@ -204,5 +230,25 @@ export function CargoVisualizer() {
         )}
       </section>
     </>
+  );
+}
+
+/* A table: copy for a spreadsheet. */
+function SpreadsheetIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className="btn-icon">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18M3 15h18M9 10v10M15 10v10" />
+    </svg>
+  );
+}
+
+/* The Markdown mark: an M and a down arrow in a box. */
+function MarkdownIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className="btn-icon">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M6 15V9l2.5 3L11 9v6M16 9v6M13.5 12.5 16 15l2.5-2.5" />
+    </svg>
   );
 }

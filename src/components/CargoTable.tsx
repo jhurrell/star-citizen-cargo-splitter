@@ -34,6 +34,11 @@ type Props = {
   onSort: (key: TextKey) => void;
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
+  /* The Grids heading's Clear button: waiting for its second click, whether
+     any row is in a grid, and what it does. */
+  gridsArmed: boolean;
+  canClearGrids: boolean;
+  onClearGrids: () => void;
 };
 type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRow" | "onDelete" | "onScuEnter">;
 
@@ -54,6 +59,9 @@ export function CargoTable({
   cargoByRow,
   onSort,
   onToggleSize,
+  gridsArmed,
+  canClearGrids,
+  onClearGrids,
   ...rowActions
 }: Props) {
   const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
@@ -91,7 +99,20 @@ export function CargoTable({
           <th className="label num sep leftover" hidden={!calc.showLeftover}>
             Left over
           </th>
-          <th className="label sep">Grids</th>
+          <th className="label sep">
+            <div className="grids-head">
+              Grids
+              <button
+                type="button"
+                className={`btn clear-grids${gridsArmed ? " is-armed" : ""}`}
+                onClick={onClearGrids}
+                disabled={!canClearGrids && !gridsArmed}
+                aria-label={gridsArmed ? "Confirm clearing every row's grids" : "Clear every row's grids"}
+              >
+                {gridsArmed ? "Confirm" : "Clear"}
+              </button>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>

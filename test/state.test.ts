@@ -77,6 +77,20 @@ describe("reducer togglePick", () => {
   });
 });
 
+describe("reducer clearPicks", () => {
+  test("takes every row out of the named grids and keeps other ships' picks", () => {
+    const a = makeRow({
+      picks: [
+        { name: "SU", order: 1 },
+        { name: "Elsewhere", order: 2 },
+      ],
+    });
+    const b = makeRow({ picks: [{ name: "SL", order: 3 }] });
+    const state = reducer({ ...defaultState(), rows: [a, b] }, { type: "clearPicks", names: ["SU", "SL"] });
+    expect(state.rows.map((r) => r.picks)).toEqual([[{ name: "Elsewhere", order: 2 }], []]);
+  });
+});
+
 describe("reducer selectShip", () => {
   test("starts the new ship on its first layout", () => {
     const state = { ...defaultState(), shipId: "a", gridId: "cargo" };
