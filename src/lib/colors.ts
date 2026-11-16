@@ -9,7 +9,7 @@ const CARGO_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0
 export const OTHER_COLOR = "#6b7f8c";
 
 export type Cargo = { name: string; color: string };
-export type CargoColors = { byRow: Map<number, Cargo>; legend: Cargo[] };
+export type CargoColors = { byRow: Map<number, Cargo>; legend: (Cargo & { rowId: number })[] };
 
 /* A color per row with cargo, in the order rows were added, so sorting never
    repaints a row. Each is named by its material. Rows that share a material
@@ -27,7 +27,7 @@ export function cargoColors(rows: Row[]): CargoColors {
       color: CARGO_COLORS[byRow.size] ?? OTHER_COLOR,
     });
   }
-  return { byRow, legend: [...byRow.values()] };
+  return { byRow, legend: [...byRow].map(([rowId, cargo]) => ({ ...cargo, rowId })) };
 }
 
 /* A tag for each row whose material another row shares, keyed by row id. */

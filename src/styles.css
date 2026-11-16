@@ -502,7 +502,7 @@ select.field option {
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 6px 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -512,10 +512,35 @@ select.field option {
 .legend:empty {
   display: none;
 }
-.legend li {
+/* A row's legend button: plain while its containers show; faded with a
+   dashed edge while they're dimmed. */
+.legend-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  color: var(--label);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.legend-btn:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.legend-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.legend-btn[aria-pressed="false"] {
+  color: var(--muted);
+  border-style: dashed;
+  opacity: 0.55;
+}
+.legend-btn[aria-pressed="false"] .swatch {
+  opacity: 0.4;
 }
 .swatch {
   flex: none;

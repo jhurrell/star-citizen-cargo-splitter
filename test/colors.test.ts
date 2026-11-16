@@ -14,6 +14,7 @@ describe("cargoColors", () => {
     expect(byRow.get(rows[10].id)!.name).toBe("m0 (#11)");
     expect(byRow.get(rows[1].id)!.name).toBe("M1"); // its material is its own
     expect(byRow.has(rows[11].id)).toBe(false);
+    expect(legend.map((c) => c.rowId)).toEqual(rows.slice(0, 11).map((r) => r.id)); // for the legend's buttons
   });
 
   test("rows sharing a material show their drop-off, or their row number when it's blank or not unique", () => {

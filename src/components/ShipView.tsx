@@ -40,6 +40,9 @@ const FLOOR = "#54adf7";
 const GROUND = "#16384d";
 const GROUND_LINE = "#24506b";
 const LIT = "#ffffff"; // the grid pointed at in the cargo table
+/* A row turned off in the legend: its containers turn mostly see-through,
+   without their sizes (which would show through from every face). */
+const DIM_OPACITY = 0.18;
 
 const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
 const isMounted = (p: Position): p is Mounted => p.mount !== null;
@@ -50,12 +53,15 @@ export default function ShipView({
   positions,
   loads,
   cargoByRow,
+  dimmed,
   highlight = null,
 }: {
   positions: Position[];
   /* Each position's packed containers, by name. */
   loads: Map<string, GridLoad>;
   cargoByRow: Map<number, Cargo>;
+  /* Rows whose containers show dimmed. */
+  dimmed: ReadonlySet<number>;
   /* A grid's name to light up, seen through the others; null for none. */
   highlight?: string | null;
 }) {
@@ -102,6 +108,7 @@ export default function ShipView({
               position={position}
               placed={loads.get(position.name)?.placed ?? []}
               cargoByRow={cargoByRow}
+              dimmed={dimmed}
               lit={position.name === highlight}
               showSizes={showSizes}
               onHover={setHover}
@@ -221,6 +228,7 @@ function GridMesh({
   position,
   placed,
   cargoByRow,
+  dimmed,
   lit,
   showSizes,
   onHover,
@@ -228,11 +236,17 @@ function GridMesh({
   position: Mounted;
   placed: Placed<number>[];
   cargoByRow: Map<number, Cargo>;
+  dimmed: ReadonlySet<number>;
   lit: boolean;
   showSizes: boolean;
   onHover: (text: string) => void;
 }) {
   const { x: X, y: Y, z: Z } = position;
+  const [solid, faded] = useMemo(
+    () => [placed.filter((b) => !dimmed.has(b.tag)), placed.filter((b) => dimmed.has(b.tag))],
+    [placed, dimmed],
+  );
+  const describe = (box: string) => onHover(box ? `${box} · ${position.name}` : "");
   const matrix = useMemo(() => new Matrix4().fromArray(mountMatrix(position.mount, sizeOf(position))), [position]);
   return (
     <group matrix={matrix} matrixAutoUpdate={false}>
@@ -247,13 +261,9 @@ function GridMesh({
         />
       </mesh>
       <HoldOutline size={[X, Y, Z]} lit={lit} />
-      <Containers
-        capacity={position.capacity}
-        placed={placed}
-        cargoByRow={cargoByRow}
-        onHover={(box) => onHover(box ? `${box} · ${position.name}` : "")}
-      />
-      {showSizes && <SizeMarks placed={placed} />}
+      <Containers capacity={position.capacity} placed={solid} cargoByRow={cargoByRow} onHover={describe} />
+      <Containers capacity={position.capacity} placed={faded} cargoByRow={cargoByRow} dim onHover={describe} />
+      {showSizes && <SizeMarks placed={solid} />}
     </group>
   );
 }
@@ -288,16 +298,19 @@ function HoldOutline({ size: [X, Y, Z], lit }: { size: Vec3; lit: boolean }) {
   );
 }
 
-/* The containers, as one instanced mesh: Hull C can hold thousands. */
+/* The containers, as one instanced mesh: Hull C can hold thousands. Dimmed
+   rows' containers go in a second, see-through one. */
 function Containers({
   capacity,
   placed,
   cargoByRow,
+  dim = false,
   onHover,
 }: {
   capacity: number;
   placed: Placed<number>[];
   cargoByRow: Map<number, Cargo>;
+  dim?: boolean;
   onHover: (text: string) => void;
 }) {
   const ref = useRef<InstancedMesh>(null);
@@ -337,7 +350,13 @@ function Containers({
       onPointerOut={() => onHover("")}
     >
       <boxGeometry />
-      <meshStandardMaterial roughness={0.7} metalness={0.1} />
+      <meshStandardMaterial
+        roughness={0.7}
+        metalness={0.1}
+        transparent={dim}
+        opacity={dim ? DIM_OPACITY : 1}
+        depthWrite={!dim}
+      />
     </instancedMesh>
   );
 }

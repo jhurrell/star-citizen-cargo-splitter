@@ -28,6 +28,17 @@ export function CargoSplitter() {
   const isMounted = positions.length > 0 && positions.every((p) => p.mount);
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
+  /* Rows turned off in the legend, whose containers show dimmed. */
+  const [dimmed, setDimmed] = useState<ReadonlySet<number>>(() => new Set());
+  const dimRows = (rowIds: number[], dim: boolean) =>
+    setDimmed((before) => {
+      const after = new Set(before);
+      for (const id of rowIds) {
+        if (dim) after.add(id);
+        else after.delete(id);
+      }
+      return after;
+    });
 
   useEffect(() => saveState(state), [state]);
 
@@ -179,13 +190,20 @@ export function CargoSplitter() {
         <h2 id="ship-title">Ship view</h2>
         {isMounted ? (
           <>
-            <Legend entries={colors.legend} />
+            <Legend entries={colors.legend} dimmed={dimmed} onDim={dimRows} />
             <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
-              <ShipView positions={positions} loads={calc.byPosition} cargoByRow={colors.byRow} highlight={highlight} />
+              <ShipView
+                positions={positions}
+                loads={calc.byPosition}
+                cargoByRow={colors.byRow}
+                dimmed={dimmed}
+                highlight={highlight}
+              />
             </Suspense>
             <p className="hint">
               Drag to turn, scroll to zoom, right-drag to pan. The pale blue face of each grid is its floor; containers
-              stack away from it. Point at a container to see what it holds.
+              stack away from it. Point at a container to see what it holds. Click a row in the legend to dim its
+              containers.
             </p>
           </>
         ) : (

@@ -1,0 +1,98 @@
+# Star Citizen Cargo Splitter
+
+A cargo planner for Star Citizen haulers. Enter each delivery's SCU and Cargo Splitter works out which container
+sizes to use, splits large deliveries across your ship's cargo grids, and shows how it all packs in a 3D view of
+the ship.
+
+## Features
+
+- **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
+  the next size down, until every SCU is placed. Click a size in the table header to turn it off and skip it.
+- **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
+  the grid has left. Pick several to split a big delivery: grids fill in the order you pick them, across all rows,
+  so a later pick never takes room an earlier one already claimed.
+- **Needs-splitting warning.** A row with more SCU than its grids can hold gets an amber edge and SCU cell. Point
+  at the SCU to see how much doesn't fit.
+- **Ship view.** A 3D view of the ship's grids with every container placed:
+  - The first delivery in a grid loads from the fore end; later ones load from the aft end, so materials stay
+    apart.
+  - Each row has its own color, and each container shows its size in SCU.
+  - Click a row in the legend to make its containers see-through, so the rest stand out.
+  - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
+  - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
+- **Copy out.** Copy the table for a spreadsheet (tab-separated) or as Markdown.
+- **Kept in your browser.** The table, ship and settings are saved in local storage.
+
+Ships included: MISC Hull B, MISC Hull C, RSI Hermes and Argo RAFT.
+
+## Running it
+
+Cargo Splitter is a [TanStack Start](https://tanstack.com/start) app built with React, TypeScript and
+[react-three-fiber](https://r3f.docs.pmnd.rs/), on the Vite+ toolchain (`vp`) with pnpm.
+
+```bash
+pnpm install
+```
+
+```bash
+vp dev
+```
+
+| Command    | What it does                                                 |
+| ---------- | ------------------------------------------------------------ |
+| `vp dev`   | Starts the dev server                                        |
+| `vp test`  | Runs the unit tests (Vitest)                                 |
+| `vp check` | Formats, lints and type-checks                               |
+| `vp build` | Builds a static site into `dist/client`, for any static host |
+
+## Configuring ships and containers
+
+Everything about ships and containers lives in [`config.json`](config.json), which is bundled into the app at build
+time. Edit it and the dev server reloads.
+
+### Containers
+
+```json
+{ "id": "scu-32", "name": "32", "capacity": 32, "lieFlat": true, "x": 2, "y": 8, "z": 2 }
+```
+
+`x`, `y` and `z` are the container's size in SCU cells (`z` is height). A `lieFlat` container keeps its long side
+horizontal; any other may be turned any way to fit.
+
+### Ships, layouts and grids
+
+A ship has one or more layouts (`grids`), and each layout has its cargo grids (`positions`):
+
+```json
+{
+  "id": "ship-misc-hull-b",
+  "name": "MISC Hull B",
+  "capacity": 512,
+  "grids": [
+    {
+      "id": "relaxed",
+      "name": "Relaxed",
+      "positions": [
+        {
+          "name": "Starboard - Upper",
+          "x": 4,
+          "y": 16,
+          "z": 2,
+          "at": { "x": 1.77, "y": 0, "z": 1.77 },
+          "rotate": { "roll": 45 }
+        }
+      ]
+    }
+  ]
+}
+```
+
+- `x`, `y`, `z`: the grid's size in SCU cells. Its floor is `x` × `y`, and containers stack up `z`.
+- `at`: where the centre of the grid's floor sits on the ship, in SCU. The ship's axes run port (−) to starboard
+  (+) for x, aft (−) to fore (+) for y, and bottom (−) to top (+) for z.
+- `rotate` (optional): how the grid is turned, in degrees, applied in this order:
+  - `roll`: about the fore–aft axis; positive tips its top toward starboard.
+  - `pitch`: about the port–starboard axis; positive tips its fore end up.
+  - `yaw`: about the up axis; positive turns its fore end toward starboard.
+
+A grid without `at` still works for planning but doesn't appear in the ship view.

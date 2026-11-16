@@ -1,23 +1,62 @@
-import { OTHER_COLOR, type Cargo } from "../lib/colors";
+import { OTHER_COLOR, type CargoColors } from "../lib/colors";
 
-/* A swatch and name per row with cargo; past the palette, one "Other rows". */
-export function Legend({ entries }: { entries: Cargo[] }) {
+/* A toggle button per row with cargo, with its swatch and name; past the
+   palette, one "Other rows" for the rest. Turning one off dims that row's
+   containers in the ship view. */
+export function Legend({
+  entries,
+  dimmed,
+  onDim,
+}: {
+  entries: CargoColors["legend"];
+  dimmed: ReadonlySet<number>;
+  /* Dim the given rows, or (with false) show them again. */
+  onDim: (rowIds: number[], dim: boolean) => void;
+}) {
   const named = entries.filter((entry) => entry.color !== OTHER_COLOR);
+  const others = entries.filter((entry) => entry.color === OTHER_COLOR).map((entry) => entry.rowId);
   return (
-    <ul className="legend" aria-label="Rows">
+    <ul className="legend" aria-label="Rows in the ship view">
       {named.map((entry) => (
-        <li key={entry.name}>
-          <Swatch color={entry.color} />
-          {entry.name}
+        <li key={entry.rowId}>
+          <LegendButton name={entry.name} color={entry.color} rowIds={[entry.rowId]} dimmed={dimmed} onDim={onDim} />
         </li>
       ))}
-      {named.length < entries.length && (
+      {others.length > 0 && (
         <li>
-          <Swatch color={OTHER_COLOR} />
-          Other rows
+          <LegendButton name="Other rows" color={OTHER_COLOR} rowIds={others} dimmed={dimmed} onDim={onDim} />
         </li>
       )}
     </ul>
+  );
+}
+
+/* On while any of its rows shows at full strength. */
+function LegendButton({
+  name,
+  color,
+  rowIds,
+  dimmed,
+  onDim,
+}: {
+  name: string;
+  color: string;
+  rowIds: number[];
+  dimmed: ReadonlySet<number>;
+  onDim: (rowIds: number[], dim: boolean) => void;
+}) {
+  const on = rowIds.some((id) => !dimmed.has(id));
+  return (
+    <button
+      type="button"
+      className="legend-btn"
+      aria-pressed={on}
+      title={on ? `Dim ${name} in the ship view` : `Show ${name} in full in the ship view`}
+      onClick={() => onDim(rowIds, on)}
+    >
+      <Swatch color={color} />
+      {name}
+    </button>
   );
 }
 
