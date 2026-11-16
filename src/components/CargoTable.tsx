@@ -1,8 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Container, Counts, Fill, Position } from "../lib/cargo";
 import { TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
-import { fmt, isEnabled, plural, positionText, shortText, type Calc, type Split } from "../lib/table";
-import { WarnNote } from "./WarnNote";
+import { fmt, isEnabled, plural, shortText, type Calc, type Split } from "../lib/table";
 
 type Props = {
   state: State;
@@ -11,17 +9,20 @@ type Props = {
   positions: Position[];
   onUpdate: (id: number, field: RowField, value: string) => void;
   onSetPositions: (id: number, names: string[]) => void;
+  /* The grid the pointer or focus is on, for the ship view; null when none. */
+  onHighlight: (name: string | null) => void;
   onDelete: (id: number) => void;
   onSort: (key: TextKey) => void;
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
 };
 
-/* The editable cargo grid: Material / Pick-up / Drop-off, SCU, a column per
-   container size, Left over (only when some SCU can't be placed), Position. */
+/* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
+   container size, Left over (only when some SCU can't be placed), Grid. */
 export function CargoTable({ state, calc, containers, positions, ...actions }: Props) {
-  /* Free room in each position, for the position menus. */
+  /* SCU still free in each grid (below 0 when over), shown on its buttons. */
   const free = new Map(positions.map((p) => [p.name, p.capacity - calc.byPosition.get(p.name)!.scu]));
+  const tags = gridTags(positions);
   const columnCount = TEXT_COLUMNS.length + 1 + containers.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
@@ -43,7 +44,7 @@ export function CargoTable({ state, calc, containers, positions, ...actions }: P
           <th className="label num sep leftover" hidden={!calc.showLeftover}>
             Left over
           </th>
-          <th className="label sep">Position</th>
+          <th className="label sep">Grid</th>
         </tr>
       </thead>
       <tbody>
@@ -61,6 +62,7 @@ export function CargoTable({ state, calc, containers, positions, ...actions }: P
               fill={calc.byRow.get(row.id)!}
               split={calc.splits.get(row.id)!}
               free={free}
+              tags={tags}
               showLeftover={calc.showLeftover}
               containers={containers}
               enabled={state.enabled}
@@ -150,8 +152,10 @@ function CargoRow({
   positions,
   split,
   free,
+  tags,
   onUpdate,
   onSetPositions,
+  onHighlight,
   onDelete,
   onScuEnter,
 }: Omit<Props, "state" | "calc" | "onSort" | "onToggleSize"> & {
@@ -159,6 +163,7 @@ function CargoRow({
   fill: Fill;
   split: Split;
   free: Map<string, number>;
+  tags: string[];
   showLeftover: boolean;
   enabled: State["enabled"];
 }) {
@@ -192,12 +197,14 @@ function CargoRow({
           </td>
         );
       })}
-      <td className="edit scu-cell">
+      {/* Amber when the row's grids don't have room for all of it; the tooltip says how much. */}
+      <td className="edit scu-cell" data-short={split.short ? "" : undefined} title={shortText(split) || undefined}>
         <input
           className="field scu"
           inputMode="numeric"
           placeholder="0"
           aria-label="SCU"
+          aria-description={shortText(split) || undefined}
           {...field("scu")}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
@@ -208,127 +215,96 @@ function CargoRow({
       </td>
       <CalcCells fill={fill} showLeftover={showLeftover} containers={containers} enabled={enabled} />
       <td className="edit sep">
-        <PositionPicker row={row} split={split} positions={positions} free={free} onSetPositions={onSetPositions} />
+        <GridPicks
+          row={row}
+          split={split}
+          positions={positions}
+          free={free}
+          tags={tags}
+          onSetPositions={onSetPositions}
+          onHighlight={onHighlight}
+        />
       </td>
     </tr>
   );
 }
 
-/* The Position cell: the row's positions (with each one's share when it's
-   split) and a menu of checkboxes to choose them. Flags a row whose positions
-   don't have room for all of it. */
-function PositionPicker({
+/* Short names for the grid buttons: each name's initials ("Port - Upper" is
+   PU), or 1, 2, 3… when two grids would share them. */
+export function gridTags(positions: Position[]): string[] {
+  const initials = positions.map((p) =>
+    p.name
+      .split(/[^A-Za-z0-9]+/)
+      .filter(Boolean)
+      .map((word) => word[0].toUpperCase())
+      .join(""),
+  );
+  return new Set(initials).size === initials.length && initials.every(Boolean)
+    ? initials
+    : positions.map((_, i) => String(i + 1));
+}
+
+/* The Grid cell: a toggle button per grid showing the SCU it has available.
+   Pointing at (or tabbing to) a button lights that grid up in the ship view. */
+function GridPicks({
   row,
   split,
   positions,
   free,
+  tags,
   onSetPositions,
+  onHighlight,
 }: {
   row: Row;
   split: Split;
   positions: Position[];
   free: Map<string, number>;
+  tags: string[];
   onSetPositions: (id: number, names: string[]) => void;
+  onHighlight: (name: string | null) => void;
 }) {
-  const menuId = `r${row.id}-positions`;
-  const button = useRef<HTMLButtonElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const { parts, short } = split;
-  const share = new Map(parts.map((p) => [p.name, p.scu]));
-
-  /* The menu sits in the top layer, outside the table's scroll frame, so it
-     closes rather than drift when anything behind it scrolls. */
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: Event) => {
-      if (!menu.current?.contains(e.target as Node)) menu.current?.hidePopover();
-    };
-    addEventListener("scroll", close, true);
-    addEventListener("resize", close);
-    return () => {
-      removeEventListener("scroll", close, true);
-      removeEventListener("resize", close);
-    };
-  }, [open]);
-
-  /* Under the button before it shows; once it has a size, kept on screen,
-     above the button when there's no room below. */
-  function place(measured: boolean) {
-    const [b, m] = [button.current!.getBoundingClientRect(), menu.current!];
-    const [w, h] = measured ? [m.offsetWidth, m.offsetHeight] : [0, 0];
-    m.style.minWidth = `${b.width}px`;
-    m.style.left = `${Math.max(8, Math.min(b.left, innerWidth - w - 8))}px`;
-    m.style.top = `${b.bottom + h > innerHeight - 8 ? Math.max(8, b.top - h) : b.bottom}px`;
-  }
-
-  /* Ticking a position can change the button's height, so follow it. */
-  useLayoutEffect(() => {
-    if (open) place(true);
-  });
-
+  const share = new Map(split.parts.map((p) => [p.name, p.scu]));
   const toggle = (name: string, on: boolean) =>
     onSetPositions(row.id, on ? [...row.positions, name] : row.positions.filter((n) => n !== name));
-  const flag = short ? (parts.length ? `${fmt(short)} SCU short` : "Needs splitting") : "";
-
   return (
-    <>
-      <button
-        ref={button}
-        type="button"
-        className="field pos-btn"
-        id={`r${row.id}-position`}
-        popoverTarget={menuId}
-        aria-label={`Position: ${positionText(split) || "none"}${flag ? `. ${shortText(split)}` : ""}`}
-        title={shortText(split) || undefined}
-        disabled={positions.length === 0}
-      >
-        <span className="pos-parts">
-          {parts.length === 0 && <span className="pos-none">—</span>}
-          {parts.length === 1 && <span>{parts[0].name}</span>}
-          {parts.length > 1 &&
-            parts.map((p) => (
-              <span key={p.name} className="pos-part">
-                <span>{p.name}</span>
-                <span className="pos-scu">{fmt(p.scu)}</span>
-              </span>
-            ))}
-          {flag && <WarnNote>{flag}</WarnNote>}
-        </span>
-        <span className="pos-caret" aria-hidden="true">
-          ▾
-        </span>
-      </button>
+    <div className="grid-cell">
+      {/* At most four buttons a line, so a ship with many grids stays narrow. */}
       <div
-        ref={menu}
-        id={menuId}
-        popover="auto"
-        className="pos-menu"
+        className="grid-picks"
         role="group"
-        aria-label="Positions for this row"
-        onBeforeToggle={(e) => {
-          if (e.newState === "open") place(false);
-        }}
-        onToggle={(e) => {
-          setOpen(e.newState === "open");
-          if (e.newState === "open") place(true);
-        }}
+        aria-label="Grids for this row"
+        style={{ gridTemplateColumns: `repeat(${Math.min(positions.length, 4)}, auto)` }}
       >
-        {positions.map((p) => {
+        {positions.map((p, i) => {
           const on = share.has(p.name);
+          const available = free.get(p.name)!;
+          const lines = [
+            p.name,
+            `${fmt(available)} SCU available`,
+            ...(on && split.parts.length > 1 ? [`${fmt(share.get(p.name)!)} SCU of this row`] : []),
+          ];
           return (
-            <label key={p.name} className="pos-option">
-              <input type="checkbox" checked={on} onChange={(e) => toggle(p.name, e.target.checked)} />
-              <span>{p.name}</span>
-              <span className="pos-room">
-                {on ? `${fmt(share.get(p.name)!)} here` : `${fmt(Math.max(0, free.get(p.name)!))} free`}
-              </span>
-            </label>
+            <button
+              key={p.name}
+              type="button"
+              className="grid-pick"
+              aria-pressed={on}
+              aria-label={lines.join(", ")}
+              title={lines.join("\n")}
+              data-over={available < 0 || undefined}
+              onClick={() => toggle(p.name, !on)}
+              onMouseEnter={() => onHighlight(p.name)}
+              onMouseLeave={() => onHighlight(null)}
+              onFocus={() => onHighlight(p.name)}
+              onBlur={() => onHighlight(null)}
+            >
+              <span className="grid-tag">{tags[i]}</span>
+              <span className="grid-free">{fmt(available)}</span>
+            </button>
           );
         })}
-        <p className="pos-help">Choose several to split this row. It fills them in this order.</p>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -338,7 +314,7 @@ function PositionPicker({
 function countCell(size: number, counts: Counts, on: boolean) {
   if (!on) return { look: "off", text: "–", title: undefined };
   if (!Object.hasOwn(counts, size))
-    return { look: "off", text: "–", title: `${size} SCU containers don't fit this position` };
+    return { look: "off", text: "–", title: `${size} SCU containers don't fit this row's grids` };
   const n = counts[size];
   return { look: n ? "has" : "zero", text: fmt(n), title: undefined };
 }

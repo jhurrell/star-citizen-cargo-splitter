@@ -218,8 +218,7 @@ header p {
 
 .btn:focus-visible,
 .icon-btn:focus-visible,
-.size-toggle input:focus-visible,
-.pos-option input:focus-visible {
+.size-toggle input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -357,89 +356,67 @@ select.field option {
 .edit.scu-cell {
   background: var(--surface-2);
 }
-/* Position cell: a button showing the row's positions, opening a menu of checkboxes. */
-.pos-btn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  text-align: left;
-  cursor: pointer;
+/* Grid cell: a toggle button per grid, showing its initials and the SCU it has available. */
+.grid-cell {
+  padding: 4px;
 }
-.pos-btn:disabled {
-  cursor: default;
-  color: var(--off-fg);
+.grid-picks {
+  display: grid;
+  gap: 2px;
 }
-.pos-parts {
+.grid-pick {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  white-space: nowrap;
-}
-.pos-part {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-.pos-scu {
-  font-family: var(--font-mono);
-  color: var(--muted);
-}
-.pos-none,
-.pos-caret {
-  color: var(--off-fg);
-}
-.pos-btn .warn-note {
-  margin-top: 3px;
-  color: var(--warn);
-  font-size: 12px;
-}
-.pos-menu {
-  inset: auto;
-  margin: 0;
-  padding: 4px 0;
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
-  overflow-y: auto;
-  background: var(--surface);
-  color: var(--fg);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-}
-.pos-option {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 7px 12px;
-  white-space: nowrap;
+  min-width: 2.9em;
+  padding: 2px 4px 3px;
+  font: inherit;
+  line-height: 1.15;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   cursor: pointer;
 }
-.pos-option:hover {
-  background: var(--accent-soft);
+.grid-pick:hover {
+  border-color: var(--accent);
+  color: var(--fg);
 }
-.pos-option input {
-  margin: 0;
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-  cursor: pointer;
+.grid-pick[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
 }
-.pos-room {
+.grid-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.grid-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.grid-free {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 600;
 }
-.pos-help {
-  margin: 4px 12px 6px;
-  max-width: 26em;
-  font-size: 12px;
-  color: var(--muted);
+.grid-pick[data-over] .grid-free {
+  color: var(--warn);
 }
-/* A row whose positions don't have room for all of it: an amber edge down its left side. */
+.grid-pick[aria-pressed="true"][data-over] .grid-free {
+  color: #7a2a00;
+}
+/* A row whose grids don't have room for all of it: an amber edge down its
+   left side and an amber SCU, whose tooltip says how much doesn't fit. */
 #cargo tr.needs-split > td:first-child {
   box-shadow: inset 4px 0 0 var(--warn);
+}
+#cargo .scu-cell[data-short] {
+  background: var(--warn-soft);
+}
+#cargo .scu-cell[data-short] .field {
+  color: var(--warn);
 }
 
 .material-cell {
@@ -771,6 +748,15 @@ select.field option {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+.ship-labels.is-off > span:not(.is-lit) {
+  visibility: hidden;
+}
+.ship-label.is-lit {
+  color: var(--accent-fg);
+  background: #ffffff;
+  font-weight: 700;
+  z-index: 1;
 }
 .ship-labels > span {
   position: absolute;

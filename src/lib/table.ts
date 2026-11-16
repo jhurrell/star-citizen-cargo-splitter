@@ -16,6 +16,7 @@ import {
   type Position,
   type Ship,
 } from "./cargo";
+import { toShip } from "./mount";
 import { TEXT_COLUMNS, type Row, type State } from "./state";
 
 export const fmt = (n: number): string => n.toLocaleString("en-US");
@@ -32,25 +33,34 @@ export function selection(ships: Ship[], state: Pick<State, "shipId" | "gridId">
   return { ship, grid, positions: grid?.positions ?? [] };
 }
 
-/* A row's positions on the selected grid, in the grid's order. */
+/* A row's positions on the selected grid, in the order given. */
 export const rowPositions = (positions: Position[], row: Row): Position[] =>
   positions.filter((p) => row.positions.includes(p.name));
 
-/* How much of a row goes in each of its positions (in the grid's order), and
+/* The positions from fore to aft, by the middle of each hold; ties (and
+   positions with no place on the ship) keep config.json's order. */
+export function foreToAft(positions: Position[]): Position[] {
+  const foreness = (p: Position) =>
+    p.mount ? Math.round(toShip(p.mount, [p.x, p.y, p.z], [p.x / 2, p.y / 2, p.z / 2])[1] * 1e6) : 0;
+  return [...positions].sort((a, b) => foreness(b) - foreness(a));
+}
+
+/* How much of a row goes in each of its positions (fore to aft), and
    `short`: how much of it there's no room for, so it needs splitting further.
    A row with no position is short by what's more than any one position holds. */
 export type Part = { name: string; scu: number };
 export type Split = { parts: Part[]; short: number };
 
 /* Rows with one position go in first, in table order, as they can go nowhere
-   else. Then each split row, in table order, fills its positions' free room in
-   the grid's order. What's left over still goes in its last position, so the
-   SCU by position table shows it over capacity. */
+   else. Then each split row, in table order, fills its positions' free room
+   from fore to aft. What's left over still goes in its last position, so the
+   SCU by grid table shows it over capacity. */
 export function splitRows(rows: Row[], positions: Position[]): Map<number, Split> {
+  const ordered = foreToAft(positions);
   const room = new Map(positions.map((p) => [p.name, p.capacity]));
   const largest = Math.max(0, ...positions.map((p) => p.capacity));
   const splits = new Map<number, Split>();
-  const chosen = new Map(rows.map((row) => [row.id, rowPositions(positions, row)]));
+  const chosen = new Map(rows.map((row) => [row.id, rowPositions(ordered, row)]));
   const count = (row: Row) => chosen.get(row.id)!.length;
   for (const row of [...rows.filter((r) => count(r) === 1), ...rows.filter((r) => count(r) > 1)]) {
     let rest = parseScu(row.scu);
@@ -210,7 +220,7 @@ export function exportTable(
     { label: "SCU", numeric: true },
     ...sizes.map((s) => ({ label: String(s), numeric: true })),
     ...leftover({ label: "Left over", numeric: true }),
-    { label: "Position", numeric: false },
+    { label: "Grid", numeric: false },
   ];
   const body = rows.map((row) => {
     const fill = calc.byRow.get(row.id)!;
@@ -233,18 +243,18 @@ export function exportTable(
   return { columns, rows: body, totals };
 }
 
-/* "Port - Upper", or for a split row "Port - Upper (128), Port - Lower (44)". */
+/* "Port - Upper", or for a split row (fore to aft) "Port - Upper (128), Port - Lower (44)". */
 export function positionText({ parts }: Split): string {
   if (parts.length < 2) return parts[0]?.name ?? "";
   return parts.map((p) => `${p.name} (${fmt(p.scu)})`).join(", ");
 }
 
-/* "Needs 72 SCU more room", or "" when the row fits where it's going. */
+/* Why a row still needs splitting, or "" when it fits where it's going. */
 export function shortText({ parts, short }: Split): string {
   if (!short) return "";
   return parts.length
-    ? `${fmt(short)} SCU more than ${parts.length === 1 ? "this position has" : "these positions have"} room for. Choose another position to split it.`
-    : `More than any one position holds. Choose positions to split it.`;
+    ? `${fmt(short)} SCU more than ${parts.length === 1 ? "this grid has" : "these grids have"} room for. Choose another grid to split it.`
+    : `More than any one grid holds. Choose grids to split it.`;
 }
 
 type Export = ReturnType<typeof exportTable>;

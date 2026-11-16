@@ -1,10 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
-import { placementsOf, type Container, type Position } from "../src/lib/cargo";
+import config from "../config.json";
+import { parseShips, placementsOf, type Container, type Position } from "../src/lib/cargo";
 import { compareRows, defaultState, hydrate, makeRow, reducer } from "../src/lib/state";
 import {
   cargoColors,
   computeTable,
   exportTable,
+  foreToAft,
   OTHER_COLOR,
   splitRows,
   tableAsMarkdown,
@@ -141,6 +143,37 @@ describe("splitRows", () => {
   });
 });
 
+describe("foreToAft", () => {
+  const grid = (id: string) => parseShips(config).find((s) => s.id === id)!.grids[0].positions;
+  const names = (positions: Position[]) => foreToAft(positions).map((p) => p.name);
+
+  test("puts the Hull C's fore racks first, keeping config order between them", () => {
+    expect(names(grid("ship-misc-hull-c"))).toEqual([
+      "Upper - Fore",
+      "Starboard - Fore",
+      "Lower - Fore",
+      "Port - Fore",
+      "Upper - Aft",
+      "Starboard - Aft",
+      "Lower - Aft",
+      "Port - Aft",
+    ]);
+  });
+
+  test("keeps config order when nothing is further fore", () => {
+    expect(names(grid("ship-misc-hull-b"))).toEqual(grid("ship-misc-hull-b").map((p) => p.name));
+  });
+
+  test("a split row fills the fore rack first", () => {
+    const positions = grid("ship-misc-hull-c");
+    const rows = [makeRow({ scu: "600", positions: ["Upper - Aft", "Upper - Fore"] })];
+    expect(splitRows(rows, positions).get(rows[0].id)!.parts).toEqual([
+      { name: "Upper - Fore", scu: 576 },
+      { name: "Upper - Aft", scu: 24 },
+    ]);
+  });
+});
+
 describe("copy formats", () => {
   const positions = [bay("Bay", 2, 8, 2)];
   const rows = [makeRow({ material: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
@@ -149,7 +182,7 @@ describe("copy formats", () => {
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
-      "Material\tPick-up\tDrop-off\tSCU\t32\t8\t1\tPosition",
+      "Material\tPick-up\tDrop-off\tSCU\t32\t8\t1\tGrid",
       "Gold | Ore\tArea18\t\t1033\t32\t1\t1\tBay",
     ]);
   });

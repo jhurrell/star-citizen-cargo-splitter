@@ -25,6 +25,7 @@ const HOLD_EDGE = "#3d6a87";
 const FLOOR = "#54adf7";
 const GROUND = "#16384d";
 const GROUND_LINE = "#24506b";
+const LIT = "#ffffff"; // the grid pointed at in the cargo table
 
 const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
 const isMounted = (p: Position): p is Mounted => p.mount !== null;
@@ -35,10 +36,13 @@ export default function ShipView({
   positions,
   calc,
   cargoByRow,
+  highlight = null,
 }: {
   positions: Position[];
   calc: Calc;
   cargoByRow: Map<number, Cargo>;
+  /* A grid's name to light up, seen through the others; null for none. */
+  highlight?: string | null;
 }) {
   const mounted = useMemo(() => positions.filter(isMounted), [positions]);
   const bounds = useMemo(() => boundsOf(mounted), [mounted]);
@@ -79,6 +83,7 @@ export default function ShipView({
               position={position}
               placed={calc.byPosition.get(position.name)?.placed ?? []}
               cargoByRow={cargoByRow}
+              lit={position.name === highlight}
               onHover={setHover}
             />
           ))}
@@ -86,12 +91,13 @@ export default function ShipView({
           <CameraRig view={view} bounds={bounds} />
           <LabelTracker labels={labels} elements={labelEls} />
         </Canvas>
-        <div className="ship-labels" aria-hidden="true" hidden={!showLabels}>
+        {/* With labels off, a lit grid's name still shows. */}
+        <div className={`ship-labels${showLabels ? "" : " is-off"}`} aria-hidden="true">
           {labels.map((label) => (
             /* Hidden until the first frame puts it in place. */
             <span
               key={label.key}
-              className={label.className}
+              className={`${label.className}${label.key === `grid:${highlight}` ? " is-lit" : ""}`}
               hidden
               ref={(el) => {
                 if (el) labelEls.current.set(label.key, el);
@@ -191,11 +197,13 @@ function GridMesh({
   position,
   placed,
   cargoByRow,
+  lit,
   onHover,
 }: {
   position: Mounted;
   placed: Placed<number>[];
   cargoByRow: Map<number, Cargo>;
+  lit: boolean;
   onHover: (text: string) => void;
 }) {
   const { x: X, y: Y, z: Z } = position;
@@ -204,9 +212,15 @@ function GridMesh({
     <group matrix={matrix} matrixAutoUpdate={false}>
       <mesh position={[X / 2, Y / 2, 0]}>
         <planeGeometry args={[X, Y]} />
-        <meshBasicMaterial color={FLOOR} transparent opacity={0.28} side={DoubleSide} depthWrite={false} />
+        <meshBasicMaterial
+          color={lit ? LIT : FLOOR}
+          transparent
+          opacity={lit ? 0.55 : 0.28}
+          side={DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
-      <HoldOutline size={[X, Y, Z]} />
+      <HoldOutline size={[X, Y, Z]} lit={lit} />
       <Containers
         capacity={position.capacity}
         placed={placed}
@@ -217,8 +231,8 @@ function GridMesh({
   );
 }
 
-/* The 12 edges of the position's hold. */
-function HoldOutline({ size: [X, Y, Z] }: { size: Vec3 }) {
+/* The 12 edges of the position's hold; when lit, bright and drawn over everything. */
+function HoldOutline({ size: [X, Y, Z], lit }: { size: Vec3; lit: boolean }) {
   const points = useMemo(() => {
     const c = (x: number, y: number, z: number): Vec3 => [x * X, y * Y, z * Z];
     const edges: [Vec3, Vec3][] = [];
@@ -235,7 +249,16 @@ function HoldOutline({ size: [X, Y, Z] }: { size: Vec3 }) {
     }
     return edges.flat();
   }, [X, Y, Z]);
-  return <Line points={points} segments color={HOLD_EDGE} lineWidth={1} />;
+  return (
+    <Line
+      points={points}
+      segments
+      color={lit ? LIT : HOLD_EDGE}
+      lineWidth={lit ? 2.5 : 1}
+      depthTest={!lit}
+      renderOrder={lit ? 10 : 0}
+    />
+  );
 }
 
 /* The containers, as one instanced mesh: Hull C can hold thousands. */

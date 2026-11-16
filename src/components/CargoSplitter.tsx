@@ -33,6 +33,8 @@ export function CargoSplitter() {
   );
   const colors = useMemo(() => cargoColors(state.rows), [state.rows]);
   const isMounted = positions.length > 0 && positions.every((p) => p.mount);
+  /* The grid being pointed at in the cargo table, lit up in the ship view. */
+  const [highlight, setHighlight] = useState<string | null>(null);
 
   useEffect(() => saveState(state), [state]);
 
@@ -89,7 +91,7 @@ export function CargoSplitter() {
   const shipInfo =
     configError ||
     (grid
-      ? `${fmt(sum(grid.positions, (p) => p.capacity))} SCU in ${plural(grid.positions.length, "position")}` +
+      ? `${fmt(sum(grid.positions, (p) => p.capacity))} SCU in ${plural(grid.positions.length, "grid")}` +
         (capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "")
       : "");
 
@@ -117,7 +119,7 @@ export function CargoSplitter() {
           </select>
         </label>
         <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
-          <span>Cargo grid</span>
+          <span>Layout</span>
           <select
             id="grid"
             value={grid?.id ?? ""}
@@ -162,6 +164,7 @@ export function CargoSplitter() {
           positions={positions}
           onUpdate={(id: number, field: RowField, value: string) => dispatch({ type: "updateRow", id, field, value })}
           onSetPositions={(id: number, names: string[]) => dispatch({ type: "setPositions", id, positions: names })}
+          onHighlight={setHighlight}
           onDelete={deleteRow}
           onSort={(key: TextKey) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size: number, on: boolean) => dispatch({ type: "setSizeEnabled", size, on })}
@@ -171,9 +174,11 @@ export function CargoSplitter() {
 
       <p className="hint">
         Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it. Press{" "}
-        <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. To split a big
-        delivery, choose several positions in its Position menu; it fills their free room in order. A row with an amber
-        edge has more SCU than its positions have room for. Your table is kept in this browser.
+        <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. Click a grid
+        button to put a row in that grid; each button shows the SCU the grid has available. To split a big delivery,
+        turn on several grids and it fills them fore to aft. An amber edge and SCU mean a row has more than its grids
+        have room for; point at the SCU to see how much. Point at a grid button to see it in the ship view. Your table
+        is kept in this browser.
       </p>
 
       <section className="summary" aria-labelledby="ship-title">
@@ -182,24 +187,24 @@ export function CargoSplitter() {
           <>
             <Legend materials={colors.materials} />
             <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
-              <ShipView positions={positions} calc={calc} cargoByRow={colors.byRow} />
+              <ShipView positions={positions} calc={calc} cargoByRow={colors.byRow} highlight={highlight} />
             </Suspense>
             <p className="hint">
-              Each position placed on the ship as config.json says. Drag to turn, scroll to zoom, right-drag to pan. The
-              pale blue face of each position is its floor; containers stack away from it. Point at a container to see
-              what it holds.
+              Each grid placed on the ship as config.json says. Drag to turn, scroll to zoom, right-drag to pan. The
+              pale blue face of each grid is its floor; containers stack away from it. Point at a container to see what
+              it holds.
             </p>
           </>
         ) : (
           <p className="hint">
-            config.json doesn't say where this grid's positions sit on the ship yet. Give each position an "at" (and, if
+            config.json doesn't say where this ship's grids sit on it yet. Give each of its positions an "at" (and, if
             it's turned, a "rotate") to see it here.
           </p>
         )}
       </section>
 
       <section className="summary" aria-labelledby="positions-title">
-        <h2 id="positions-title">SCU by position</h2>
+        <h2 id="positions-title">SCU by grid</h2>
         <div className="frame">
           <PositionsTable calc={calc} positions={positions} />
         </div>
@@ -215,8 +220,8 @@ export function CargoSplitter() {
         <Legend materials={colors.materials} />
         <LoadPlan calc={calc} positions={positions} colors={colors} />
         <p className="hint">
-          Each position as packed for the Fit column, seen from above its fore–starboard corner. Colors follow the
-          material; point at a container to see what it holds.
+          Each grid as packed for the Fit column, seen from above its fore–starboard corner. Colors follow the material;
+          point at a container to see what it holds.
         </p>
       </section>
     </>

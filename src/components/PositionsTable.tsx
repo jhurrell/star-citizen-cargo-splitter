@@ -13,7 +13,7 @@ export function PositionsTable({ calc, positions }: { calc: Calc; positions: Pos
     <table className="grid" id="positions">
       <thead>
         <tr>
-          <th className="label">Position</th>
+          <th className="label">Grid</th>
           <th className="label num">Rows</th>
           <th className="label num">SCU</th>
           <th className="label num">Capacity</th>
@@ -48,7 +48,7 @@ export function PositionsTable({ calc, positions }: { calc: Calc; positions: Pos
             <td className="num scu-sum">{fmt(unassigned.scu)}</td>
             <td />
             <td colSpan={3}>
-              <WarnNote>Choose a position for this cargo</WarnNote>
+              <WarnNote>Choose a grid for this cargo</WarnNote>
             </td>
           </tr>
         )}
