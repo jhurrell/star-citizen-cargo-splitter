@@ -26,7 +26,7 @@ function gridSummary(grid: Grid): string {
 }
 
 /* The whole tool. It reads localStorage, so it renders in the browser only. */
-export function CargoSplitter() {
+export function CargoVisualizer() {
   const [state, dispatch] = useReducer(reducer, undefined, loadState);
   const { ship, grid, positions } = selection(ships, state);
   const calc = useMemo(

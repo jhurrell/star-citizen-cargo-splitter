@@ -33,7 +33,7 @@ export const isEnabled = (enabled: State["enabled"], size: number): boolean => e
 export const enabledContainers = (containers: Container[], enabled: State["enabled"]): Container[] =>
   containers.filter((c) => isEnabled(enabled, c.size));
 
-const STORE_KEY = "cargo-splitter-v3";
+const STORE_KEY = "cargo-visualizer-v3";
 /* Position names saved before ships were selectable: the Hull B's relaxed grid. */
 const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "relaxed" };
 const LEGACY_POSITIONS: Record<string, string> = {
