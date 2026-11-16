@@ -8,17 +8,23 @@ the ship.
 
 ## Features
 
+- **Toolbar.** Type in the ship field to find a ship, or pick one from its list, and choose a layout when the ship
+  has more than one. **Add row** adds a row under the last one. The two icons beside **Copy for** copy the table for
+  a spreadsheet (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**,
+  at the top right, opens a short guide.
 - **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
   the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
   turn it off and skip it.
 - **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
   the grid has left; once a grid has no room for another container, the other rows can't pick it. Pick several to
   split a big delivery: grids fill in the order you pick them, across all rows, so a later pick never takes room an
-  earlier one already claimed, and no grid is ever overloaded. Clear, in the Grids heading, takes every row out of its
-  grids (click it again to confirm).
+  earlier one already claimed, and no grid is ever overloaded.
+- **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
+  Grids heading, keeps the rows but takes every one out of its grids; it's greyed out while no row is in a grid. Either turns to an amber
+  **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
 - **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet, because it
   has no grid or its grids are out of room, with the table's total at the foot. While a row has some, its edge and
-  SCU turn amber; point at the SCU to see why.
+  SCU turn amber; point at the SCU to see why. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so materials stay
     apart.
@@ -27,7 +33,6 @@ the ship.
     Material, Pick-up or Drop-off in the table to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
-- **Copy out.** Copy the table for a spreadsheet (tab-separated) or as Markdown, with the two icons beside "Copy for".
 - **Kept in your browser.** The table, ship and settings are saved in local storage.
 
 Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
