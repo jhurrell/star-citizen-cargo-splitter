@@ -14,7 +14,7 @@ type View = "3d" | "top" | "port" | "fore";
 /* Where the camera looks from, as a direction from the ship's centre. The top
    view leans a hair aft so "up" on screen is fore. */
 const VIEWS: Record<View, { label: string; from: Vec3 }> = {
-  "3d": { label: "3D", from: [-0.9, 0.7, 0.8] },
+  "3d": { label: "3D", from: [-0.9, -0.7, 0.8] }, // from port, aft and above
   top: { label: "Top", from: [0, -0.001, 1] },
   port: { label: "Port side", from: [-1, 0, 0] },
   fore: { label: "From fore", from: [0, 1, 0] },
