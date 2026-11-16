@@ -1,6 +1,5 @@
 import { drawOrder, type Placed, type Position } from "../lib/cargo";
-import type { Row } from "../lib/state";
-import { cargoColors, fmt, hasUnfit, OTHER_COLOR, plural, unfitText, type Calc, type Cargo } from "../lib/table";
+import { fmt, hasUnfit, OTHER_COLOR, plural, unfitText, type Calc, type Cargo, type CargoColors } from "../lib/table";
 import { WarnNote } from "./WarnNote";
 
 const PLAN_PX = 16; // pixels per SCU cell edge, before shrinking to fit
@@ -9,48 +8,51 @@ type Point = [x: number, y: number, z: number];
 
 /* An isometric drawing of each position of the selected grid, with its
    containers as packed for the Fit column. */
-export function LoadPlan({ calc, positions, rows }: { calc: Calc; positions: Position[]; rows: Row[] }) {
-  const { byRow, materials } = cargoColors(rows);
+export function LoadPlan({ calc, positions, colors }: { calc: Calc; positions: Position[]; colors: CargoColors }) {
+  return (
+    <div className="plan-grid">
+      {positions.length === 0 && <p className="hint">No ship loaded.</p>}
+      {positions.map((position) => {
+        const entry = calc.byPosition.get(position.name)!;
+        return (
+          <figure key={position.name} className={`plan-card${entry.scu ? "" : " is-empty"}`}>
+            <figcaption>
+              <span>{position.name}</span>
+              <span className="plan-meta">
+                {fmt(entry.scu)} / {fmt(position.capacity)} SCU
+              </span>
+            </figcaption>
+            <PositionDrawing position={position} placed={entry.placed} cargoByRow={colors.byRow} />
+            {hasUnfit(entry.unfit) && (
+              <p className="plan-note">
+                <WarnNote>{unfitText(entry.unfit)}</WarnNote>
+              </p>
+            )}
+          </figure>
+        );
+      })}
+    </div>
+  );
+}
+
+/* A swatch and name per material with cargo; past the palette, one "Other materials". */
+export function Legend({ materials }: { materials: Cargo[] }) {
   const named = materials.filter((m) => m.color !== OTHER_COLOR);
   return (
-    <>
-      <ul className="plan-legend" aria-label="Materials">
-        {named.map((m) => (
-          <li key={m.name}>
-            <Swatch color={m.color} />
-            {m.name}
-          </li>
-        ))}
-        {named.length < materials.length && (
-          <li>
-            <Swatch color={OTHER_COLOR} />
-            Other materials
-          </li>
-        )}
-      </ul>
-      <div className="plan-grid">
-        {positions.length === 0 && <p className="hint">No ship loaded.</p>}
-        {positions.map((position) => {
-          const entry = calc.byPosition.get(position.name)!;
-          return (
-            <figure key={position.name} className={`plan-card${entry.scu ? "" : " is-empty"}`}>
-              <figcaption>
-                <span>{position.name}</span>
-                <span className="plan-meta">
-                  {fmt(entry.scu)} / {fmt(position.capacity)} SCU
-                </span>
-              </figcaption>
-              <PositionDrawing position={position} placed={entry.placed} cargoByRow={byRow} />
-              {hasUnfit(entry.unfit) && (
-                <p className="plan-note">
-                  <WarnNote>{unfitText(entry.unfit)}</WarnNote>
-                </p>
-              )}
-            </figure>
-          );
-        })}
-      </div>
-    </>
+    <ul className="plan-legend" aria-label="Materials">
+      {named.map((m) => (
+        <li key={m.name}>
+          <Swatch color={m.color} />
+          {m.name}
+        </li>
+      ))}
+      {named.length < materials.length && (
+        <li>
+          <Swatch color={OTHER_COLOR} />
+          Other materials
+        </li>
+      )}
+    </ul>
   );
 }
 

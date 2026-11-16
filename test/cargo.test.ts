@@ -106,7 +106,7 @@ describe("parseShips", () => {
       ],
     });
     expect(ships.map((s) => s.name)).toEqual(["Alpha", "Zeta"]);
-    expect(ships[1].grids[0].positions).toEqual([{ name: "Bay", x: 2, y: 2, z: 2, capacity: 8 }]);
+    expect(ships[1].grids[0].positions).toEqual([{ name: "Bay", x: 2, y: 2, z: 2, capacity: 8, mount: null }]);
   });
 });
 

@@ -8,7 +8,14 @@ const container = (size: number, x: number, y: number, z: number): Container => 
   placements: placementsOf({ x, y, z }, true),
 });
 const containers = [container(32, 2, 8, 2), container(8, 2, 2, 2), container(1, 1, 1, 1)];
-const bay = (name: string, x: number, y: number, z: number): Position => ({ name, x, y, z, capacity: x * y * z });
+const bay = (name: string, x: number, y: number, z: number): Position => ({
+  name,
+  x,
+  y,
+  z,
+  capacity: x * y * z,
+  mount: null,
+});
 
 describe("compareRows", () => {
   test("sorts numerically and keeps blanks last in both directions", () => {

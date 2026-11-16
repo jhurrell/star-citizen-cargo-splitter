@@ -6,6 +6,8 @@ export default defineConfig({
   server: { port: 3000 },
   /* Start's plugin must come before React's. Prerendering writes the page as
      static HTML, so the build in dist/client can be served by any static host. */
+  /* The 3D ship view (three.js) is a ~1 MB chunk, loaded only when a grid has placements. */
+  build: { chunkSizeWarningLimit: 1100 },
   plugins: lazyPlugins(() => [tanstackStart({ prerender: { enabled: true } }), viteReact()]),
   test: {
     include: ["test/**/*.test.ts"],

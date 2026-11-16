@@ -69,108 +69,6 @@
       "capacity": 512,
       "grids": [
         {
-          "id": "strict",
-          "name": "Strict",
-          "positions": [
-            {
-              "name": "Top Right - Upper - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Right - Upper - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Right - Lower - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Right - Lower - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Right - Upper - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Right - Upper - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Right - Lower - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Right - Lower - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Left - Upper - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Left - Upper - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Left - Lower - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Top Left - Lower - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Left - Upper - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Left - Upper - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Left - Lower - Fore",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            },
-            {
-              "name": "Bottom Left - Lower - Aft",
-              "x": 2,
-              "y": 8,
-              "z": 2
-            }
-          ]
-        },
-        {
           "id": "relaxed",
           "name": "Relaxed",
           "positions": [
@@ -178,25 +76,33 @@
               "name": "Port - Upper",
               "x": 4,
               "y": 16,
-              "z": 2
+              "z": 2,
+              "at": { "x": -1.41, "y": 0, "z": 1.41 },
+              "rotate": { "roll": -45 }
             },
             {
               "name": "Port - Lower",
               "x": 4,
               "y": 16,
-              "z": 2
+              "z": 2,
+              "at": { "x": -1.41, "y": 0, "z": -1.41 },
+              "rotate": { "roll": -135 }
             },
             {
               "name": "Starboard - Upper",
               "x": 4,
               "y": 16,
-              "z": 2
+              "z": 2,
+              "at": { "x": 1.41, "y": 0, "z": 1.41 },
+              "rotate": { "roll": 45 }
             },
             {
               "name": "Starboard - Lower",
               "x": 4,
               "y": 16,
-              "z": 2
+              "z": 2,
+              "at": { "x": 1.41, "y": 0, "z": -1.41 },
+              "rotate": { "roll": 135 }
             }
           ]
         }
@@ -215,49 +121,65 @@
               "name": "Upper - Fore",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 0, "y": 0.5, "z": 10 },
+              "rotate": { "pitch": 90, "yaw": 180 }
             },
             {
               "name": "Upper - Aft",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 0, "y": -0.5, "z": 10 },
+              "rotate": { "pitch": 90 }
             },
             {
               "name": "Starboard - Fore",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 10, "y": 0.5, "z": 0 },
+              "rotate": { "roll": -90, "yaw": 90 }
             },
             {
               "name": "Starboard - Aft",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 10, "y": -0.5, "z": 0 },
+              "rotate": { "roll": 90, "yaw": 90 }
             },
             {
               "name": "Lower - Fore",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 0, "y": 0.5, "z": -10 },
+              "rotate": { "pitch": -90 }
             },
             {
               "name": "Lower - Aft",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": 0, "y": -0.5, "z": -10 },
+              "rotate": { "pitch": -90, "yaw": 180 }
             },
             {
               "name": "Port - Fore",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": -10, "y": 0.5, "z": 0 },
+              "rotate": { "roll": 90, "yaw": -90 }
             },
             {
               "name": "Port - Aft",
               "x": 8,
               "y": 12,
-              "z": 6
+              "z": 6,
+              "at": { "x": -10, "y": -0.5, "z": 0 },
+              "rotate": { "roll": -90, "yaw": -90 }
             }
           ]
         }

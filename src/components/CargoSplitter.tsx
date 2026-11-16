@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { configError, containers, ships } from "../lib/config";
 import { loadState, makeRow, reducer, saveState, type RowField, type TextKey } from "../lib/state";
 import {
+  cargoColors,
   computeTable,
   exportTable,
   fmt,
@@ -13,8 +14,11 @@ import {
   tableAsTsv,
 } from "../lib/table";
 import { CargoTable } from "./CargoTable";
-import { LoadPlan } from "./LoadPlan";
+import { Legend, LoadPlan } from "./LoadPlan";
 import { PositionsTable } from "./PositionsTable";
+
+/* three.js is big, so the 3D view loads only when a grid has placements to show. */
+const ShipView = lazy(() => import("./ShipView"));
 
 const STATUS_MS = 2200; // how long a copy or clear message stays
 const DISARM_MS = 3000; // how long Clear table waits for the second click
@@ -27,6 +31,8 @@ export function CargoSplitter() {
     () => computeTable(state.rows, state.enabled, containers, positions),
     [state.rows, state.enabled, positions],
   );
+  const colors = useMemo(() => cargoColors(state.rows), [state.rows]);
+  const isMounted = positions.length > 0 && positions.every((p) => p.mount);
 
   useEffect(() => saveState(state), [state]);
 
@@ -180,9 +186,32 @@ export function CargoSplitter() {
         </p>
       </section>
 
+      <section className="summary" aria-labelledby="ship-title">
+        <h2 id="ship-title">Ship view</h2>
+        {isMounted ? (
+          <>
+            <Legend materials={colors.materials} />
+            <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
+              <ShipView positions={positions} calc={calc} cargoByRow={colors.byRow} />
+            </Suspense>
+            <p className="hint">
+              Each position placed on the ship as config.json says. Drag to turn, scroll to zoom, right-drag to pan. The
+              pale blue face of each position is its floor; containers stack away from it. Point at a container to see
+              what it holds.
+            </p>
+          </>
+        ) : (
+          <p className="hint">
+            config.json doesn't say where this grid's positions sit on the ship yet. Give each position an "at" (and, if
+            it's turned, a "rotate") to see it here.
+          </p>
+        )}
+      </section>
+
       <section className="summary" aria-labelledby="plan-title">
         <h2 id="plan-title">Load plan</h2>
-        <LoadPlan calc={calc} positions={positions} rows={state.rows} />
+        <Legend materials={colors.materials} />
+        <LoadPlan calc={calc} positions={positions} colors={colors} />
         <p className="hint">
           Each position as packed for the Fit column, seen from above its fore–starboard corner. Colors follow the
           material; point at a container to see what it holds.

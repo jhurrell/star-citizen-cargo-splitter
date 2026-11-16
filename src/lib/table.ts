@@ -126,7 +126,8 @@ export type Cargo = { name: string; color: string };
 
 /* A color per material with cargo, keyed case-insensitively, in the order rows
    were added, so sorting rows never repaints a material. */
-export function cargoColors(rows: Row[]): { byRow: Map<number, Cargo>; materials: Cargo[] } {
+export type CargoColors = { byRow: Map<number, Cargo>; materials: Cargo[] };
+export function cargoColors(rows: Row[]): CargoColors {
   const byMaterial = new Map<string, Cargo>();
   const byRow = new Map<number, Cargo>();
   for (const row of [...rows].sort((a, b) => a.id - b.id)) {

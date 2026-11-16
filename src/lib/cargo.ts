@@ -1,3 +1,5 @@
+import { parseMount, type Mount } from "./mount";
+
 /* Cargo Splitter's pure logic: config parsing, container splitting and 3D
    packing. No DOM or React, so it can be unit tested. */
 
@@ -8,7 +10,8 @@ const MAX_SCU = 10_000_000;
 export type Shape = { x: number; y: number; z: number };
 export type Placement = [w: number, d: number, h: number];
 export type Container = { size: number; placements: Placement[] };
-export type Position = Shape & { name: string; capacity: number };
+/* `mount` places it on the ship for the ship view; see mount.ts. */
+export type Position = Shape & { name: string; capacity: number; mount: Mount | null };
 export type Grid = { id: string; name: string; positions: Position[] };
 export type Ship = { id: string; name: string; grids: Grid[] };
 /* Container counts by size, e.g. { 32: 2, 8: 1 }. */
@@ -90,7 +93,7 @@ export function parseContainers(config: unknown): Container[] {
 export function parsePosition(item: Raw): Position | null {
   const name = asText(item?.name);
   const shape = parseShape(item);
-  return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z } : null;
+  return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z, mount: parseMount(item) } : null;
 }
 
 /* The ship list from config.json, sorted by name. Malformed positions are

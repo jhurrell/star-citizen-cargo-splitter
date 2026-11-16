@@ -616,3 +616,60 @@ select.field option {
       color 120ms;
   }
 }
+
+/* ---------- Ship view (read-only, 3D) ---------- */
+.ship-view {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.ship-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.ship-canvas {
+  position: relative;
+  overflow: hidden;
+  height: min(560px, 70vh);
+  cursor: grab;
+}
+.ship-canvas:active {
+  cursor: grabbing;
+}
+.ship-label,
+.ship-dir {
+  font-family: var(--font-body);
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.ship-label {
+  color: var(--fg);
+  background: rgba(10, 29, 41, 0.75);
+  padding: 1px 5px;
+}
+.ship-dir {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--off-fg);
+}
+.ship-dir.is-positive {
+  color: var(--label);
+}
+/* Labels sit over the canvas; ShipView moves each to its point every frame. */
+.ship-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ship-labels > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
