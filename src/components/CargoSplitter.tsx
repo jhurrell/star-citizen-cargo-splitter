@@ -174,18 +174,6 @@ export function CargoSplitter() {
         kept in this browser.
       </p>
 
-      <section className="summary" aria-labelledby="positions-title">
-        <h2 id="positions-title">SCU by position</h2>
-        <div className="frame">
-          <PositionsTable calc={calc} positions={positions} />
-        </div>
-        <p className="hint">
-          Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every
-          container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it
-          says won't fit may still fit by hand.
-        </p>
-      </section>
-
       <section className="summary" aria-labelledby="ship-title">
         <h2 id="ship-title">Ship view</h2>
         {isMounted ? (
@@ -206,6 +194,18 @@ export function CargoSplitter() {
             it's turned, a "rotate") to see it here.
           </p>
         )}
+      </section>
+
+      <section className="summary" aria-labelledby="positions-title">
+        <h2 id="positions-title">SCU by position</h2>
+        <div className="frame">
+          <PositionsTable calc={calc} positions={positions} />
+        </div>
+        <p className="hint">
+          Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every
+          container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it
+          says won't fit may still fit by hand.
+        </p>
       </section>
 
       <section className="summary" aria-labelledby="plan-title">
