@@ -148,8 +148,13 @@ export function CargoVisualizer() {
               Markdown
             </button>
           </div>
-          <button type="button" className={`btn${clearArmed ? " is-armed" : ""}`} onClick={clearTable}>
-            {clearArmed ? "Click again to clear" : "Clear table"}
+          <button
+            type="button"
+            className={`btn${clearArmed ? " is-armed" : ""}`}
+            onClick={clearTable}
+            aria-label={clearArmed ? "Confirm clearing the table" : undefined}
+          >
+            {clearArmed ? "Confirm" : "Clear table"}
           </button>
         </div>
       </div>
