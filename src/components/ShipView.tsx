@@ -1,7 +1,16 @@
 import { Line, OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, Vector3, type InstancedMesh } from "three";
+import {
+  CanvasTexture,
+  Color,
+  DoubleSide,
+  InstancedBufferAttribute,
+  Matrix4,
+  SRGBColorSpace,
+  Vector3,
+  type InstancedMesh,
+} from "three";
 import type { GridLoad } from "../lib/calc";
 import type { Position } from "../lib/cargo";
 import { OTHER_COLOR, type Cargo } from "../lib/colors";
@@ -52,6 +61,7 @@ export default function ShipView({
   const [view, setView] = useState<View>("3d");
   const [hover, setHover] = useState("");
   const [showLabels, setShowLabels] = useState(false);
+  const [showSizes, setShowSizes] = useState(true);
   const labels = useMemo(() => [...mounted.map(gridLabel), ...directionLabels(bounds)], [mounted, bounds]);
   const labelEls = useRef(new Map<string, HTMLElement>());
 
@@ -73,6 +83,10 @@ export default function ShipView({
           <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
           Show direction labels
         </label>
+        <label className="ship-toggle">
+          <input type="checkbox" checked={showSizes} onChange={(e) => setShowSizes(e.target.checked)} />
+          Show sizes
+        </label>
         <span className="status">{hover}</span>
       </div>
       <div className="ship-canvas">
@@ -87,6 +101,7 @@ export default function ShipView({
               placed={loads.get(position.name)?.placed ?? []}
               cargoByRow={cargoByRow}
               lit={position.name === highlight}
+              showSizes={showSizes}
               onHover={setHover}
             />
           ))}
@@ -195,18 +210,20 @@ function LabelTracker({ labels, elements }: { labels: Label[]; elements: React.R
 }
 
 /* One position: its floor (pale blue, so you can tell which way it faces), the
-   outline of its hold, its name and its containers. */
+   outline of its hold, its name and its containers, each with its size. */
 function GridMesh({
   position,
   placed,
   cargoByRow,
   lit,
+  showSizes,
   onHover,
 }: {
   position: Mounted;
   placed: Placed<number>[];
   cargoByRow: Map<number, Cargo>;
   lit: boolean;
+  showSizes: boolean;
   onHover: (text: string) => void;
 }) {
   const { x: X, y: Y, z: Z } = position;
@@ -230,6 +247,7 @@ function GridMesh({
         cargoByRow={cargoByRow}
         onHover={(box) => onHover(box ? `${box} · ${position.name}` : "")}
       />
+      {showSizes && <SizeMarks placed={placed} />}
     </group>
   );
 }
@@ -316,6 +334,108 @@ function Containers({
       <meshStandardMaterial roughness={0.7} metalness={0.1} />
     </instancedMesh>
   );
+}
+
+/* Each face of a container: the way it faces, and which way is up for the
+   number on it (away from the floor on the sides, fore-ish on top and bottom). */
+const FACES: { normal: Vector3; up: Vector3 }[] = [
+  { normal: new Vector3(0, 0, 1), up: new Vector3(0, 1, 0) },
+  { normal: new Vector3(0, 0, -1), up: new Vector3(0, 1, 0) },
+  { normal: new Vector3(1, 0, 0), up: new Vector3(0, 0, 1) },
+  { normal: new Vector3(-1, 0, 0), up: new Vector3(0, 0, 1) },
+  { normal: new Vector3(0, 1, 0), up: new Vector3(0, 0, 1) },
+  { normal: new Vector3(0, -1, 0), up: new Vector3(0, 0, 1) },
+];
+const MARK_LIFT = 0.01; // off the face, so the number doesn't flicker into it
+
+/* Each container's size in SCU, on all six of its faces so it reads from any
+   side; one instanced mesh per size. */
+function SizeMarks({ placed }: { placed: Placed<number>[] }) {
+  const bySize = useMemo(() => {
+    const groups = new Map<number, Placed<number>[]>();
+    for (const box of placed) groups.set(box.size, [...(groups.get(box.size) ?? []), box]);
+    return groups;
+  }, [placed]);
+  return (
+    <>
+      {[...bySize].map(([size, boxes]) => (
+        <SizeMark key={size} size={size} boxes={boxes} />
+      ))}
+    </>
+  );
+}
+
+function SizeMark({ size, boxes }: { size: number; boxes: Placed<number>[] }) {
+  const ref = useRef<InstancedMesh>(null);
+  const invalidate = useThree((s) => s.invalidate);
+  const texture = useMemo(() => numberTexture(String(size)), [size]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const count = boxes.length * FACES.length;
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const matrix = new Matrix4();
+    const right = new Vector3();
+    const at = new Vector3();
+    const scale = new Vector3();
+    let i = 0;
+    for (const b of boxes) {
+      const half = new Vector3(b.w, b.d, b.h).subScalar(GAP).multiplyScalar(0.5);
+      const center = new Vector3(b.x + b.w / 2, b.y + b.d / 2, b.z + b.h / 2);
+      for (const { normal, up } of FACES) {
+        right.crossVectors(up, normal);
+        /* The face's width and height, from the container's half-sizes along them. */
+        const across = Math.abs(right.dot(half)) * 2;
+        const tall = Math.abs(up.dot(half)) * 2;
+        const side = Math.min(across, tall) * 0.7;
+        at.copy(normal)
+          .multiplyScalar(Math.abs(normal.dot(half)) + MARK_LIFT)
+          .add(center);
+        matrix
+          .makeBasis(right, up, normal)
+          .scale(scale.set(side, side, 1))
+          .setPosition(at);
+        mesh.setMatrixAt(i++, matrix);
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    invalidate();
+  }, [boxes, count, invalidate]);
+  /* Keyed by count, as an instanced mesh can't grow; it never takes the pointer,
+     so pointing at a container still says what it holds. */
+  return (
+    <instancedMesh key={count} ref={ref} args={[undefined, undefined, count]} raycast={() => null}>
+      <planeGeometry />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+/* A number in white with a dark edge, so it reads on every cargo color. */
+function numberTexture(text: string): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+  let px = 88;
+  const font = () => `700 ${px}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  ctx.font = font();
+  while (ctx.measureText(text).width > 112 && px > 20) {
+    px -= 4;
+    ctx.font = font();
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "rgba(8, 20, 30, 0.7)";
+  ctx.strokeText(text, 64, 68);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(text, 64, 68);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
 }
 
 /* The ship's three axes, with fore–aft drawn solid like a spine and a cone
