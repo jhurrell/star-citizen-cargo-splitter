@@ -47,6 +47,27 @@ vp dev
 | `vp check` | Formats, lints and type-checks                               |
 | `vp build` | Builds a static site into `dist/client`, for any static host |
 
+### Project layout
+
+| Path                   | What's in it                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `src/config/`          | `containers.json` and `ships.json` (see below)                                                |
+| `src/lib/`             | The logic, as pure functions: reading the config, splitting rows across grids, packing, state |
+| `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`)              |
+| `src/components/ship/` | The 3D ship view's parts, below                                                               |
+| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                        |
+| `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                   |
+
+`ShipView.tsx` draws each grid with its containers and loads only when a grid has placements, as three.js is large.
+The rest of the 3D view lives in `src/components/ship/`:
+
+- [`scene.ts`](src/components/ship/scene.ts): the scene's layout in ship coordinates, as pure functions with no
+  three.js: the camera views, the box around the cargo, the axes and the labels' positions. Tested in
+  `test/scene.test.ts`.
+- [`SizeMarks.tsx`](src/components/ship/SizeMarks.tsx): each container's SCU on all six of its faces.
+- [`Surroundings.tsx`](src/components/ship/Surroundings.tsx): everything around the cargo: the axes and fore cone,
+  the ground, the camera presets and the HTML labels that follow the camera.
+
 ## Configuring ships and containers
 
 Containers and ships live in two JSON files, each a list, bundled into the app at build time. Edit either and the dev

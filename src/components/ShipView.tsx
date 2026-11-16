@@ -72,7 +72,7 @@ export default function ShipView({
         ))}
         <label className="ship-toggle">
           <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
-          Show direction labels
+          Show labels
         </label>
         <label className="ship-toggle">
           <input type="checkbox" checked={showSizes} onChange={(e) => setShowSizes(e.target.checked)} />
