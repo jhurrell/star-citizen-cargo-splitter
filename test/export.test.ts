@@ -12,8 +12,8 @@ describe("copy formats", () => {
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
-      "Material\tPick-up\tDrop-off\tSCU\t32\t8\t1\tGrids",
-      "Gold | Ore\tArea18\t\t1033\t32\t1\t1\tBay",
+      "Material\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
+      "Gold | Ore\tArea18\t\t1033\t1001\t32\t1\t1\tBay",
     ]);
   });
 
@@ -28,6 +28,7 @@ describe("copy formats", () => {
       true,
       true,
       true,
+      true,
       false,
     ]);
     expect(cells(lines[2]).map((cell) => cell.trim())).toEqual([
@@ -35,6 +36,7 @@ describe("copy formats", () => {
       "Area18",
       "",
       "1,033",
+      "1,001",
       "32",
       "1",
       "1",
@@ -46,6 +48,7 @@ describe("copy formats", () => {
       "",
       "",
       "**1,033**",
+      "**1,001**",
       "**32**",
       "**1**",
       "**1**",
@@ -57,22 +60,22 @@ describe("copy formats", () => {
 
 describe("gridText", () => {
   test("names one grid, or each grid's share of a split row", () => {
-    expect(gridText({ parts: [{ name: "A", scu: 8 }], short: 0 })).toBe("A");
+    expect(gridText({ parts: [{ name: "A", scu: 8 }], unassigned: 0 })).toBe("A");
     const split = {
       parts: [
         { name: "A", scu: 1200 },
         { name: "B", scu: 16 },
       ],
-      short: 0,
+      unassigned: 0,
     };
     expect(gridText(split)).toBe("A (1,200), B (16)");
-    expect(gridText({ parts: [], short: 0 })).toBe("");
+    expect(gridText({ parts: [], unassigned: 0 })).toBe("");
     const full = {
       parts: [
         { name: "A", scu: 0 },
         { name: "B", scu: 10 },
       ],
-      short: 0,
+      unassigned: 0,
     };
     expect(gridText(full)).toBe("B"); // A was full when it was picked
   });

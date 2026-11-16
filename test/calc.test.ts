@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
-import { computeTable, shortText, splitRows } from "../src/lib/calc";
+import { computeTable, unassignedText, splitRows } from "../src/lib/calc";
 import { sum } from "../src/lib/format";
 import { makeRow } from "../src/lib/state";
 import { bay, containers, shipPositions } from "./helpers";
@@ -23,7 +23,7 @@ describe("computeTable", () => {
     const rows = [makeRow({ scu: "40", picks: [{ name: "Small", order: 1 }] })];
     const calc = computeTable(rows, {}, containers, positions);
     expect(calc.byPosition.get("Small")).toMatchObject({ scu: 8 });
-    expect(calc.splits.get(rows[0].id)!.short).toBe(32);
+    expect(calc.splits.get(rows[0].id)!.unassigned).toBe(32);
     expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 32: 1, 8: 1, 1: 0 }, leftover: 0 });
     expect(calc.totals.scu).toBe(40);
   });
@@ -55,14 +55,14 @@ describe("splitRows", () => {
           { name: "Starboard - Upper", scu: 128 },
           { name: "Starboard - Lower", scu: 56 },
         ],
-        short: 0,
+        unassigned: 0,
       },
       {
         parts: [
           { name: "Starboard - Lower", scu: 72 },
           { name: "Port - Lower", scu: 12 },
         ],
-        short: 0,
+        unassigned: 0,
       },
     ]);
   });
@@ -78,9 +78,9 @@ describe("splitRows", () => {
           { name: "C", scu: 16 },
           { name: "A", scu: 4 },
         ],
-        short: 0,
+        unassigned: 0,
       },
-      { parts: [{ name: "A", scu: 10 }], short: 0 },
+      { parts: [{ name: "A", scu: 10 }], unassigned: 0 },
     ]);
   });
 
@@ -94,7 +94,7 @@ describe("splitRows", () => {
         { name: "A", scu: 0 },
         { name: "B", scu: 10 },
       ],
-      short: 0,
+      unassigned: 0,
     });
   });
 
@@ -106,7 +106,7 @@ describe("splitRows", () => {
     ]);
   });
 
-  test("what there's no room for stays out of every grid and counts as short", () => {
+  test("what there's no room for stays out of every grid and counts as unassigned", () => {
     const rows = [
       makeRow({ scu: "40", picks: picks([1, "A"], [2, "B"]) }),
       makeRow({ scu: "20", picks: picks([3, "C"]) }),
@@ -117,28 +117,29 @@ describe("splitRows", () => {
           { name: "A", scu: 16 },
           { name: "B", scu: 16 },
         ],
-        short: 8,
+        unassigned: 8,
       },
-      { parts: [{ name: "C", scu: 16 }], short: 4 },
+      { parts: [{ name: "C", scu: 16 }], unassigned: 4 },
     ]);
   });
 
   test("a later pick of a full grid gets nothing from it", () => {
     const rows = [makeRow({ scu: "16", picks: picks([1, "A"]) }), makeRow({ scu: "4", picks: picks([2, "A"]) })];
-    expect(parts(rows)[1]).toEqual({ parts: [{ name: "A", scu: 0 }], short: 4 });
+    expect(parts(rows)[1]).toEqual({ parts: [{ name: "A", scu: 0 }], unassigned: 4 });
   });
 
-  test("a row with no grid is short only when no one grid could hold it", () => {
-    const rows = [
-      makeRow({ scu: "16" }),
-      makeRow({ scu: "17" }),
-      makeRow({ scu: "9", picks: picks([1, "Elsewhere"]) }),
-    ];
+  test("a row with no grid on this layout is all unassigned", () => {
+    const rows = [makeRow({ scu: "16" }), makeRow({ scu: "9", picks: picks([1, "Elsewhere"]) }), makeRow({ scu: "" })];
     expect(parts(rows)).toEqual([
-      { parts: [], short: 0 },
-      { parts: [], short: 1 },
-      { parts: [], short: 0 },
+      { parts: [], unassigned: 16 },
+      { parts: [], unassigned: 9 },
+      { parts: [], unassigned: 0 },
     ]);
+  });
+
+  test("a layout with no grids leaves nothing to assign", () => {
+    const rows = [makeRow({ scu: "16" })];
+    expect(parts(rows, [])).toEqual([{ parts: [], unassigned: 0 }]);
   });
 
   test("a split row's containers are packed per grid and counted once", () => {
@@ -175,10 +176,12 @@ describe("splitRows", () => {
   });
 });
 
-describe("shortText", () => {
-  test("says how much doesn't fit, or nothing when it all does", () => {
-    expect(shortText({ parts: [{ name: "A", scu: 20 }], short: 4 })).toMatch(/^4 SCU more than this grid has room/);
-    expect(shortText({ parts: [], short: 1 })).toMatch(/^More than any one grid holds/);
-    expect(shortText({ parts: [{ name: "A", scu: 8 }], short: 0 })).toBe("");
+describe("unassignedText", () => {
+  test("says how much isn't in a grid and why, or nothing when it all is", () => {
+    expect(unassignedText({ parts: [{ name: "A", scu: 20 }], unassigned: 4 })).toMatch(
+      /^4 SCU more than this grid has room/,
+    );
+    expect(unassignedText({ parts: [], unassigned: 57 })).toBe("57 SCU not in a grid yet. Choose a grid for it.");
+    expect(unassignedText({ parts: [{ name: "A", scu: 8 }], unassigned: 0 })).toBe("");
   });
 });

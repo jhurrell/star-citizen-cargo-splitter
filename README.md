@@ -7,13 +7,15 @@ the ship.
 ## Features
 
 - **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
-  the next size down, until every SCU is placed. Click a size in the table header to turn it off and skip it.
+  the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
+  turn it off and skip it.
 - **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
   the grid has left; once a grid has no room for another container, the other rows can't pick it. Pick several to
   split a big delivery: grids fill in the order you pick them, across all rows, so a later pick never takes room an
   earlier one already claimed, and no grid is ever overloaded.
-- **Needs-splitting warning.** A row with more SCU than its grids can hold gets an amber edge and SCU cell. Point
-  at the SCU to see how much doesn't fit.
+- **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet, because it
+  has no grid or its grids are out of room, with the table's total at the foot. While a row has some, its edge and
+  SCU turn amber; point at the SCU to see why.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so materials stay
     apart.

@@ -1,7 +1,7 @@
-import { shortText, type Calc, type Split } from "../lib/calc";
-import { fitsInside, type Container, type Position } from "../lib/cargo";
+import { unassignedText, type Calc, type Split } from "../lib/calc";
+import { fitsInside, isOverMaxScu, type Container, type Position } from "../lib/cargo";
 import type { Cargo } from "../lib/colors";
-import { fmt, initials, plural } from "../lib/format";
+import { fmt, initials, plural, sum } from "../lib/format";
 import type { Counts, Fill } from "../lib/packing";
 import {
   enabledContainers,
@@ -40,8 +40,9 @@ type SizeColumn = { size: number; on: boolean };
    too little for any container, so other rows can't pick it. */
 type GridButton = { name: string; tag: string; free: number; full: boolean };
 
-/* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
-   container size, Left over (only when some SCU can't be placed), Grids. */
+/* The editable cargo table: Material / Pick-up / Drop-off, SCU, Remaining (SCU
+   not in a grid yet), a column per container size, Left over (only when some
+   SCU can't be made of the sizes turned on), Grids. */
 export function CargoTable({
   state,
   calc,
@@ -64,8 +65,9 @@ export function CargoTable({
       full: !usable.some((c) => c.size <= free && fitsInside(c, p)),
     };
   });
-  /* Material, Pick-up and Drop-off; SCU; the sizes; Left over; Grids. */
-  const columnCount = TEXT_COLUMNS.length + 1 + sizes.length + 1 + 1;
+  const unassigned = sum([...calc.splits.values()], (s) => s.unassigned);
+  /* Material, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
+  const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
       <thead>
@@ -74,6 +76,10 @@ export function CargoTable({
             <SortHead key={key} sortKey={key} label={label} sort={state.sort} onSort={onSort} />
           ))}
           <th className="label num">SCU</th>
+          {/* Δ for Remaining, to keep the column narrow. */}
+          <th className="label num" aria-label="Remaining" title="Remaining: SCU not in a grid yet">
+            Δ
+          </th>
           {sizes.map(({ size, on }, i) => (
             <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onToggleSize} />
           ))}
@@ -112,6 +118,7 @@ export function CargoTable({
             Total · {plural(state.rows.length, "row")}
           </td>
           <td className="foot-scu">{fmt(calc.totals.scu)}</td>
+          <RemainingCell scu={unassigned} />
           <CalcCells fill={calc.totals} sizes={sizes} showLeftover={calc.showLeftover} />
           <td className="sep" />
         </tr>
@@ -200,14 +207,18 @@ function CargoRow({
   grids: GridButton[];
   showLeftover: boolean;
 }) {
-  const why = shortText(split) || undefined;
+  const why = unassignedText(split) || undefined;
   const field = (key: RowField) => ({
     id: `r${row.id}-${key}`,
     value: row[key],
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => onUpdate(row.id, key, e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      /* Typing or pasting past the most SCU a row can have leaves the field as it was. */
+      if (key === "scu" && isOverMaxScu(e.target.value)) return;
+      onUpdate(row.id, key, e.target.value);
+    },
   });
   return (
-    <tr className={split.short ? "needs-split" : undefined}>
+    <tr className={split.unassigned ? "has-unassigned" : undefined}>
       {TEXT_COLUMNS.map(({ key, label }, i) => {
         const input = <input className="field" aria-label={label} {...field(key)} />;
         return (
@@ -235,8 +246,8 @@ function CargoRow({
           </td>
         );
       })}
-      {/* Amber when the row's grids don't have room for all of it; the tooltip says how much. */}
-      <td className="edit scu-cell" data-short={split.short ? "" : undefined} title={why}>
+      {/* Amber while some of the row isn't in a grid; the tooltip says how much and why. */}
+      <td className="edit scu-cell" data-unassigned={split.unassigned ? "" : undefined} title={why}>
         <input
           className="field scu"
           inputMode="numeric"
@@ -251,6 +262,7 @@ function CargoRow({
           }}
         />
       </td>
+      <RemainingCell scu={split.unassigned} title={why} />
       <CalcCells fill={fill} sizes={sizes} showLeftover={showLeftover} />
       <td className="edit sep">
         <GridPicks row={row} split={split} grids={grids} onTogglePick={onTogglePick} onHighlight={onHighlight} />
@@ -313,6 +325,15 @@ function GridPicks({
         })}
       </div>
     </div>
+  );
+}
+
+/* The SCU still to be put in a grid, amber while there is any. */
+function RemainingCell({ scu, title }: { scu: number; title?: string }) {
+  return (
+    <td className="remaining" data-state={scu ? "warn" : "zero"} title={title}>
+      {fmt(scu)}
+    </td>
   );
 }
 

@@ -4,7 +4,8 @@ import { parseMount, type Mount } from "./mount";
 /* The cargo domain: container and ship shapes, read from containers.json and
    ships.json, and the SCU a row asks for. Pure functions, so they can be unit tested. */
 
-const MAX_SCU = 10_000_000;
+/* The most SCU a row can ask for; it keeps the SCU column four digits wide. */
+export const MAX_SCU = 9_999;
 
 /* x × y × z extents in whole SCU cells. Axes follow Star Citizen: x is
    port–starboard, y is fore–aft and z is height. */
@@ -25,11 +26,14 @@ const positiveInt = (n: unknown): number => (Number.isInteger(n) && (n as number
 export const asText = (value: unknown, fallback = ""): string =>
   typeof value === "string" || typeof value === "number" ? String(value) : fallback;
 
-/* Accepts "1,200" or "57"; anything else counts as 0. */
+/* Accepts "1,200" or "57", up to MAX_SCU; anything else counts as 0. */
 export function parseScu(value: string): number {
   const n = Math.floor(Number(value.replace(/,/g, "")));
   return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_SCU) : 0;
 }
+
+/* Whether typed SCU is past MAX_SCU, so the field can refuse it. */
+export const isOverMaxScu = (value: string): boolean => Number(value.replace(/,/g, "")) > MAX_SCU;
 
 /* Read x × y × z as whole SCU cells, or null if any is missing. */
 function parseShape(item: Raw): Shape | null {

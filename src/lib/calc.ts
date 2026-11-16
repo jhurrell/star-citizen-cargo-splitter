@@ -25,19 +25,19 @@ export function selection(ships: Ship[], state: Pick<State, "shipId" | "gridId">
 }
 
 /* How much of a row goes in each of its grids, in the order it picked them,
-   and `short`: how much of it there's no room for, so it needs splitting
-   further. A row with no grid is short by what's more than any one holds. */
+   and `unassigned`: how much of it is in no grid yet, as it has none or its
+   grids have no more room. */
 export type Part = { name: string; scu: number };
-export type Split = { parts: Part[]; short: number };
+export type Split = { parts: Part[]; unassigned: number };
 
 /* Grids fill in the order they were picked, across all rows: each pick takes
    what it can of its row's remaining SCU from the room its grid has left, so
    a later pick never takes room from an earlier one, and no grid takes more
-   than it holds. What's left of a row after all its picks is its `short`.
-   Picks for grids not on this layout are ignored. */
+   than it holds. What's left of a row after all its picks is unassigned.
+   Picks for grids not on this layout are ignored, and a layout with no grids
+   leaves nothing to assign. */
 export function splitRows(rows: Row[], positions: Position[]): Map<number, Split> {
   const room = new Map(positions.map((p) => [p.name, p.capacity]));
-  const largest = Math.max(0, ...positions.map((p) => p.capacity));
   const rest = new Map(rows.map((row) => [row.id, parseScu(row.scu)]));
   const parts = new Map(rows.map((row) => [row.id, [] as Part[]]));
   /* Ties (from older saves) go by table order. The sort is stable. */
@@ -52,21 +52,16 @@ export function splitRows(rows: Row[], positions: Position[]): Map<number, Split
   }
 
   return new Map(
-    rows.map((row) => {
-      const rowParts = parts.get(row.id)!;
-      const rowRest = rest.get(row.id)!;
-      const short = rowParts.length ? rowRest : positions.length ? Math.max(0, rowRest - largest) : 0;
-      return [row.id, { parts: rowParts, short }];
-    }),
+    rows.map((row) => [row.id, { parts: parts.get(row.id)!, unassigned: positions.length ? rest.get(row.id)! : 0 }]),
   );
 }
 
-/* Why a row still needs splitting, or "" when it fits where it's going. */
-export function shortText({ parts, short }: Split): string {
-  if (!short) return "";
-  if (!parts.length) return "More than any one grid holds. Choose grids to split it.";
+/* What of a row isn't in a grid yet, and what to do about it; "" when all of it is. */
+export function unassignedText({ parts, unassigned }: Split): string {
+  if (!unassigned) return "";
+  if (!parts.length) return `${fmt(unassigned)} SCU not in a grid yet. Choose a grid for it.`;
   const where = parts.length === 1 ? "this grid has" : "these grids have";
-  return `${fmt(short)} SCU more than ${where} room for. Choose another grid to split it.`;
+  return `${fmt(unassigned)} SCU more than ${where} room for. Choose another grid to split it.`;
 }
 
 /* Load a position from its fore end toward aft when its floor runs fore–aft

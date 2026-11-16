@@ -1,7 +1,15 @@
 import { describe, expect, test } from "vite-plus/test";
 import rawContainers from "../src/config/containers.json";
 import rawShips from "../src/config/ships.json";
-import { fitsInside, parseContainers, parseScu, parseShips, placementsOf, type Placement } from "../src/lib/cargo";
+import {
+  fitsInside,
+  isOverMaxScu,
+  parseContainers,
+  parseScu,
+  parseShips,
+  placementsOf,
+  type Placement,
+} from "../src/lib/cargo";
 import { container } from "./helpers";
 
 const sorted = (placements: Placement[]) => placements.map((p) => p.join("x")).sort();
@@ -12,7 +20,18 @@ describe("parseScu", () => {
     expect(parseScu("57.9")).toBe(57);
     expect(parseScu("-3")).toBe(0);
     expect(parseScu("abc")).toBe(0);
-    expect(parseScu("99999999999")).toBe(10_000_000);
+    expect(parseScu("99999999999")).toBe(9_999);
+  });
+});
+
+describe("isOverMaxScu", () => {
+  test("refuses more than 9,999, with or without a comma", () => {
+    expect(isOverMaxScu("9,999")).toBe(false);
+    expect(isOverMaxScu("9999")).toBe(false);
+    expect(isOverMaxScu("10000")).toBe(true);
+    expect(isOverMaxScu("10,000")).toBe(true);
+    expect(isOverMaxScu("")).toBe(false);
+    expect(isOverMaxScu("abc")).toBe(false);
   });
 });
 

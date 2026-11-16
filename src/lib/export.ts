@@ -2,7 +2,7 @@
 
 import { parseScu } from "./cargo";
 import type { Calc, Split } from "./calc";
-import { fmt } from "./format";
+import { fmt, sum } from "./format";
 import { TEXT_COLUMNS, type Row } from "./state";
 
 type Cell = string | number;
@@ -25,24 +25,28 @@ export function exportTable(rows: Row[], calc: Calc, sizes: number[]): ExportedT
   const columns: Column[] = [
     ...TEXT_COLUMNS.map((c) => ({ label: c.label, numeric: false })),
     { label: "SCU", numeric: true },
+    { label: "Remaining", numeric: true },
     ...sizes.map((s) => ({ label: String(s), numeric: true })),
     ...leftover({ label: "Left over", numeric: true }),
     { label: "Grids", numeric: false },
   ];
   const body = rows.map((row) => {
     const fill = calc.byRow.get(row.id)!;
+    const split = calc.splits.get(row.id)!;
     return [
       ...TEXT_COLUMNS.map((c) => row[c.key]),
       parseScu(row.scu),
+      split.unassigned,
       ...sizes.map((s) => fill.counts[s] ?? 0),
       ...leftover(fill.leftover),
-      gridText(calc.splits.get(row.id)!),
+      gridText(split),
     ];
   });
   const totals = [
     "Total",
     ...TEXT_COLUMNS.slice(1).map(() => ""),
     calc.totals.scu,
+    sum([...calc.splits.values()], (s) => s.unassigned),
     ...sizes.map((s) => calc.totals.counts[s] ?? 0),
     ...leftover(calc.totals.leftover),
     "",

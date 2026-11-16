@@ -407,7 +407,9 @@ header p {
   font-family: var(--font-mono);
   font-weight: 600;
   text-align: right;
-  min-width: 5.5em;
+  /* Room for the most a row can have, "9,999", plus padding; the Remaining
+     column beside it matches. */
+  min-width: calc(5ch + 20px);
 }
 select.field {
   cursor: pointer;
@@ -471,15 +473,15 @@ select.field option {
   opacity: 0.4;
   cursor: not-allowed;
 }
-/* A row whose grids don't have room for all of it: an amber edge down its
-   left side and an amber SCU, whose tooltip says how much doesn't fit. */
-#cargo tr.needs-split > td:first-child {
+/* A row with SCU in no grid yet: an amber edge down its left side, an amber
+   SCU whose tooltip says why, and the amount under its grid buttons. */
+#cargo tr.has-unassigned > td:first-child {
   box-shadow: inset 4px 0 0 var(--warn);
 }
-#cargo .scu-cell[data-short] {
+#cargo .scu-cell[data-unassigned] {
   background: var(--warn-soft);
 }
-#cargo .scu-cell[data-short] .field {
+#cargo .scu-cell[data-unassigned] .field {
   color: var(--warn);
 }
 
@@ -503,7 +505,8 @@ select.field option {
 /* Calculated cells: data-state sets the look, so live updates only change data.
    Prefixed with .grid so they outrank the base `.grid td { padding: 0 }` rule. */
 .grid .count,
-.grid td.leftover {
+.grid td.leftover,
+.grid td.remaining {
   font-family: var(--font-mono);
   font-weight: 600;
   white-space: nowrap;
@@ -513,15 +516,22 @@ select.field option {
   font-size: 15px;
   padding: 9px 6px;
 }
-.grid td.leftover {
+.grid td.leftover,
+.grid td.remaining {
   text-align: right;
   padding: 9px 12px;
+}
+/* As wide as the SCU field beside it. */
+.grid td.remaining {
+  min-width: calc(5ch + 20px);
+  padding-inline: 10px;
 }
 .count[data-state="has"] {
   background: var(--accent-soft);
 }
 .count[data-state="zero"],
-.leftover[data-state="zero"] {
+.leftover[data-state="zero"],
+.remaining[data-state="zero"] {
   color: var(--off-fg);
   font-weight: 400;
 }
@@ -530,7 +540,8 @@ select.field option {
   color: var(--off-fg);
   font-weight: 400;
 }
-.leftover[data-state="warn"] {
+.leftover[data-state="warn"],
+.remaining[data-state="warn"] {
   background: var(--warn-soft);
   color: var(--warn);
 }
