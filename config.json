@@ -171,31 +171,31 @@
           ]
         },
         {
-          "id": "loose",
-          "name": "Loose",
+          "id": "relaxed",
+          "name": "Relaxed",
           "positions": [
             {
               "name": "Port - Upper",
-              "x": 2,
-              "y": 32,
+              "x": 4,
+              "y": 16,
               "z": 2
             },
             {
               "name": "Port - Lower",
-              "x": 2,
-              "y": 32,
+              "x": 4,
+              "y": 16,
               "z": 2
             },
             {
               "name": "Starboard - Upper",
-              "x": 2,
-              "y": 32,
+              "x": 4,
+              "y": 16,
               "z": 2
             },
             {
               "name": "Starboard - Lower",
-              "x": 2,
-              "y": 32,
+              "x": 4,
+              "y": 16,
               "z": 2
             }
           ]

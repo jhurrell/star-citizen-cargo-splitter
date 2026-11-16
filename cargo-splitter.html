@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cargo Splitter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -261,6 +262,36 @@ select.field option { background: var(--surface); color: var(--fg); }
 .avail[data-state="full"] { color: var(--muted); }
 .avail[data-state="over"] { color: var(--warn); }
 
+/* ---------- Load plan (read-only) ---------- */
+.plan-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; color: var(--label); font-size: 13px; }
+.plan-legend:empty { display: none; }
+.plan-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { flex: none; width: 12px; height: 12px; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.plan-card {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.plan-card figcaption { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.plan-card.is-empty figcaption { color: var(--off-fg); }
+.plan-meta { font-family: var(--font-mono); font-weight: 500; color: var(--muted); white-space: nowrap; }
+.plan-note { margin: 0; color: var(--warn); font-size: 13px; }
+.plan-note .warn-note { white-space: normal; }
+.plan-svg { display: block; max-width: 100%; height: auto; margin: auto; }
+/* Strokes stay 1px however far the drawing is scaled. */
+.plan-svg polygon, .plan-svg polyline { vector-effect: non-scaling-stroke; stroke-width: 1; stroke-linejoin: round; }
+.plan-svg .hold { fill: var(--off); stroke: var(--line); }
+.plan-svg .hold-edge { fill: none; stroke: var(--off-fg); stroke-dasharray: 3 3; }
+.plan-svg .box polygon { stroke: var(--bg); }
+.plan-svg .box:hover polygon { stroke: var(--fg); }
+.plan-svg .axis-label { font-family: var(--font-body); font-size: 0.75px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; fill: var(--muted); }
+
 @media (prefers-reduced-motion: no-preference) {
   .btn, .icon-btn { transition: background 120ms, border-color 120ms, color 120ms; }
 }
@@ -300,6 +331,13 @@ select.field option { background: var(--surface); color: var(--fg); }
     </div>
     <p class="hint">Fit packs each position's containers using their shapes from config.json. Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it says won't fit may still fit by hand.</p>
   </section>
+
+  <section class="summary" aria-labelledby="plan-title">
+    <h2 id="plan-title">Load plan</h2>
+    <ul class="plan-legend" id="plan-legend" aria-label="Materials"></ul>
+    <div class="plan-grid" id="plan"></div>
+    <p class="hint">Each position as packed for the Fit column, seen from above its fore–starboard corner. Colors follow the material; point at a container to see what it holds.</p>
+  </section>
 </div>
 
 
@@ -309,8 +347,8 @@ select.field option { background: var(--surface); color: var(--fg); }
 /* ================= Config ================= */
 
 const CONFIG_URL = "config.json"; // container sizes, ships and their cargo grids, published beside this page
-/* Position names saved before ships were selectable: the Hull B's loose grid. */
-const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "loose" };
+/* Position names saved before ships were selectable: the Hull B's relaxed grid. */
+const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "relaxed" };
 const LEGACY_POSITIONS = {
   "Left Upper": "Port - Upper",
   "Left Lower": "Port - Lower",
@@ -325,6 +363,11 @@ const TEXT_COLUMNS = [
 const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 const MAX_SCU = 10_000_000;
 const STORE_KEY = "cargo-splitter-v3";
+/* Load plan colors, one per material in the order rows were added. A validated
+   categorical set for this page's background; past eight, materials share OTHER_COLOR. */
+const CARGO_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9", "#e66767"];
+const OTHER_COLOR = "#6b7f8c";
+const PLAN_PX = 16; // load plan pixels per SCU cell edge, before shrinking to fit
 const STATUS_MS = 2200; // how long a copy or clear message stays
 const DISARM_MS = 3000; // how long Clear table waits for the second click
 
@@ -430,8 +473,9 @@ function parseShips(config) {
 /* Whether a container fits a space in at least one of its placements. */
 const fitsInside = (box, space) => box.placements.some(([w, d, h]) => w <= space.x && d <= space.y && h <= space.z);
 
-/* Pack containers into a space of x × y × z SCU cells (z is height) and return
-   the ones that don't fit, as { size: count }. `load` is [{ container, count }].
+/* Pack containers into a space of x × y × z SCU cells (z is height).
+   `load` is [{ container, count, tag }], where `tag` says whose cargo it is.
+   Returns { placed: [{ x, y, z, w, d, h, size, tag }], unfit: { size: count } }.
    Each container sits in one of its placements (see placementsOf), on the floor
    or wholly on top of other containers.
    Greedy: biggest first, each in the first spot that takes it, filling the
@@ -466,20 +510,55 @@ function packContainers(space, load) {
     return null;
   }
 
+  const placed = [];
   const unfit = {};
+  /* Biggest first; the sort is stable, so cargo of one size keeps its row order. */
   const order = [...load].sort((a, b) => b.container.size - a.container.size);
-  for (const { container, count } of order) {
-    for (let placed = 0; placed < count; placed++) {
-      const spot = findSpot(container);
+  for (const { container, count, tag } of order) {
+    const { size } = container;
+    for (let n = 0; n < count; n++) {
+      /* Space only shrinks, so once a size fails, the rest of that size fails too. */
+      const spot = unfit[size] ? null : findSpot(container);
       if (!spot) {
-        /* Space only shrinks, so the rest of this size won't fit either. */
-        unfit[container.size] = count - placed;
+        unfit[size] = (unfit[size] ?? 0) + count - n;
         break;
       }
       occupy(spot);
+      placed.push({ ...spot, size, tag });
     }
   }
-  return unfit;
+  return { placed, unfit };
+}
+
+/* Painter's order for packed containers in the isometric view, which looks down
+   from the +x, +y, +z side: a container that is wholly on the far (lower) side
+   of another along some axis is drawn first. Two containers apart both ways
+   along different axes can't overlap on screen, so they get no order. */
+function drawOrder(boxes) {
+  const farSide = (a, b) => a.x + a.w <= b.x || a.y + a.d <= b.y || a.z + a.h <= b.z;
+  const sorted = [...boxes].sort((a, b) => a.x + a.y + a.z - (b.x + b.y + b.z));
+  const after = sorted.map(() => []);
+  const waitingOn = sorted.map(() => 0);
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const iFirst = farSide(sorted[i], sorted[j]);
+      const jFirst = farSide(sorted[j], sorted[i]);
+      if (iFirst === jFirst) continue;
+      const [first, second] = iFirst ? [i, j] : [j, i];
+      after[first].push(second);
+      waitingOn[second] += 1;
+    }
+  }
+  const order = [];
+  const ready = sorted.map((_, i) => i).filter((i) => waitingOn[i] === 0);
+  while (ready.length) {
+    const i = ready.shift();
+    order.push(sorted[i]);
+    for (const j of after[i]) if (--waitingOn[j] === 0) ready.push(j);
+  }
+  /* A cycle can't happen with these shapes in practice; draw any leftovers last. */
+  if (order.length < sorted.length) order.push(...sorted.filter((box) => !order.includes(box)));
+  return order;
 }
 
 /* Add `extra` ({ size: count }) into `into`, in place. */
@@ -593,14 +672,14 @@ const rowPosition = (row) => currentPositions().find((p) => p.name === row.posit
 const rowPositionName = (row) => rowPosition(row)?.name ?? "";
 
 /* Everything derived from state, computed once per update. A row only uses
-   container sizes that fit its position; each position is then packed to find
-   any containers that don't fit (`unfit`, as { size: count }). */
+   container sizes that fit its position; each position is then packed, giving
+   where each container sits (`placed`) and which don't fit (`unfit`, { size: count }). */
 function computeTable() {
   const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(enabledSizes().map((s) => [s, 0])), unfit: {} };
   const byRow = new Map();
   /* "" collects cargo with no position chosen. Only rows with SCU count as rows. */
   const byPosition = new Map(["", ...currentPositions().map((p) => p.name)]
-    .map((name) => [name, { rows: 0, scu: 0, counts: {}, unfit: {} }]));
+    .map((name) => [name, { rows: 0, scu: 0, load: [], placed: [], unfit: {} }]));
   for (const row of state.rows) {
     const scu = parseScu(row.scu);
     const position = rowPosition(row);
@@ -612,13 +691,15 @@ function computeTable() {
     const entry = byPosition.get(position?.name ?? "");
     entry.rows += 1;
     entry.scu += scu;
-    addCounts(entry.counts, fill.counts);
     addCounts(totals.counts, fill.counts);
+    for (const container of containers) {
+      const count = fill.counts[container.size];
+      if (count) entry.load.push({ container, count, tag: row.id });
+    }
   }
   for (const position of currentPositions()) {
     const entry = byPosition.get(position.name);
-    const load = containers.map((c) => ({ container: c, count: entry.counts[c.size] ?? 0 })).filter((l) => l.count > 0);
-    entry.unfit = packContainers(position, load);
+    Object.assign(entry, packContainers(position, entry.load));
     addCounts(totals.unfit, entry.unfit);
   }
   return { byRow, byPosition, totals, showLeftover: totals.leftover > 0 };
@@ -639,6 +720,8 @@ const els = {
   grid: $("grid"),
   gridPicker: $("grid-picker"),
   shipInfo: $("ship-info"),
+  plan: $("plan"),
+  planLegend: $("plan-legend"),
 };
 
 /* Look, text and tooltip for a calculated cell; shared by full renders and live
@@ -753,14 +836,18 @@ function loadCellsHtml(scu, capacity, unfit) {
     <td class="num avail" data-state="${load.look}">${load.label}</td>`;
 }
 
+/* "2 × 32 SCU, 1 × 8 SCU won't fit", largest first. */
+function unfitText(unfit) {
+  const sizes = Object.keys(unfit).map(Number).sort((a, b) => b - a);
+  return `${sizes.map((size) => `${fmt(unfit[size])} × ${size} SCU`).join(", ")} won't fit`;
+}
+
 /* Fit cell: blank with no cargo, `fitsText` when everything fits, else which
-   containers don't, largest first. */
+   containers don't. */
 function fitCellHtml(scu, unfit, fitsText) {
   if (!scu) return "<td></td>";
   if (!hasUnfit(unfit)) return `<td class="fit" data-state="ok">${fitsText}</td>`;
-  const sizes = Object.keys(unfit).map(Number).sort((a, b) => b - a);
-  const parts = sizes.map((size) => `${fmt(unfit[size])} × ${size} SCU`).join(", ");
-  return `<td class="fit" data-state="warn">${warnNoteHtml(`${parts} won't fit`)}</td>`;
+  return `<td class="fit" data-state="warn">${warnNoteHtml(unfitText(unfit))}</td>`;
 }
 
 /* Read-only SCU-by-position table for the selected ship's grid. Every position
@@ -811,6 +898,114 @@ function positionsHtml(calc) {
     </tr></tfoot>`;
 }
 
+/* ---- Load plan: an isometric drawing of each position ---- */
+
+const ISO_X = Math.cos(Math.PI / 6);
+/* Screen point for a grid point, seen from above the +x (starboard), +y (fore)
+   corner: z is up, so screen y falls as z rises. */
+const project = (x, y, z) => [(x - y) * ISO_X, (x + y) / 2 - z];
+const pointsAttr = (corners) => corners.map((c) => project(...c).map((n) => n.toFixed(3)).join(",")).join(" ");
+
+/* Lighten (amount > 0) or darken (amount < 0) a #rrggbb color by that fraction. */
+function shade(hex, amount) {
+  const target = amount > 0 ? 255 : 0;
+  return "#" + [1, 3, 5].map((i) => {
+    const channel = parseInt(hex.slice(i, i + 2), 16);
+    return Math.round(channel + (target - channel) * Math.abs(amount)).toString(16).padStart(2, "0");
+  }).join("");
+}
+
+/* A color per material with cargo, keyed case-insensitively, in the order rows
+   were added, so sorting rows never repaints a material. Returns
+   { byRow: Map(row id → { name, color }), materials: [{ name, color }] }. */
+function cargoColors() {
+  const byMaterial = new Map();
+  const byRow = new Map();
+  for (const row of [...state.rows].sort((a, b) => a.id - b.id)) {
+    if (!parseScu(row.scu)) continue;
+    const key = row.material.trim().toLowerCase();
+    if (!byMaterial.has(key)) {
+      const color = CARGO_COLORS[byMaterial.size] ?? OTHER_COLOR;
+      byMaterial.set(key, { name: row.material.trim() || "No material", color });
+    }
+    byRow.set(row.id, byMaterial.get(key));
+  }
+  return { byRow, materials: [...byMaterial.values()] };
+}
+
+const swatchHtml = (color) =>
+  `<svg class="swatch" viewBox="0 0 10 10" aria-hidden="true"><rect width="10" height="10" fill="${color}"/></svg>`;
+
+function legendHtml(materials) {
+  const named = materials.filter((m) => m.color !== OTHER_COLOR);
+  const items = named.map((m) => `<li>${swatchHtml(m.color)}${esc(m.name)}</li>`);
+  if (named.length < materials.length) items.push(`<li>${swatchHtml(OTHER_COLOR)}Other materials</li>`);
+  return items.join("");
+}
+
+/* One container: its top, starboard (+x) and fore (+y) faces, lit from above. */
+function boxSvg({ x, y, z, w, d, h, size }, cargo) {
+  const [x1, y1, z1] = [x + w, y + d, z + h];
+  const top = [[x, y, z1], [x1, y, z1], [x1, y1, z1], [x, y1, z1]];
+  const starboard = [[x1, y, z], [x1, y1, z], [x1, y1, z1], [x1, y, z1]];
+  const fore = [[x, y1, z], [x1, y1, z], [x1, y1, z1], [x, y1, z1]];
+  return `<g class="box"><title>${esc(cargo.name)} · ${size} SCU</title>
+    <polygon points="${pointsAttr(top)}" fill="${shade(cargo.color, 0.25)}"/>
+    <polygon points="${pointsAttr(starboard)}" fill="${cargo.color}"/>
+    <polygon points="${pointsAttr(fore)}" fill="${shade(cargo.color, -0.3)}"/></g>`;
+}
+
+/* The position's floor and far walls, its containers back to front, then its
+   near edges dashed on top so the hold's size still shows. */
+function positionSvg(position, placed, cargoByRow) {
+  const { x: X, y: Y, z: Z } = position;
+  const corners = [0, X].flatMap((x) => [0, Y].flatMap((y) => [0, Z].map((z) => project(x, y, z))));
+  const pad = 0.5;
+  const labelRoom = 1.4; // below the fore edge, for its label
+  const minX = Math.min(...corners.map(([sx]) => sx)) - pad - labelRoom;
+  const maxX = Math.max(...corners.map(([sx]) => sx)) + pad;
+  const minY = Math.min(...corners.map(([, sy]) => sy)) - pad;
+  const maxY = Math.max(...corners.map(([, sy]) => sy)) + pad + labelRoom;
+  const [width, height] = [maxX - minX, maxY - minY];
+
+  const hold = [
+    [[0, 0, 0], [X, 0, 0], [X, Y, 0], [0, Y, 0]], // floor
+    [[0, 0, 0], [0, Y, 0], [0, Y, Z], [0, 0, Z]], // port wall
+    [[0, 0, 0], [X, 0, 0], [X, 0, Z], [0, 0, Z]], // aft wall
+  ].map((face) => `<polygon class="hold" points="${pointsAttr(face)}"/>`).join("");
+  const nearEdges = [
+    [[X, 0, 0], [X, 0, Z]], [[X, Y, 0], [X, Y, Z]], [[0, Y, 0], [0, Y, Z]],
+    [[0, 0, Z], [X, 0, Z]], [[X, 0, Z], [X, Y, Z]], [[X, Y, Z], [0, Y, Z]], [[0, Y, Z], [0, 0, Z]],
+  ].map((edge) => `<polyline class="hold-edge" points="${pointsAttr(edge)}"/>`).join("");
+  const boxes = drawOrder(placed).map((box) => boxSvg(box, cargoByRow.get(box.tag))).join("");
+  const [labelX, labelY] = project(X / 2, Y, 0);
+
+  return `<svg class="plan-svg" viewBox="${[minX, minY, width, height].map((n) => n.toFixed(3)).join(" ")}"
+    width="${Math.round(width * PLAN_PX)}" height="${Math.round(height * PLAN_PX)}"
+    role="img" aria-label="${esc(position.name)}: ${plural(placed.length, "container")}">
+    ${hold}${boxes}${nearEdges}
+    <text class="axis-label" x="${(labelX - 0.4).toFixed(3)}" y="${(labelY + 1).toFixed(3)}" text-anchor="end">Fore</text>
+  </svg>`;
+}
+
+function planCardHtml(position, entry, cargoByRow) {
+  const note = hasUnfit(entry.unfit) ? `<p class="plan-note">${warnNoteHtml(unfitText(entry.unfit))}</p>` : "";
+  return `<figure class="plan-card${entry.scu ? "" : " is-empty"}">
+    <figcaption><span>${esc(position.name)}</span><span class="plan-meta">${fmt(entry.scu)} / ${fmt(position.capacity)} SCU</span></figcaption>
+    ${positionSvg(position, entry.placed, cargoByRow)}
+    ${note}
+  </figure>`;
+}
+
+function renderPlan(calc) {
+  const { byRow, materials } = cargoColors();
+  const positions = currentPositions();
+  els.planLegend.innerHTML = legendHtml(materials);
+  els.plan.innerHTML = positions.length
+    ? positions.map((p) => planCardHtml(p, calc.byPosition.get(p.name), byRow)).join("")
+    : `<p class="hint">No ship loaded.</p>`;
+}
+
 /* Fill the Ship and Cargo grid pickers and the capacity note beside them. */
 function renderShipPicker() {
   const ship = currentShip();
@@ -839,9 +1034,11 @@ function applyBarWidths(root) {
   for (const fill of root.querySelectorAll(".bar-fill")) fill.style.width = `${fill.dataset.percent}%`;
 }
 
-function renderPositions(calc) {
+/* The read-only views below the cargo table. */
+function renderSummaries(calc) {
   els.positions.innerHTML = positionsHtml(calc);
   applyBarWidths(els.positions);
+  renderPlan(calc);
 }
 
 /* Full redraw: used when the ship, rows, order or container sizes change. */
@@ -851,7 +1048,7 @@ function render(focusId) {
   els.cargo.innerHTML = `<thead>${cargoHeadHtml(calc)}</thead>
     <tbody>${cargoBodyHtml(calc)}</tbody>
     <tfoot>${cargoFootHtml(calc)}</tfoot>`;
-  renderPositions(calc);
+  renderSummaries(calc);
   if (focusId) $(focusId)?.focus();
 }
 
@@ -865,7 +1062,7 @@ function refresh() {
   foot.querySelector(".foot-scu").textContent = fmt(calc.totals.scu);
   updateCalcCells(foot, calc.totals, calc.showLeftover);
   els.cargo.querySelector("thead .leftover").hidden = !calc.showLeftover;
-  renderPositions(calc);
+  renderSummaries(calc);
 }
 
 /* ================= Actions ================= */
