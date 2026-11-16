@@ -106,49 +106,53 @@ export function CargoVisualizer() {
 
   return (
     <>
-      <div className="ship-bar">
-        <ShipPicker
-          ships={ships}
-          value={ship?.id ?? ""}
-          onChange={(shipId) => dispatch({ type: "selectShip", shipId })}
-        />
-        <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
-          <span>Layout</span>
-          <select
-            id="grid"
-            value={grid?.id ?? ""}
-            onChange={(e) => dispatch({ type: "selectGrid", gridId: e.target.value })}
-          >
-            {ship?.grids.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className={`ship-info${configError ? " is-error" : ""}`} aria-live="polite">
-          {shipInfo}
-        </span>
-      </div>
-
+      {/* The ship on the left, what to do with the table on the right; on a
+          narrow window the actions wrap onto a line of their own. */}
       <div className="toolbar">
-        <button type="button" className="btn primary" id="add-row" onClick={addRow}>
-          Add row
-        </button>
-        <button type="button" className="btn" onClick={() => void copy("tsv")}>
-          Copy for Spreadsheet
-        </button>
-        <button type="button" className="btn" onClick={() => void copy("markdown")}>
-          Copy Markdown
-        </button>
-        <span className="status" aria-live="polite">
-          {status}
-        </span>
+        <div className="toolbar-group">
+          <ShipPicker
+            ships={ships}
+            value={ship?.id ?? ""}
+            onChange={(shipId) => dispatch({ type: "selectShip", shipId })}
+          />
+          <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
+            <span>Layout</span>
+            <select
+              id="grid"
+              value={grid?.id ?? ""}
+              onChange={(e) => dispatch({ type: "selectGrid", gridId: e.target.value })}
+            >
+              {ship?.grids.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className={`ship-info${configError ? " is-error" : ""}`} aria-live="polite">
+            {shipInfo}
+          </span>
+        </div>
         <span className="spacer" />
-        <button type="button" className={`btn${clearArmed ? " is-armed" : ""}`} onClick={clearTable}>
-          {clearArmed ? "Click again to clear" : "Clear table"}
-        </button>
+        <div className="toolbar-group">
+          <button type="button" className="btn primary" id="add-row" onClick={addRow}>
+            Add row
+          </button>
+          <button type="button" className="btn" onClick={() => void copy("tsv")}>
+            Copy for Spreadsheet
+          </button>
+          <button type="button" className="btn" onClick={() => void copy("markdown")}>
+            Copy Markdown
+          </button>
+          <button type="button" className={`btn${clearArmed ? " is-armed" : ""}`} onClick={clearTable}>
+            {clearArmed ? "Click again to clear" : "Clear table"}
+          </button>
+        </div>
       </div>
+      {/* Copy and clear messages, over the table's top edge so they never move it. */}
+      <p className="status" aria-live="polite" hidden={!status}>
+        {status}
+      </p>
 
       <div className="frame">
         <CargoTable
@@ -168,21 +172,14 @@ export function CargoVisualizer() {
         />
       </div>
 
-      <p className="hint">
-        Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it. Press{" "}
-        <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row. Click a grid
-        button to put a row in that grid; each button shows the SCU the grid has available, and a full grid can't be
-        picked. To split a big delivery, turn on several grids: grids fill in the order you pick them, and a later pick
-        only takes the room an earlier one left. Remaining shows the SCU not in a grid yet; while a row has some, its
-        edge and SCU turn amber, and pointing at the SCU says why. Point at a grid button to see it in the ship view.
-        Your table is kept in this browser.
-      </p>
-
       <section className="section" aria-labelledby="ship-title">
-        <h2 id="ship-title">Ship view</h2>
+        {/* The heading and the legend share a line. */}
+        <div className="section-head">
+          <h2 id="ship-title">Ship view</h2>
+          {isMounted && <Legend entries={colors.legend} dimmed={dimmed} onDim={dimRows} />}
+        </div>
         {isMounted ? (
           <>
-            <Legend entries={colors.legend} dimmed={dimmed} onDim={dimRows} />
             <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
               <ShipView
                 positions={positions}
@@ -192,11 +189,6 @@ export function CargoVisualizer() {
                 highlight={highlight}
               />
             </Suspense>
-            <p className="hint">
-              Drag to turn, scroll to zoom, right-drag to pan. The pale blue face of each grid is its floor; containers
-              stack away from it. Point at a container to see what it holds. Click a row in the legend to dim its
-              containers, or point at a row's Material, Pick-up or Drop-off in the cargo table to dim all the others.
-            </p>
           </>
         ) : (
           <p className="hint">Ship's grid is not configured yet.</p>

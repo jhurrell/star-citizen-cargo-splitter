@@ -49,67 +49,70 @@ export function ShipPicker({
   return (
     <div className="picker ship-picker">
       <label htmlFor="ship">Ship</label>
-      <input
-        ref={input}
-        id="ship"
-        type="text"
-        role="combobox"
-        autoComplete="off"
-        spellCheck={false}
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-activedescendant={open && matches.length ? optionId(active) : undefined}
-        placeholder={open ? (selected?.name ?? "Type to find a ship") : ""}
-        value={open ? query : (selected?.name ?? "")}
-        disabled={ships.length === 0}
-        onFocus={() => show("")}
-        onClick={() => !open && show("")}
-        onBlur={() => setQuery(null)}
-        onChange={(e) => show(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-            e.preventDefault();
-            if (open) move(e.key === "ArrowDown" ? 1 : -1);
-            else show("");
-          } else if (e.key === "Enter" && open) {
-            e.preventDefault();
-            pick(matches[active]);
-          } else if (e.key === "Escape" && open) {
-            e.preventDefault();
-            pick(undefined);
-          }
-        }}
-      />
-      {open && (
-        <ul ref={list} className="ship-options" id={listId} role="listbox" aria-label="Ships">
-          {matches.map((ship, i) => (
-            <li
-              key={ship.id}
-              id={optionId(i)}
-              role="option"
-              aria-selected={i === active}
-              className={ship.id === value ? "is-current" : undefined}
-              /* Keep focus in the input, so picking doesn't count as leaving it first. */
-              onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActive(i)}
-              onClick={() => pick(ship)}
-            >
-              <span>
-                {matchedParts(ship.name, query).map((part, j) =>
-                  part.hit ? <mark key={j}>{part.text}</mark> : part.text,
-                )}
-              </span>
-              <span className="ship-scu">{fmt(maxScu(ship))} SCU</span>
-            </li>
-          ))}
-          {!matches.length && (
-            <li className="ship-none" role="option" aria-selected={false} aria-disabled>
-              No ships match “{query}”
-            </li>
-          )}
-        </ul>
-      )}
+      {/* The list drops down from the input itself, not its label. */}
+      <div className="ship-field">
+        <input
+          ref={input}
+          id="ship"
+          type="text"
+          role="combobox"
+          autoComplete="off"
+          spellCheck={false}
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-activedescendant={open && matches.length ? optionId(active) : undefined}
+          placeholder={open ? (selected?.name ?? "Type to find a ship") : ""}
+          value={open ? query : (selected?.name ?? "")}
+          disabled={ships.length === 0}
+          onFocus={() => show("")}
+          onClick={() => !open && show("")}
+          onBlur={() => setQuery(null)}
+          onChange={(e) => show(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              if (open) move(e.key === "ArrowDown" ? 1 : -1);
+              else show("");
+            } else if (e.key === "Enter" && open) {
+              e.preventDefault();
+              pick(matches[active]);
+            } else if (e.key === "Escape" && open) {
+              e.preventDefault();
+              pick(undefined);
+            }
+          }}
+        />
+        {open && (
+          <ul ref={list} className="ship-options" id={listId} role="listbox" aria-label="Ships">
+            {matches.map((ship, i) => (
+              <li
+                key={ship.id}
+                id={optionId(i)}
+                role="option"
+                aria-selected={i === active}
+                className={ship.id === value ? "is-current" : undefined}
+                /* Keep focus in the input, so picking doesn't count as leaving it first. */
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => pick(ship)}
+              >
+                <span>
+                  {matchedParts(ship.name, query).map((part, j) =>
+                    part.hit ? <mark key={j}>{part.text}</mark> : part.text,
+                  )}
+                </span>
+                <span className="ship-scu">{fmt(maxScu(ship))} SCU</span>
+              </li>
+            ))}
+            {!matches.length && (
+              <li className="ship-none" role="option" aria-selected={false} aria-disabled>
+                No ships match “{query}”
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
