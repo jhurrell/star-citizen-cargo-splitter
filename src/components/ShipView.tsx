@@ -23,6 +23,8 @@ const FOV = 40;
 const GAP = 0.08; // between neighbouring containers, so each one shows
 const HOLD_EDGE = "#3d6a87";
 const FLOOR = "#54adf7";
+const GROUND = "#16384d";
+const GROUND_LINE = "#24506b";
 
 const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
 const isMounted = (p: Position): p is Mounted => p.mount !== null;
@@ -81,9 +83,11 @@ export default function ShipView({
         </Canvas>
         <div className="ship-labels" aria-hidden="true">
           {labels.map((label) => (
+            /* Hidden until the first frame puts it in place. */
             <span
               key={label.key}
               className={label.className}
+              hidden
               ref={(el) => {
                 if (el) labelEls.current.set(label.key, el);
                 else labelEls.current.delete(label.key);
@@ -127,20 +131,39 @@ const gridLabel = (p: Mounted): Label => ({
 });
 
 /* The ship's three axes run through the middle of the cargo, past its edges. */
-function axesOf({ min, max, center: [cx, cy, cz], radius }: Bounds) {
-  const pad = Math.max(3, radius * 0.25);
+/* Room around the cargo for the axes and the fore cone. */
+const padOf = (bounds: Bounds) => Math.max(3, bounds.radius * 0.25);
+/* The ground's height: below the bottom of the lowest grid's hold (so below
+   even a full grid), with a gap. */
+const groundOf = (bounds: Bounds) => bounds.min[2] - Math.max(1.5, padOf(bounds) * 0.5);
+const coneOf = (bounds: Bounds) => ({ length: padOf(bounds) * 0.7, radius: padOf(bounds) * 0.25 });
+
+/* The ship's three axes through the middle of the cargo; top–bottom stops at the ground. */
+function axesOf(bounds: Bounds) {
+  const { min, max } = bounds;
+  const [cx, cy, cz] = bounds.center;
+  const pad = padOf(bounds);
   return [
     { plus: "Fore", minus: "Aft", from: [cx, min[1] - pad, cz], to: [cx, max[1] + pad, cz] },
     { plus: "Starboard", minus: "Port", from: [min[0] - pad, cy, cz], to: [max[0] + pad, cy, cz] },
-    { plus: "Top", minus: "Bottom", from: [cx, cy, min[2] - pad], to: [cx, cy, max[2] + pad] },
+    { plus: "Top", minus: "Bottom", from: [cx, cy, groundOf(bounds)], to: [cx, cy, max[2] + pad] },
   ] as { plus: string; minus: string; from: Vec3; to: Vec3 }[];
 }
 
-const directionLabels = (bounds: Bounds): Label[] =>
-  axesOf(bounds).flatMap(({ plus, minus, from, to }) => [
-    { key: plus, text: plus, at: to, className: "ship-dir is-positive" },
-    { key: minus, text: minus, at: from, className: "ship-dir" },
+/* Each axis end's name. Fore sits past the cone's tip, Bottom just under the ground. */
+function directionLabels(bounds: Bounds): Label[] {
+  const beyond = (point: Vec3, axis: number, by: number): Vec3 =>
+    point.map((n, i) => (i === axis ? n + by : n)) as Vec3;
+  return axesOf(bounds).flatMap(({ plus, minus, from, to }) => [
+    {
+      key: plus,
+      text: plus,
+      at: plus === "Fore" ? beyond(to, 1, coneOf(bounds).length + 1.5) : to,
+      className: "ship-dir is-positive",
+    },
+    { key: minus, text: minus, at: minus === "Bottom" ? beyond(from, 2, -1) : from, className: "ship-dir" },
   ]);
+}
 
 /* Each frame, move every label to its point's place on screen (hidden when behind the camera). */
 function LabelTracker({ labels, elements }: { labels: Label[]; elements: React.RefObject<Map<string, HTMLElement>> }) {
@@ -264,11 +287,21 @@ function Containers({
   );
 }
 
-/* The ship's three axes; fore–aft is drawn solid, like a spine. */
+/* The ship's three axes, with fore–aft drawn solid like a spine and a cone
+   at its fore end for the front of the ship; and the ground below. */
 function Directions({ bounds }: { bounds: Bounds }) {
+  const axes = axesOf(bounds);
+  const fore = axes[0].to;
+  const cone = coneOf(bounds);
   return (
     <>
-      {axesOf(bounds).map(({ plus, from, to }) => {
+      {/* Three's cone points along +y, which is fore here. */}
+      <mesh position={[fore[0], fore[1] + cone.length / 2, fore[2]]}>
+        <coneGeometry args={[cone.radius, cone.length, 24]} />
+        <meshStandardMaterial color="#add3eb" roughness={0.6} />
+      </mesh>
+      <Ground bounds={bounds} />
+      {axes.map(({ plus, from, to }) => {
         const spine = plus === "Fore";
         return (
           <Line
@@ -286,6 +319,23 @@ function Directions({ bounds }: { bounds: Bounds }) {
   );
 }
 
+/* A square of ground under the cargo, with a 2 SCU grid on it. */
+function Ground({ bounds }: { bounds: Bounds }) {
+  const pad = padOf(bounds);
+  const [cx, cy] = bounds.center;
+  const side = Math.ceil((Math.max(bounds.max[0] - bounds.min[0], bounds.max[1] - bounds.min[1]) + pad * 2) / 2) * 2;
+  return (
+    <group position={[cx, cy, groundOf(bounds)]}>
+      <mesh>
+        <planeGeometry args={[side, side]} />
+        <meshBasicMaterial color={GROUND} transparent opacity={0.55} side={DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* Grid helpers lie flat in x–z; turn this one into the x–y ground. */}
+      <gridHelper args={[side, side / 2, GROUND_LINE, GROUND_LINE]} rotation={[Math.PI / 2, 0, 0]} />
+    </group>
+  );
+}
+
 /* Moves the camera when the view changes, keeping orbit controls on the ship's centre. */
 function CameraRig({ view, bounds }: { view: View; bounds: Bounds }) {
   const camera = useThree((s) => s.camera);
@@ -294,7 +344,8 @@ function CameraRig({ view, bounds }: { view: View; bounds: Bounds }) {
   useEffect(() => {
     const [dx, dy, dz] = VIEWS[view].from;
     const length = Math.hypot(dx, dy, dz);
-    const distance = (bounds.radius * 0.85) / Math.sin(((FOV / 2) * Math.PI) / 180);
+    /* Frame the cargo plus the axes, cone and labels around it. */
+    const distance = ((bounds.radius + padOf(bounds)) * 0.85) / Math.sin(((FOV / 2) * Math.PI) / 180);
     const [cx, cy, cz] = bounds.center;
     camera.position.set(cx + (dx / length) * distance, cy + (dy / length) * distance, cz + (dz / length) * distance);
     controls.current?.target.set(cx, cy, cz);
