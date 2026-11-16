@@ -325,6 +325,11 @@ h2 {
   width: 10em;
   white-space: nowrap;
 }
+/* Two buttons that belong together, a little closer than the rest. */
+.btn-pair {
+  display: flex;
+  gap: 8px;
+}
 /* An icon in place of a label; the button's aria-label names it. */
 .btn.icon {
   padding: 8px 10px;

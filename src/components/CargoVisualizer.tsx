@@ -149,14 +149,13 @@ export function CargoVisualizer() {
           <button type="button" className="btn primary" id="add-row" onClick={addRow}>
             Add row
           </button>
-          {/* "Copy for" once, then the formats; screen readers hear the group's name with each button. */}
-          <div className="picker" role="group" aria-labelledby="copy-for">
-            <span id="copy-for">Copy for</span>
+          {/* The copy formats as icons; each says what it does in its tooltip and to screen readers. */}
+          <div className="btn-pair">
             <button
               type="button"
               className="btn icon"
               onClick={() => void copy("tsv")}
-              aria-label="Spreadsheet"
+              aria-label="Copy for a spreadsheet"
               data-tip="Copy for a spreadsheet"
             >
               <SpreadsheetIcon />
@@ -165,7 +164,7 @@ export function CargoVisualizer() {
               type="button"
               className="btn icon"
               onClick={() => void copy("markdown")}
-              aria-label="Markdown"
+              aria-label="Copy as a Markdown table"
               data-tip="Copy as a Markdown table"
             >
               <MarkdownIcon />

@@ -9,8 +9,8 @@ the ship.
 ## Features
 
 - **Toolbar.** Type in the ship field to find a ship, or pick one from its list, and choose a layout when the ship
-  has more than one. **Add row** adds a row under the last one. The two icons beside **Copy for** copy the table for
-  a spreadsheet (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**,
+  has more than one. **Add row** adds a row under the last one. The two copy icons copy the table for a spreadsheet
+  (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**,
   at the top right, opens a short guide.
 - **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
   the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
