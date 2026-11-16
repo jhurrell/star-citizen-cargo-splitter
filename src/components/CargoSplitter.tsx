@@ -39,6 +39,15 @@ export function CargoSplitter() {
   const [highlight, setHighlight] = useState<string | null>(null);
   /* Rows turned off in the legend, whose containers show dimmed. */
   const [dimmed, dimRows] = useIdSet();
+  /* The row pointed at in the cargo table. While there is one, every other
+     row's containers show dimmed instead, so its own stand out. */
+  const [pointedRow, setPointedRow] = useState<number | null>(null);
+  const shipDimmed = useMemo(() => {
+    const ids = state.rows.map((r) => r.id);
+    /* A row deleted while pointed at no longer counts. */
+    if (pointedRow === null || !ids.includes(pointedRow)) return dimmed;
+    return new Set(ids.filter((id) => id !== pointedRow));
+  }, [pointedRow, dimmed, state.rows]);
 
   useEffect(() => saveState(state), [state]);
 
@@ -151,6 +160,7 @@ export function CargoSplitter() {
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
           onTogglePick={(id, name) => dispatch({ type: "togglePick", id, name })}
           onHighlight={setHighlight}
+          onPointRow={setPointedRow}
           onDelete={deleteRow}
           onSort={(key) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
@@ -178,14 +188,14 @@ export function CargoSplitter() {
                 positions={positions}
                 loads={calc.byPosition}
                 cargoByRow={colors.byRow}
-                dimmed={dimmed}
+                dimmed={shipDimmed}
                 highlight={highlight}
               />
             </Suspense>
             <p className="hint">
               Drag to turn, scroll to zoom, right-drag to pan. The pale blue face of each grid is its floor; containers
               stack away from it. Point at a container to see what it holds. Click a row in the legend to dim its
-              containers.
+              containers, or point at a row's Material, Pick-up or Drop-off in the cargo table to dim all the others.
             </p>
           </>
         ) : (

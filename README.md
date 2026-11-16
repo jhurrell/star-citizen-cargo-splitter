@@ -20,7 +20,8 @@ the ship.
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so materials stay
     apart.
   - Each row has its own color, and each container shows its size in SCU.
-  - Click a row in the legend to make its containers see-through, so the rest stand out.
+  - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row's
+    Material, Pick-up or Drop-off in the table to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Copy out.** Copy the table for a spreadsheet (tab-separated) or as Markdown.

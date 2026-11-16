@@ -27,12 +27,15 @@ type Props = {
   onTogglePick: (id: number, name: string) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
   onHighlight: (name: string | null) => void;
+  /* The row whose Material, Pick-up or Drop-off the pointer or focus is in,
+     so the ship view can fade the rest; null when none. */
+  onPointRow: (id: number | null) => void;
   onDelete: (id: number) => void;
   onSort: (key: TextKey) => void;
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
 };
-type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onDelete" | "onScuEnter">;
+type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRow" | "onDelete" | "onScuEnter">;
 
 /* A container size's column, on unless turned off in its header. */
 type SizeColumn = { size: number; on: boolean };
@@ -196,6 +199,7 @@ function CargoRow({
   onUpdate,
   onTogglePick,
   onHighlight,
+  onPointRow,
   onDelete,
   onScuEnter,
 }: RowActions & {
@@ -222,7 +226,16 @@ function CargoRow({
       {TEXT_COLUMNS.map(({ key, label }, i) => {
         const input = <input className="field" aria-label={label} {...field(key)} />;
         return (
-          <td className="edit" key={key}>
+          /* Pointing at (or tabbing to) Material, Pick-up or Drop-off picks out
+             this row in the ship view. */
+          <td
+            className="edit"
+            key={key}
+            onMouseEnter={() => onPointRow(row.id)}
+            onMouseLeave={() => onPointRow(null)}
+            onFocus={() => onPointRow(row.id)}
+            onBlur={() => onPointRow(null)}
+          >
             {i > 0 ? (
               input
             ) : (
