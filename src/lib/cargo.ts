@@ -1,8 +1,8 @@
+import { collator } from "./format";
 import { parseMount, type Mount } from "./mount";
 
 /* The cargo domain: container and ship shapes, read from containers.json and
-   ships.json, and
-   the SCU a row asks for. Pure functions, so they can be unit tested. */
+   ships.json, and the SCU a row asks for. Pure functions, so they can be unit tested. */
 
 const MAX_SCU = 10_000_000;
 
@@ -30,8 +30,6 @@ export function parseScu(value: string): number {
   const n = Math.floor(Number(value.replace(/,/g, "")));
   return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_SCU) : 0;
 }
-
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /* Read x × y × z as whole SCU cells, or null if any is missing. */
 function parseShape(item: Raw): Shape | null {

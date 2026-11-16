@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import type { Grid } from "../lib/cargo";
 import { computeTable, selection } from "../lib/calc";
 import { copyText } from "../lib/clipboard";
 import { cargoColors } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
-import { useTimedFlag, useTimedMessage } from "../lib/hooks";
-import { isEnabled, loadState, makeRow, reducer, saveState, type RowField, type TextKey } from "../lib/state";
+import { useIdSet, useTimedFlag, useTimedMessage } from "../lib/hooks";
+import { enabledContainers, loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { Legend } from "./Legend";
 import { ShipPicker } from "./ShipPicker";
@@ -16,6 +17,13 @@ const ShipView = lazy(() => import("./ShipView"));
 
 const STATUS_MS = 2200; // how long a copy or clear message stays
 const DISARM_MS = 3000; // how long Clear table waits for the second click
+
+/* "512 SCU in 4 grids of 128 SCU": the layout's total, and each grid's size when they're all alike. */
+function gridSummary(grid: Grid): string {
+  const capacities = new Set(grid.positions.map((p) => p.capacity));
+  const each = capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "";
+  return `${fmt(sum(grid.positions, (p) => p.capacity))} SCU in ${plural(grid.positions.length, "grid")}${each}`;
+}
 
 /* The whole tool. It reads localStorage, so it renders in the browser only. */
 export function CargoSplitter() {
@@ -30,16 +38,7 @@ export function CargoSplitter() {
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
   /* Rows turned off in the legend, whose containers show dimmed. */
-  const [dimmed, setDimmed] = useState<ReadonlySet<number>>(() => new Set());
-  const dimRows = (rowIds: number[], dim: boolean) =>
-    setDimmed((before) => {
-      const after = new Set(before);
-      for (const id of rowIds) {
-        if (dim) after.add(id);
-        else after.delete(id);
-      }
-      return after;
-    });
+  const [dimmed, dimRows] = useIdSet();
 
   useEffect(() => saveState(state), [state]);
 
@@ -51,20 +50,22 @@ export function CargoSplitter() {
     document.getElementById(focusNext.current)?.focus();
     focusNext.current = null;
   });
+  const focusMaterial = (row: Row | undefined) => {
+    focusNext.current = row ? `r${row.id}-material` : "add-row";
+  };
 
   const [status, showStatus] = useTimedMessage(STATUS_MS);
   const [clearArmed, setClearArmed] = useTimedFlag(DISARM_MS);
 
   function addRow() {
     const row = makeRow();
-    focusNext.current = `r${row.id}-material`;
+    focusMaterial(row);
     dispatch({ type: "addRow", row });
   }
 
   function deleteRow(id: number) {
     const index = state.rows.findIndex((r) => r.id === id);
-    const next = state.rows[index + 1] ?? state.rows[index - 1];
-    focusNext.current = next ? `r${next.id}-material` : "add-row";
+    focusMaterial(state.rows[index + 1] ?? state.rows[index - 1]);
     dispatch({ type: "deleteRow", id });
   }
 
@@ -79,26 +80,20 @@ export function CargoSplitter() {
     if (!clearArmed) return setClearArmed(true);
     setClearArmed(false);
     const row = makeRow();
-    focusNext.current = `r${row.id}-material`;
+    focusMaterial(row);
     dispatch({ type: "clearRows", row });
     showStatus("Table cleared");
   }
 
   async function copy(format: "tsv" | "markdown") {
-    const sizes = containers.map((c) => c.size).filter((size) => isEnabled(state.enabled, size));
+    const sizes = enabledContainers(containers, state.enabled).map((c) => c.size);
     const table = exportTable(state.rows, calc, sizes);
     const ok = await copyText(format === "tsv" ? tableAsTsv(table) : tableAsMarkdown(table));
     if (!ok) showStatus("Copy isn't available here");
     else showStatus(format === "tsv" ? "Copied. Paste into a spreadsheet." : "Copied as a Markdown table.");
   }
 
-  const capacities = new Set(grid?.positions.map((p) => p.capacity));
-  const shipInfo =
-    configError ||
-    (grid
-      ? `${fmt(sum(grid.positions, (p) => p.capacity))} SCU in ${plural(grid.positions.length, "grid")}` +
-        (capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "")
-      : "");
+  const shipInfo = configError || (grid ? gridSummary(grid) : "");
 
   return (
     <>
@@ -106,11 +101,7 @@ export function CargoSplitter() {
         <ShipPicker
           ships={ships}
           value={ship?.id ?? ""}
-          onChange={(shipId) => {
-            /* A new ship starts on its first cargo grid. */
-            const gridId = ships.find((s) => s.id === shipId)?.grids[0]?.id ?? "";
-            dispatch({ type: "selectShip", shipId, gridId });
-          }}
+          onChange={(shipId) => dispatch({ type: "selectShip", shipId })}
         />
         <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
           <span>Layout</span>
@@ -157,12 +148,12 @@ export function CargoSplitter() {
           containers={containers}
           positions={positions}
           cargoByRow={colors.byRow}
-          onUpdate={(id: number, field: RowField, value: string) => dispatch({ type: "updateRow", id, field, value })}
-          onTogglePick={(id: number, name: string) => dispatch({ type: "togglePick", id, name })}
+          onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
+          onTogglePick={(id, name) => dispatch({ type: "togglePick", id, name })}
           onHighlight={setHighlight}
           onDelete={deleteRow}
-          onSort={(key: TextKey) => dispatch({ type: "sortBy", key })}
-          onToggleSize={(size: number, on: boolean) => dispatch({ type: "setSizeEnabled", size, on })}
+          onSort={(key) => dispatch({ type: "sortBy", key })}
+          onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
           onScuEnter={focusNextScu}
         />
       </div>

@@ -2,6 +2,9 @@
 
 export const fmt = (n: number): string => n.toLocaleString("en-US");
 
+/* Compares names as people read them: "Hull 10" after "Hull 9", ignoring case. */
+export const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 export const plural = (n: number, word: string): string => `${fmt(n)} ${word}${n === 1 ? "" : "s"}`;
 
 export const sum = <T>(items: T[], pick: (item: T) => number): number =>

@@ -1,4 +1,5 @@
-import { asText } from "./cargo";
+import { asText, type Container } from "./cargo";
+import { collator } from "./format";
 
 /* The page's saved state: the chosen ship and grid, which container sizes are
    on, the last sort and the cargo rows. Kept in localStorage. */
@@ -29,6 +30,8 @@ export type State = {
 
 /* Container sizes are on unless unchecked. */
 export const isEnabled = (enabled: State["enabled"], size: number): boolean => enabled[size] !== false;
+export const enabledContainers = (containers: Container[], enabled: State["enabled"]): Container[] =>
+  containers.filter((c) => isEnabled(enabled, c.size));
 
 const STORE_KEY = "cargo-splitter-v3";
 /* Position names saved before ships were selectable: the Hull B's relaxed grid. */
@@ -132,7 +135,8 @@ export type Action =
   /* Pick a grid for a row, after every earlier pick, or unpick it. */
   | { type: "togglePick"; id: number; name: string }
   | { type: "sortBy"; key: TextKey }
-  | { type: "selectShip"; shipId: string; gridId: string }
+  /* A new ship starts on its first layout. */
+  | { type: "selectShip"; shipId: string }
   | { type: "selectGrid"; gridId: string }
   | { type: "setSizeEnabled"; size: number; on: boolean }
   | { type: "clearRows"; row: Row };
@@ -164,7 +168,7 @@ export function reducer(state: State, action: Action): State {
       return { ...state, sort: { key, dir }, rows };
     }
     case "selectShip":
-      return { ...state, shipId: action.shipId, gridId: action.gridId };
+      return { ...state, shipId: action.shipId, gridId: "" };
     case "selectGrid":
       return { ...state, gridId: action.gridId };
     case "setSizeEnabled":
@@ -173,8 +177,6 @@ export function reducer(state: State, action: Action): State {
       return { ...state, rows: [action.row] };
   }
 }
-
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /* Blank values always sort last, whichever way the sort runs. */
 export function compareRows(a: string, b: string, dir: SortDir): number {

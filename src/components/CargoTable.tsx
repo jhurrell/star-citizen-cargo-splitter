@@ -23,30 +23,44 @@ type Props = {
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
 };
+type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onDelete" | "onScuEnter">;
+
+/* A container size's column, on unless turned off in its header. */
+type SizeColumn = { size: number; on: boolean };
+/* A grid's button: its short tag and the SCU it has free (below 0 when over). */
+type GridButton = { name: string; tag: string; free: number };
 
 /* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
    container size, Left over (only when some SCU can't be placed), Grid. */
-export function CargoTable({ state, calc, containers, positions, cargoByRow, ...actions }: Props) {
-  /* SCU still free in each grid (below 0 when over), shown on its buttons. */
-  const free = new Map(positions.map((p) => [p.name, p.capacity - calc.byPosition.get(p.name)!.scu]));
+export function CargoTable({
+  state,
+  calc,
+  containers,
+  positions,
+  cargoByRow,
+  onSort,
+  onToggleSize,
+  ...rowActions
+}: Props) {
+  const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
   const tags = initials(positions.map((p) => p.name));
-  const columnCount = TEXT_COLUMNS.length + 1 + containers.length + 1 + 1;
+  const grids: GridButton[] = positions.map((p, i) => ({
+    name: p.name,
+    tag: tags[i],
+    free: p.capacity - calc.byPosition.get(p.name)!.scu,
+  }));
+  /* Material, Pick-up and Drop-off; SCU; the sizes; Left over; Grid. */
+  const columnCount = TEXT_COLUMNS.length + 1 + sizes.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
       <thead>
         <tr>
           {TEXT_COLUMNS.map(({ key, label }) => (
-            <SortHead key={key} sortKey={key} label={label} sort={state.sort} onSort={actions.onSort} />
+            <SortHead key={key} sortKey={key} label={label} sort={state.sort} onSort={onSort} />
           ))}
           <th className="label num">SCU</th>
-          {containers.map(({ size }, i) => (
-            <SizeHead
-              key={size}
-              size={size}
-              first={i === 0}
-              on={isEnabled(state.enabled, size)}
-              onToggle={actions.onToggleSize}
-            />
+          {sizes.map(({ size, on }, i) => (
+            <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onToggleSize} />
           ))}
           <th className="label num sep leftover" hidden={!calc.showLeftover}>
             Left over
@@ -69,13 +83,10 @@ export function CargoTable({ state, calc, containers, positions, cargoByRow, ...
               fill={calc.byRow.get(row.id)!}
               split={calc.splits.get(row.id)!}
               cargo={cargoByRow.get(row.id)}
-              free={free}
-              tags={tags}
+              sizes={sizes}
+              grids={grids}
               showLeftover={calc.showLeftover}
-              containers={containers}
-              enabled={state.enabled}
-              positions={positions}
-              {...actions}
+              {...rowActions}
             />
           ))
         )}
@@ -86,12 +97,7 @@ export function CargoTable({ state, calc, containers, positions, cargoByRow, ...
             Total · {plural(state.rows.length, "row")}
           </td>
           <td className="foot-scu">{fmt(calc.totals.scu)}</td>
-          <CalcCells
-            fill={calc.totals}
-            showLeftover={calc.showLeftover}
-            containers={containers}
-            enabled={state.enabled}
-          />
+          <CalcCells fill={calc.totals} sizes={sizes} showLeftover={calc.showLeftover} />
           <td className="sep" />
         </tr>
       </tfoot>
@@ -160,29 +166,26 @@ function SizeHead({
 function CargoRow({
   row,
   fill,
-  showLeftover,
-  containers,
-  enabled,
-  positions,
   split,
   cargo,
-  free,
-  tags,
+  sizes,
+  grids,
+  showLeftover,
   onUpdate,
   onTogglePick,
   onHighlight,
   onDelete,
   onScuEnter,
-}: Omit<Props, "state" | "calc" | "cargoByRow" | "onSort" | "onToggleSize"> & {
+}: RowActions & {
   row: Row;
   fill: Fill;
   split: Split;
   cargo: Cargo | undefined;
-  free: Map<string, number>;
-  tags: string[];
+  sizes: SizeColumn[];
+  grids: GridButton[];
   showLeftover: boolean;
-  enabled: State["enabled"];
 }) {
+  const why = shortText(split) || undefined;
   const field = (key: RowField) => ({
     id: `r${row.id}-${key}`,
     value: row[key],
@@ -218,13 +221,13 @@ function CargoRow({
         );
       })}
       {/* Amber when the row's grids don't have room for all of it; the tooltip says how much. */}
-      <td className="edit scu-cell" data-short={split.short ? "" : undefined} title={shortText(split) || undefined}>
+      <td className="edit scu-cell" data-short={split.short ? "" : undefined} title={why}>
         <input
           className="field scu"
           inputMode="numeric"
           placeholder="0"
           aria-label="SCU"
-          aria-description={shortText(split) || undefined}
+          aria-description={why}
           {...field("scu")}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
@@ -233,17 +236,9 @@ function CargoRow({
           }}
         />
       </td>
-      <CalcCells fill={fill} showLeftover={showLeftover} containers={containers} enabled={enabled} />
+      <CalcCells fill={fill} sizes={sizes} showLeftover={showLeftover} />
       <td className="edit sep">
-        <GridPicks
-          row={row}
-          split={split}
-          positions={positions}
-          free={free}
-          tags={tags}
-          onTogglePick={onTogglePick}
-          onHighlight={onHighlight}
-        />
+        <GridPicks row={row} split={split} grids={grids} onTogglePick={onTogglePick} onHighlight={onHighlight} />
       </td>
     </tr>
   );
@@ -254,19 +249,13 @@ function CargoRow({
 function GridPicks({
   row,
   split,
-  positions,
-  free,
-  tags,
+  grids,
   onTogglePick,
   onHighlight,
-}: {
+}: Pick<RowActions, "onTogglePick" | "onHighlight"> & {
   row: Row;
   split: Split;
-  positions: Position[];
-  free: Map<string, number>;
-  tags: string[];
-  onTogglePick: (id: number, name: string) => void;
-  onHighlight: (name: string | null) => void;
+  grids: GridButton[];
 }) {
   const share = new Map(split.parts.map((p) => [p.name, p.scu]));
   return (
@@ -276,33 +265,32 @@ function GridPicks({
         className="grid-picks"
         role="group"
         aria-label="Grids for this row"
-        style={{ gridTemplateColumns: `repeat(${Math.min(positions.length, 4)}, auto)` }}
+        style={{ gridTemplateColumns: `repeat(${Math.min(grids.length, 4)}, auto)` }}
       >
-        {positions.map((p, i) => {
-          const on = share.has(p.name);
-          const available = free.get(p.name)!;
+        {grids.map(({ name, tag, free }) => {
+          const on = share.has(name);
           const lines = [
-            p.name,
-            `${fmt(available)} SCU available`,
-            ...(on && split.parts.length > 1 ? [`${fmt(share.get(p.name)!)} SCU of this row`] : []),
+            name,
+            `${fmt(free)} SCU available`,
+            ...(on && split.parts.length > 1 ? [`${fmt(share.get(name)!)} SCU of this row`] : []),
           ];
           return (
             <button
-              key={p.name}
+              key={name}
               type="button"
               className="grid-pick"
               aria-pressed={on}
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
-              data-over={available < 0 || undefined}
-              onClick={() => onTogglePick(row.id, p.name)}
-              onMouseEnter={() => onHighlight(p.name)}
+              data-over={free < 0 || undefined}
+              onClick={() => onTogglePick(row.id, name)}
+              onMouseEnter={() => onHighlight(name)}
               onMouseLeave={() => onHighlight(null)}
-              onFocus={() => onHighlight(p.name)}
+              onFocus={() => onHighlight(name)}
               onBlur={() => onHighlight(null)}
             >
-              <span className="grid-tag">{tags[i]}</span>
-              <span className="grid-free">{fmt(available)}</span>
+              <span className="grid-tag">{tag}</span>
+              <span className="grid-free">{fmt(free)}</span>
             </button>
           );
         })}
@@ -323,21 +311,11 @@ function countCell(size: number, counts: Counts, on: boolean) {
 }
 
 /* Container counts and Left over for one row, or the total row. */
-function CalcCells({
-  fill,
-  showLeftover,
-  containers,
-  enabled,
-}: {
-  fill: Fill;
-  showLeftover: boolean;
-  containers: Container[];
-  enabled: State["enabled"];
-}) {
+function CalcCells({ fill, sizes, showLeftover }: { fill: Fill; sizes: SizeColumn[]; showLeftover: boolean }) {
   return (
     <>
-      {containers.map(({ size }, i) => {
-        const cell = countCell(size, fill.counts, isEnabled(enabled, size));
+      {sizes.map(({ size, on }, i) => {
+        const cell = countCell(size, fill.counts, on);
         return (
           <td key={size} className={`count${i === 0 ? " sep" : ""}`} data-state={cell.look} title={cell.title}>
             {cell.text}

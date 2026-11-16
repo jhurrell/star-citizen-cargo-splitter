@@ -15,7 +15,7 @@ import {
   type Placed,
   type Sweep,
 } from "./packing";
-import { isEnabled, type Row, type State } from "./state";
+import { enabledContainers, type Row, type State } from "./state";
 
 /* The selected ship and grid layout, falling back to the first of each. */
 export function selection(ships: Ship[], state: Pick<State, "shipId" | "gridId">) {
@@ -118,7 +118,7 @@ export function computeTable(
   containers: Container[],
   positions: Position[],
 ): Calc {
-  const usable = containers.filter((c) => isEnabled(enabled, c.size));
+  const usable = enabledContainers(containers, enabled);
   const byName = new Map(positions.map((p) => [p.name, p]));
   const sizesFor = (position: Position | undefined) =>
     usable.filter((c) => !position || fitsInside(c, position)).map((c) => c.size);

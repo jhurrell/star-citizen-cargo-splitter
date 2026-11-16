@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /* A message that clears itself `ms` after it was last shown. */
 export function useTimedMessage(ms: number): [string, (message: string) => void] {
@@ -22,4 +22,22 @@ export function useTimedFlag(ms: number): [boolean, (on: boolean) => void] {
     return () => clearTimeout(timer);
   }, [on, ms]);
   return [on, setOn];
+}
+
+/* A set of ids, and a way to add (or, with false, remove) several at once. */
+export function useIdSet(): [ReadonlySet<number>, (ids: number[], add: boolean) => void] {
+  const [ids, setIds] = useState<ReadonlySet<number>>(() => new Set());
+  const update = useCallback(
+    (changed: number[], add: boolean) =>
+      setIds((before) => {
+        const after = new Set(before);
+        for (const id of changed) {
+          if (add) after.add(id);
+          else after.delete(id);
+        }
+        return after;
+      }),
+    [],
+  );
+  return [ids, update];
 }

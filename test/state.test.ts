@@ -76,3 +76,10 @@ describe("reducer togglePick", () => {
     expect(state.rows[0].picks).toEqual([{ name: "SL", order: 3 }]);
   });
 });
+
+describe("reducer selectShip", () => {
+  test("starts the new ship on its first layout", () => {
+    const state = { ...defaultState(), shipId: "a", gridId: "cargo" };
+    expect(reducer(state, { type: "selectShip", shipId: "b" })).toMatchObject({ shipId: "b", gridId: "" });
+  });
+});

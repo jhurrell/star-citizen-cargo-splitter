@@ -7,8 +7,9 @@ import { filterByName, matchedParts } from "../lib/search";
 const maxScu = (ship: Ship) => Math.max(0, ...ship.grids.map((g) => sum(g.positions, (p) => p.capacity)));
 
 /* The ship, chosen by typing: the list narrows to ships with each typed word
-   anywhere in their name, each shown with the most SCU it carries. Arrow keys move through it, Enter or a click picks,
-   Escape gives up. While closed it shows the chosen ship's name. */
+   anywhere in their name, each shown with the most SCU it carries. Arrow keys
+   move through it, Enter or a click picks, Escape gives up. While closed it
+   shows the chosen ship's name. */
 export function ShipPicker({
   ships,
   value,
@@ -19,6 +20,7 @@ export function ShipPicker({
   onChange: (shipId: string) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLUListElement>(null);
   const listId = useId();
   /* What's typed while the list is open; null while it's closed. */
   const [query, setQuery] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function ShipPicker({
     if (!matches.length) return;
     const next = (active + by + matches.length) % matches.length;
     setActive(next);
-    document.getElementById(optionId(next))?.scrollIntoView({ block: "nearest" });
+    list.current?.children[next]?.scrollIntoView({ block: "nearest" });
   };
 
   return (
@@ -80,7 +82,7 @@ export function ShipPicker({
         }}
       />
       {open && (
-        <ul className="ship-options" id={listId} role="listbox" aria-label="Ships">
+        <ul ref={list} className="ship-options" id={listId} role="listbox" aria-label="Ships">
           {matches.map((ship, i) => (
             <li
               key={ship.id}
