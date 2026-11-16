@@ -138,12 +138,16 @@ export function CargoVisualizer() {
           <button type="button" className="btn primary" id="add-row" onClick={addRow}>
             Add row
           </button>
-          <button type="button" className="btn" onClick={() => void copy("tsv")}>
-            Copy for Spreadsheet
-          </button>
-          <button type="button" className="btn" onClick={() => void copy("markdown")}>
-            Copy Markdown
-          </button>
+          {/* "Copy for" once, then the formats; screen readers hear the group's name with each button. */}
+          <div className="picker" role="group" aria-labelledby="copy-for">
+            <span id="copy-for">Copy for</span>
+            <button type="button" className="btn" onClick={() => void copy("tsv")}>
+              Spreadsheet
+            </button>
+            <button type="button" className="btn" onClick={() => void copy("markdown")}>
+              Markdown
+            </button>
+          </div>
           <button type="button" className={`btn${clearArmed ? " is-armed" : ""}`} onClick={clearTable}>
             {clearArmed ? "Click again to clear" : "Clear table"}
           </button>

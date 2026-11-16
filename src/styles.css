@@ -140,7 +140,7 @@ h2 {
   margin: 0;
 }
 
-/* ---------- Ship picker: its label beside it, in the toolbar ---------- */
+/* ---------- Toolbar pickers and button groups: a small label beside them ---------- */
 .picker {
   display: flex;
   align-items: center;
@@ -178,8 +178,9 @@ h2 {
   position: relative;
 }
 .ship-picker input {
-  /* Wide enough for the longest ship name, "RSI Constellation Mk IV Andromeda / Aquila". */
-  min-width: 23em;
+  /* The list below is as wide as this, so this is wide enough for its longest
+     row ("RSI Constellation Mk IV Andromeda / Aquila", its SCU and a scrollbar). */
+  min-width: 29em;
   cursor: text;
 }
 .ship-picker input::placeholder {
@@ -191,10 +192,13 @@ h2 {
   top: 100%;
   left: 0;
   z-index: 20;
-  min-width: 100%;
+  /* As wide as the field. Firefox leaves the scrollbar out when it sizes a list
+     to its rows, which pushed the longest one into a sideways scroll. */
+  width: 100%;
   max-height: min(360px, 60vh);
   margin: 4px 0 0;
   padding: 4px 0;
+  overflow-x: hidden;
   overflow-y: auto;
   list-style: none;
   background: var(--surface);
@@ -210,6 +214,13 @@ h2 {
   white-space: nowrap;
   color: var(--fg);
   cursor: pointer;
+}
+/* A name too long for the field (a font wider than expected) ends in "…"
+   rather than scrolling the list sideways. */
+.ship-options li > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ship-options li[aria-selected="true"] {
   background: var(--surface-2);

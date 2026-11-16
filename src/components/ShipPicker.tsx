@@ -48,12 +48,13 @@ export function ShipPicker({
 
   return (
     <div className="picker ship-picker">
-      <label htmlFor="ship">Ship</label>
-      {/* The list drops down from the input itself, not its label. */}
+      {/* No visible label: the placeholder says what it's for, and screen
+          readers hear "Ship". */}
       <div className="ship-field">
         <input
           ref={input}
           id="ship"
+          aria-label="Ship"
           type="text"
           role="combobox"
           autoComplete="off"
@@ -62,7 +63,7 @@ export function ShipPicker({
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={open && matches.length ? optionId(active) : undefined}
-          placeholder={open ? (selected?.name ?? "Type to find a ship") : ""}
+          placeholder="Enter or select a ship"
           value={open ? query : (selected?.name ?? "")}
           disabled={ships.length === 0}
           onFocus={() => show("")}
