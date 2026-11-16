@@ -10,14 +10,14 @@ describe("cargoColors", () => {
     expect(legend).toHaveLength(11);
     expect(new Set(legend.slice(0, 8).map((c) => c.color)).size).toBe(8);
     expect(legend.slice(8).every((c) => c.color === OTHER_COLOR)).toBe(true);
-    expect(byRow.get(rows[0].id)!.name).toBe("M0 (#1)"); // shares a cargo; no route, so its row number
+    expect(byRow.get(rows[0].id)!.name).toBe("M0 (#1)"); // shares a cargo; no drop-off, so its row number
     expect(byRow.get(rows[10].id)!.name).toBe("m0 (#11)");
     expect(byRow.get(rows[1].id)!.name).toBe("M1"); // its cargo is its own
     expect(byRow.has(rows[11].id)).toBe(false);
     expect(legend.map((c) => c.rowId)).toEqual(rows.slice(0, 11).map((r) => r.id)); // for the legend's buttons
   });
 
-  test("rows sharing a cargo show their drop-off, or their row number when it's blank or not unique", () => {
+  test("rows show their drop-off, and their row number when another has the same cargo and drop-off", () => {
     const rows = [
       makeRow({ cargo: "Gold", pickup: "Area18", dropoff: " Lorville ", scu: "1" }),
       makeRow({ cargo: "gold ", pickup: "New Babbage", dropoff: "Orison", scu: "1" }),
@@ -27,7 +27,14 @@ describe("cargoColors", () => {
       makeRow({ cargo: "Iron", pickup: "Area18", dropoff: "Lorville", scu: "1" }),
     ];
     const names = cargoColors(rows).legend.map((c) => c.name);
-    expect(names).toEqual(["Gold (Lorville)", "gold (Orison)", "Gold (#3)", "Gold (#4)", "Gold (#5)", "Iron"]);
+    expect(names).toEqual([
+      "Gold (Lorville)",
+      "gold (Orison)",
+      "Gold", // the only Gold with no drop-off
+      "Gold (Hurston #4)",
+      "Gold (hurston #5)",
+      "Iron (Lorville)",
+    ]);
   });
 
   test("sorting the table doesn't repaint a row, but reorders the legend", () => {

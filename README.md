@@ -29,7 +29,8 @@ the ship.
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
     stays apart.
   - Each row has its own color, and each container shows its size in SCU. The legend lists the rows in the
-    table's order.
+    table's order, each by its cargo and drop-off, "Gold (Lorville)", with its row number when another row has the
+    same cargo and drop-off.
   - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row in the
     legend, or at its Cargo, Pick-up or Drop-off in the table, to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
