@@ -9,15 +9,23 @@ describe("computeTable", () => {
 
   test("only uses sizes that fit the row's position, and totals them", () => {
     const rows = [
-      makeRow({ scu: "40", picks: [{ name: "Small", order: 1 }] }),
-      makeRow({ scu: "40", picks: [{ name: "Big", order: 2 }] }),
+      makeRow({ scu: "8", picks: [{ name: "Small", order: 1 }] }),
+      makeRow({ scu: "32", picks: [{ name: "Big", order: 2 }] }),
     ];
     const calc = computeTable(rows, {}, containers, positions);
-    expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 8: 5, 1: 0 }, leftover: 0 });
-    expect(calc.byRow.get(rows[1].id)).toEqual({ counts: { 32: 1, 8: 1, 1: 0 }, leftover: 0 });
-    expect(calc.totals.counts).toEqual({ 32: 1, 8: 6, 1: 0 });
-    expect(calc.byPosition.get("Small")!.scu).toBe(40); // over its capacity of 8
+    expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 8: 1, 1: 0 }, leftover: 0 });
+    expect(calc.byRow.get(rows[1].id)).toEqual({ counts: { 32: 1, 8: 0, 1: 0 }, leftover: 0 });
+    expect(calc.totals.counts).toEqual({ 32: 1, 8: 1, 1: 0 });
     expect(calc.byPosition.get("Small")!.placed).toHaveLength(1);
+  });
+
+  test("a grid never takes more than it holds; the rest is counted with any size", () => {
+    const rows = [makeRow({ scu: "40", picks: [{ name: "Small", order: 1 }] })];
+    const calc = computeTable(rows, {}, containers, positions);
+    expect(calc.byPosition.get("Small")).toMatchObject({ scu: 8 });
+    expect(calc.splits.get(rows[0].id)!.short).toBe(32);
+    expect(calc.byRow.get(rows[0].id)).toEqual({ counts: { 32: 1, 8: 1, 1: 0 }, leftover: 0 });
+    expect(calc.totals.scu).toBe(40);
   });
 
   test("unchecked sizes are skipped and leave a leftover when nothing smaller fits", () => {
@@ -98,7 +106,7 @@ describe("splitRows", () => {
     ]);
   });
 
-  test("what there's no room for goes in the last pick and counts as short", () => {
+  test("what there's no room for stays out of every grid and counts as short", () => {
     const rows = [
       makeRow({ scu: "40", picks: picks([1, "A"], [2, "B"]) }),
       makeRow({ scu: "20", picks: picks([3, "C"]) }),
@@ -107,12 +115,17 @@ describe("splitRows", () => {
       {
         parts: [
           { name: "A", scu: 16 },
-          { name: "B", scu: 24 },
+          { name: "B", scu: 16 },
         ],
         short: 8,
       },
-      { parts: [{ name: "C", scu: 20 }], short: 4 },
+      { parts: [{ name: "C", scu: 16 }], short: 4 },
     ]);
+  });
+
+  test("a later pick of a full grid gets nothing from it", () => {
+    const rows = [makeRow({ scu: "16", picks: picks([1, "A"]) }), makeRow({ scu: "4", picks: picks([2, "A"]) })];
+    expect(parts(rows)[1]).toEqual({ parts: [{ name: "A", scu: 0 }], short: 4 });
   });
 
   test("a row with no grid is short only when no one grid could hold it", () => {

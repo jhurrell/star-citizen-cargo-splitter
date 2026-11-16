@@ -443,7 +443,7 @@ select.field option {
   border-radius: var(--radius);
   cursor: pointer;
 }
-.grid-pick:hover {
+.grid-pick:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--fg);
 }
@@ -466,11 +466,10 @@ select.field option {
   font-size: 12px;
   font-weight: 600;
 }
-.grid-pick[data-over] .grid-free {
-  color: var(--warn);
-}
-.grid-pick[aria-pressed="true"][data-over] .grid-free {
-  color: #7a2a00;
+/* A full grid, on rows that aren't in it. */
+.grid-pick:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 /* A row whose grids don't have room for all of it: an amber edge down its
    left side and an amber SCU, whose tooltip says how much doesn't fit. */

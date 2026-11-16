@@ -1,9 +1,18 @@
 import { shortText, type Calc, type Split } from "../lib/calc";
-import type { Container, Position } from "../lib/cargo";
+import { fitsInside, type Container, type Position } from "../lib/cargo";
 import type { Cargo } from "../lib/colors";
 import { fmt, initials, plural } from "../lib/format";
 import type { Counts, Fill } from "../lib/packing";
-import { isEnabled, TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
+import {
+  enabledContainers,
+  isEnabled,
+  TEXT_COLUMNS,
+  type Row,
+  type RowField,
+  type Sort,
+  type State,
+  type TextKey,
+} from "../lib/state";
 import { Swatch } from "./Legend";
 
 type Props = {
@@ -27,8 +36,9 @@ type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onD
 
 /* A container size's column, on unless turned off in its header. */
 type SizeColumn = { size: number; on: boolean };
-/* A grid's button: its short tag and the SCU it has free (below 0 when over). */
-type GridButton = { name: string; tag: string; free: number };
+/* A grid's button: its short tag, the SCU it has free, and whether that's
+   too little for any container, so other rows can't pick it. */
+type GridButton = { name: string; tag: string; free: number; full: boolean };
 
 /* The editable cargo table: Material / Pick-up / Drop-off, SCU, a column per
    container size, Left over (only when some SCU can't be placed), Grids. */
@@ -44,11 +54,16 @@ export function CargoTable({
 }: Props) {
   const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
   const tags = initials(positions.map((p) => p.name));
-  const grids: GridButton[] = positions.map((p, i) => ({
-    name: p.name,
-    tag: tags[i],
-    free: p.capacity - calc.byPosition.get(p.name)!.scu,
-  }));
+  const usable = enabledContainers(containers, state.enabled);
+  const grids: GridButton[] = positions.map((p, i) => {
+    const free = p.capacity - calc.byPosition.get(p.name)!.scu;
+    return {
+      name: p.name,
+      tag: tags[i],
+      free,
+      full: !usable.some((c) => c.size <= free && fitsInside(c, p)),
+    };
+  });
   /* Material, Pick-up and Drop-off; SCU; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 1 + sizes.length + 1 + 1;
   return (
@@ -244,8 +259,9 @@ function CargoRow({
   );
 }
 
-/* The Grids cell: a toggle button per grid showing the SCU it has available.
-   Pointing at (or tabbing to) a button lights that grid up in the ship view. */
+/* The Grids cell: a toggle button per grid showing the SCU it has available,
+   disabled once the grid is full unless this row is in it. Pointing at (or
+   tabbing to) a button lights that grid up in the ship view. */
 function GridPicks({
   row,
   split,
@@ -267,11 +283,11 @@ function GridPicks({
         aria-label="Grids for this row"
         style={{ gridTemplateColumns: `repeat(${Math.min(grids.length, 4)}, auto)` }}
       >
-        {grids.map(({ name, tag, free }) => {
+        {grids.map(({ name, tag, free, full }) => {
           const on = share.has(name);
           const lines = [
             name,
-            `${fmt(free)} SCU available`,
+            full && !on ? "Full: no room for another container" : `${fmt(free)} SCU available`,
             ...(on && split.parts.length > 1 ? [`${fmt(share.get(name)!)} SCU of this row`] : []),
           ];
           return (
@@ -282,7 +298,8 @@ function GridPicks({
               aria-pressed={on}
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
-              data-over={free < 0 || undefined}
+              /* A row that already has this grid can still give it up. */
+              disabled={full && !on}
               onClick={() => onTogglePick(row.id, name)}
               onMouseEnter={() => onHighlight(name)}
               onMouseLeave={() => onHighlight(null)}

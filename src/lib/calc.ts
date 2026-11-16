@@ -32,43 +32,33 @@ export type Split = { parts: Part[]; short: number };
 
 /* Grids fill in the order they were picked, across all rows: each pick takes
    what it can of its row's remaining SCU from the room its grid has left, so
-   a later pick never takes room from an earlier one. What's left of a row
-   after all its picks still goes in its last-picked grid, so that grid shows
-   as over capacity. Picks for grids not on this layout are ignored. */
+   a later pick never takes room from an earlier one, and no grid takes more
+   than it holds. What's left of a row after all its picks is its `short`.
+   Picks for grids not on this layout are ignored. */
 export function splitRows(rows: Row[], positions: Position[]): Map<number, Split> {
   const room = new Map(positions.map((p) => [p.name, p.capacity]));
   const largest = Math.max(0, ...positions.map((p) => p.capacity));
   const rest = new Map(rows.map((row) => [row.id, parseScu(row.scu)]));
   const parts = new Map(rows.map((row) => [row.id, [] as Part[]]));
-  const take = (rowId: number, name: string, scu: number) => {
-    rest.set(rowId, rest.get(rowId)! - scu);
-    room.set(name, room.get(name)! - scu);
-  };
-
   /* Ties (from older saves) go by table order. The sort is stable. */
   const picks = rows
     .flatMap((row) => row.picks.filter((p) => room.has(p.name)).map((p) => ({ ...p, rowId: row.id })))
     .sort((a, b) => a.order - b.order);
   for (const { rowId, name } of picks) {
-    const scu = Math.min(rest.get(rowId)!, Math.max(0, room.get(name)!));
+    const scu = Math.min(rest.get(rowId)!, room.get(name)!);
     parts.get(rowId)!.push({ name, scu });
-    take(rowId, name, scu);
+    rest.set(rowId, rest.get(rowId)! - scu);
+    room.set(name, room.get(name)! - scu);
   }
 
-  const splits = new Map<number, Split>();
-  for (const row of rows) {
-    const rowParts = parts.get(row.id)!;
-    const short = rest.get(row.id)!;
-    const last = rowParts[rowParts.length - 1];
-    if (last) {
-      last.scu += short;
-      take(row.id, last.name, short);
-      splits.set(row.id, { parts: rowParts, short });
-    } else {
-      splits.set(row.id, { parts: [], short: positions.length ? Math.max(0, short - largest) : 0 });
-    }
-  }
-  return splits;
+  return new Map(
+    rows.map((row) => {
+      const rowParts = parts.get(row.id)!;
+      const rowRest = rest.get(row.id)!;
+      const short = rowParts.length ? rowRest : positions.length ? Math.max(0, rowRest - largest) : 0;
+      return [row.id, { parts: rowParts, short }];
+    }),
+  );
 }
 
 /* Why a row still needs splitting, or "" when it fits where it's going. */
@@ -108,8 +98,8 @@ export type Calc = {
   showLeftover: boolean;
 };
 
-/* Each part of a row only uses the container sizes turned on that fit its position
-   (a row with no position, any checked size). Each position is then packed a
+/* Each part of a row only uses the container sizes turned on that fit its position;
+   a row with no position, and what a row's grids have no room for, any size turned on. Each position is then packed a
    row at a time, in the order its rows picked it, to keep their cargo apart:
    the first from the fore end, later ones from aft (see packApart). */
 export function computeTable(
@@ -133,9 +123,13 @@ export function computeTable(
   for (const row of rows) {
     const scu = parseScu(row.scu);
     const { parts } = splits.get(row.id)!;
-    const shares = parts.length
-      ? parts.map((p) => ({ ...p, position: byName.get(p.name) }))
-      : [{ scu, position: undefined }];
+    const inGrids = sum(parts, (p) => p.scu);
+    /* What's in no grid (all of a row without one) is still counted, so a
+       row's containers add up to its SCU. */
+    const shares = [
+      ...parts.map((p) => ({ ...p, position: byName.get(p.name) })),
+      ...(!parts.length || scu > inGrids ? [{ scu: scu - inGrids, position: undefined }] : []),
+    ];
     /* Counts list every size the row could use, so the table can grey out the rest. */
     const fill: Fill = { counts: {}, leftover: 0 };
     for (const { position } of shares) for (const size of sizesFor(position)) fill.counts[size] = 0;
