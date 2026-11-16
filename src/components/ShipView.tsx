@@ -44,6 +44,7 @@ export default function ShipView({
   const bounds = useMemo(() => boundsOf(mounted), [mounted]);
   const [view, setView] = useState<View>("3d");
   const [hover, setHover] = useState("");
+  const [showLabels, setShowLabels] = useState(true);
   const labels = useMemo(() => [...mounted.map(gridLabel), ...directionLabels(bounds)], [mounted, bounds]);
   const labelEls = useRef(new Map<string, HTMLElement>());
 
@@ -61,6 +62,10 @@ export default function ShipView({
             {VIEWS[v].label}
           </button>
         ))}
+        <label className="ship-toggle">
+          <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
+          Labels
+        </label>
         <span className="status">{hover}</span>
       </div>
       <div className="ship-canvas">
@@ -81,7 +86,7 @@ export default function ShipView({
           <CameraRig view={view} bounds={bounds} />
           <LabelTracker labels={labels} elements={labelEls} />
         </Canvas>
-        <div className="ship-labels" aria-hidden="true">
+        <div className="ship-labels" aria-hidden="true" hidden={!showLabels}>
           {labels.map((label) => (
             /* Hidden until the first frame puts it in place. */
             <span
