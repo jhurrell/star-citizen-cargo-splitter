@@ -73,22 +73,6 @@
           "name": "Relaxed",
           "positions": [
             {
-              "name": "Port - Upper",
-              "x": 4,
-              "y": 16,
-              "z": 2,
-              "at": { "x": -1.77, "y": 0, "z": 1.77 },
-              "rotate": { "roll": -45 }
-            },
-            {
-              "name": "Port - Lower",
-              "x": 4,
-              "y": 16,
-              "z": 2,
-              "at": { "x": -1.77, "y": 0, "z": -1.77 },
-              "rotate": { "roll": -135 }
-            },
-            {
               "name": "Starboard - Upper",
               "x": 4,
               "y": 16,
@@ -103,6 +87,22 @@
               "z": 2,
               "at": { "x": 1.77, "y": 0, "z": -1.77 },
               "rotate": { "roll": 135 }
+            },
+            {
+              "name": "Port - Lower",
+              "x": 4,
+              "y": 16,
+              "z": 2,
+              "at": { "x": -1.77, "y": 0, "z": -1.77 },
+              "rotate": { "roll": -135 }
+            },
+            {
+              "name": "Port - Upper",
+              "x": 4,
+              "y": 16,
+              "z": 2,
+              "at": { "x": -1.77, "y": 0, "z": 1.77 },
+              "rotate": { "roll": -45 }
             }
           ]
         }

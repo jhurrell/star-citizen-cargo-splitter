@@ -10,8 +10,23 @@ describe("cargoColors", () => {
     expect(legend).toHaveLength(11);
     expect(new Set(legend.slice(0, 8).map((c) => c.color)).size).toBe(8);
     expect(legend.slice(8).every((c) => c.color === OTHER_COLOR)).toBe(true);
-    expect(byRow.get(rows[10].id)!.name).toBe("m0 (2)"); // same material, its own color and name
+    expect(byRow.get(rows[0].id)!.name).toBe("M0 (#1)"); // shares a material; no route, so its row number
+    expect(byRow.get(rows[10].id)!.name).toBe("m0 (#11)");
+    expect(byRow.get(rows[1].id)!.name).toBe("M1"); // its material is its own
     expect(byRow.has(rows[11].id)).toBe(false);
+  });
+
+  test("rows sharing a material show their route, or their row number when it's blank or not unique", () => {
+    const rows = [
+      makeRow({ material: "Gold", pickup: "area18", dropoff: "Lorville", scu: "1" }),
+      makeRow({ material: "gold ", pickup: "New Babbage", dropoff: "Orison", scu: "1" }),
+      makeRow({ material: "Gold", pickup: "Area18", dropoff: "", scu: "1" }),
+      makeRow({ material: "Gold", pickup: "Crusader", dropoff: "Hurston", scu: "1" }),
+      makeRow({ material: "Gold", pickup: "Crusader", dropoff: "Hurston", scu: "1" }),
+      makeRow({ material: "Iron", pickup: "Area18", dropoff: "Lorville", scu: "1" }),
+    ];
+    const names = cargoColors(rows).legend.map((c) => c.name);
+    expect(names).toEqual(["Gold (A→L)", "gold (N→O)", "Gold (#3)", "Gold (#4)", "Gold (#5)", "Iron"]);
   });
 
   test("sorting the table doesn't repaint a row", () => {
