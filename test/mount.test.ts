@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 import config from "../config.json";
 import { parseContainers, parseShips, packContainers, type Position } from "../src/lib/cargo";
-import { mountMatrix, parseMount, rotationOf, toShip, type Mount, type Vec3 } from "../src/lib/mount";
+import { foreAxis, mountMatrix, parseMount, rotationOf, toShip, type Mount, type Vec3 } from "../src/lib/mount";
 
 const mount = (roll = 0, pitch = 0, yaw = 0, at: Vec3 = [0, 0, 0]): Mount => ({ at, roll, pitch, yaw });
 /* Where the position's own x, y and z axes point on the ship. */
@@ -36,6 +36,15 @@ describe("rotationOf", () => {
   test("applies roll, then pitch, then yaw", () => {
     /* Roll 90 points up at starboard; yaw 90 then swings starboard round to aft. */
     expect(axes(mount(90, 0, 90))[2]).toEqual([0, -1, 0]);
+  });
+});
+
+describe("foreAxis", () => {
+  test("finds the floor axis that runs fore–aft, if any", () => {
+    expect(foreAxis(mount(45))).toEqual({ axis: "y", pointsFore: true }); // Hull B: rolled only
+    expect(foreAxis(mount(0, 0, 180))).toEqual({ axis: "y", pointsFore: false });
+    expect(foreAxis(mount(0, 0, -90))).toEqual({ axis: "x", pointsFore: true });
+    expect(foreAxis(mount(0, 90))).toBeNull(); // a Hull C rack: stacks fore–aft
   });
 });
 

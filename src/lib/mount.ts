@@ -79,3 +79,14 @@ export function mountMatrix(mount: Mount, size: Vec3): number[] {
   const origin = toShip(mount, size, [0, 0, 0]);
   return [r[0][0], r[1][0], r[2][0], 0, r[0][1], r[1][1], r[2][1], 0, r[0][2], r[1][2], r[2][2], 0, ...origin, 1];
 }
+
+/* Which of a position's floor axes runs fore–aft, and whether it points fore,
+   so its cargo can be loaded from the fore end. Null when neither does (a
+   rack facing fore or aft, whose cargo stacks fore or aft from its floor). */
+export function foreAxis(mount: Mount): { axis: "x" | "y"; pointsFore: boolean } | null {
+  const r = rotationOf(mount);
+  const [x, y] = [r[1][0], r[1][1]]; // how far each floor axis points fore
+  const axis = Math.abs(y) >= Math.abs(x) ? "y" : "x";
+  const along = axis === "y" ? y : x;
+  return Math.abs(along) > 0.5 ? { axis, pointsFore: along > 0 } : null;
+}

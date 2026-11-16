@@ -164,6 +164,13 @@ describe("foreToAft", () => {
     expect(names(grid("ship-misc-hull-b"))).toEqual(grid("ship-misc-hull-b").map((p) => p.name));
   });
 
+  test("loads a Hull B grid from its fore end", () => {
+    const positions = grid("ship-misc-hull-b");
+    const rows = [makeRow({ scu: "32", positions: ["Port - Upper"] })];
+    const { placed } = computeTable(rows, {}, containers, positions).byPosition.get("Port - Upper")!;
+    expect(placed.map(({ y, d }) => [y, y + d])).toEqual([[8, 16]]);
+  });
+
   test("a split row fills the fore rack first", () => {
     const positions = grid("ship-misc-hull-c");
     const rows = [makeRow({ scu: "600", positions: ["Upper - Aft", "Upper - Fore"] })];

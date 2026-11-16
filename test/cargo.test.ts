@@ -123,6 +123,17 @@ describe("packContainers", () => {
   const scu8 = box(8, 2, 2, 2);
   const scu1 = box(1, 1, 1, 1);
 
+  test("a floor-axis sweep stacks each spot full height, and reverse starts at the far end", () => {
+    const units = [{ container: scu1, count: 4, tag: 1 }];
+    const space = { x: 2, y: 4, z: 2 };
+    const cells = (sweep: Parameters<typeof packContainers>[2]) =>
+      packContainers(space, units, sweep).placed.map(({ x, y, z }) => `${x}${y}${z}`);
+    expect(cells({ axis: "z" })).toEqual(["000", "100", "010", "110"]);
+    expect(cells({ axis: "y" })).toEqual(["000", "100", "001", "101"]);
+    expect(cells({ axis: "y", reverse: true })).toEqual(["030", "130", "031", "131"]);
+    expect(cells({ axis: "x", reverse: true })).toEqual(["100", "110", "120", "130"]);
+  });
+
   test("fills a space exactly", () => {
     const { placed, unfit } = pack({ x: 4, y: 16, z: 2 }, [scu32, 4]);
     expect(placed).toHaveLength(4);

@@ -15,8 +15,9 @@ import {
   type Placed,
   type Position,
   type Ship,
+  type Sweep,
 } from "./cargo";
-import { toShip } from "./mount";
+import { foreAxis, toShip } from "./mount";
 import { TEXT_COLUMNS, type Row, type State } from "./state";
 
 export const fmt = (n: number): string => n.toLocaleString("en-US");
@@ -78,6 +79,13 @@ export function splitRows(rows: Row[], positions: Position[]): Map<number, Split
   for (const row of rows.filter((r) => count(r) === 0))
     splits.set(row.id, { parts: [], short: positions.length ? Math.max(0, parseScu(row.scu) - largest) : 0 });
   return splits;
+}
+
+/* Load a position from its fore end toward aft when its floor runs fore–aft;
+   otherwise (or with no place on the ship) a layer at a time from its floor. */
+function sweepOf(position: Position): Sweep {
+  const fore = position.mount && foreAxis(position.mount);
+  return fore ? { axis: fore.axis, reverse: fore.pointsFore } : { axis: "z" };
 }
 
 export type PositionEntry = { rows: number; scu: number; placed: Placed<number>[]; unfit: Counts };
@@ -152,7 +160,7 @@ export function computeTable(
   }
   for (const position of positions) {
     const entry = byPosition.get(position.name)!;
-    Object.assign(entry, packContainers(position, loads.get(position.name) ?? []));
+    Object.assign(entry, packContainers(position, loads.get(position.name) ?? [], sweepOf(position)));
     addCounts(totals.unfit, entry.unfit);
   }
   return { byRow, splits, byPosition, totals, showLeftover: totals.leftover > 0 };

@@ -121,13 +121,19 @@ export function parseShips(config: unknown): Ship[] {
 export const fitsInside = (box: Container, space: Shape): boolean =>
   box.placements.some(([w, d, h]) => w <= space.x && d <= space.y && h <= space.z);
 
+/* Which way packing sweeps a space. "z" fills the bottom layer before the
+   next. "x" or "y" fills along that floor axis from 0 instead, each spot as
+   high as it stacks before moving on; `reverse` then mirrors the result so it
+   fills from the far end (the fore end, say). */
+export type Sweep = { axis: "x" | "y" | "z"; reverse?: boolean };
+
 /* Pack containers into a space of x × y × z SCU cells (z is height). `tag`
    says whose cargo each container is. Each container sits in one of its
    placements (see placementsOf), on the floor or wholly on top of others.
-   Greedy: biggest first, each in the first spot that takes it, filling the
-   bottom layer before the next. This can miss a packing that exists, so it may
-   report a load as not fitting when a cleverer layout would. */
-export function packContainers<Tag>(space: Shape, load: Load<Tag>[]): Packing<Tag> {
+   Greedy: biggest first, each in the first spot that takes it, in `sweep`
+   order. This can miss a packing that exists, so it may report a load as not
+   fitting when a cleverer layout would. */
+export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Sweep = { axis: "z" }): Packing<Tag> {
   const { x: X, y: Y, z: Z } = space;
   const filled = new Uint8Array(X * Y * Z);
   const cell = (x: number, y: number, z: number) => (z * Y + y) * X + x;
@@ -145,14 +151,24 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[]): Packing<Ta
       return true;
     });
 
+  /* Every corner cell in sweep order: the sweep axis outermost, then height,
+     then the other floor axis. */
+  const corners: [number, number, number][] = [];
+  const [outer, inner] = sweep.axis === "x" ? [X, Y] : [Y, X];
+  if (sweep.axis === "z") {
+    for (let z = 0; z < Z; z++) for (let y = 0; y < Y; y++) for (let x = 0; x < X; x++) corners.push([x, y, z]);
+  } else {
+    for (let a = 0; a < outer; a++)
+      for (let z = 0; z < Z; z++)
+        for (let b = 0; b < inner; b++) corners.push(sweep.axis === "x" ? [a, b, z] : [b, a, z]);
+  }
+
   function findSpot(container: Container): Box | null {
-    for (let z = 0; z < Z; z++)
-      for (let y = 0; y < Y; y++)
-        for (let x = 0; x < X; x++)
-          for (const [w, d, h] of container.placements) {
-            const box = { x, y, z, w, d, h };
-            if (x + w <= X && y + d <= Y && z + h <= Z && isSupported(box) && isFree(box)) return box;
-          }
+    for (const [x, y, z] of corners)
+      for (const [w, d, h] of container.placements) {
+        const box = { x, y, z, w, d, h };
+        if (x + w <= X && y + d <= Y && z + h <= Z && isSupported(box) && isFree(box)) return box;
+      }
     return null;
   }
 
@@ -173,6 +189,8 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[]): Packing<Ta
       placed.push({ ...spot, size, tag });
     }
   }
+  if (sweep.reverse && sweep.axis === "x") for (const box of placed) box.x = X - box.x - box.w;
+  if (sweep.reverse && sweep.axis === "y") for (const box of placed) box.y = Y - box.y - box.d;
   return { placed, unfit };
 }
 
