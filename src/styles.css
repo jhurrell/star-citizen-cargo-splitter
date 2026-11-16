@@ -219,7 +219,7 @@ header p {
 
 .btn:focus-visible,
 .icon-btn:focus-visible,
-.size-toggle input:focus-visible {
+.size-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -293,34 +293,37 @@ header p {
   padding-left: calc(var(--del-size) + var(--swatch-room) + 10px);
 }
 
-.size-toggle label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 7px 4px 6px;
-  min-width: 3.4em;
-  cursor: pointer;
+/* A size's toggle button: filled while its containers are used; struck
+   through and plain while they're skipped. */
+.grid .size-toggle {
+  padding: 5px 3px;
 }
-.size-toggle input {
-  margin: 0;
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.size-toggle .size {
+.size-btn {
+  display: block;
+  width: 100%;
+  min-width: 2.4em;
+  padding: 3px 2px;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
-  color: var(--fg);
+  line-height: 1.15;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.size-btn[aria-pressed="false"] {
+  color: var(--off-fg);
+  background: var(--surface-2);
+  border-color: var(--line);
+  text-decoration: line-through;
+}
+.size-btn:hover {
+  border-color: var(--fg);
 }
 .grid thead .size-toggle.is-off {
   background: var(--off);
-}
-.size-toggle.is-off .size {
-  color: var(--off-fg);
-  text-decoration: line-through;
 }
 
 .field {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import { computeTable, shortText, splitRows } from "../src/lib/calc";
+import { sum } from "../src/lib/format";
 import { makeRow } from "../src/lib/state";
 import { bay, containers, shipPositions } from "./helpers";
 
@@ -134,6 +135,23 @@ describe("splitRows", () => {
     expect(calc.byPosition.get("A")).toMatchObject({ scu: 16 });
     expect(calc.byPosition.get("B")).toMatchObject({ scu: 16 });
     expect(calc.totals.scu).toBe(32);
+  });
+
+  test("a grid's later cargo loads from aft, apart from what was there first", () => {
+    const at = shipPositions("ship-misc-hull-b");
+    const rows = [
+      makeRow({ scu: "184", picks: picks([1, "Starboard - Upper"], [2, "Starboard - Lower"]) }),
+      makeRow({ scu: "84", picks: picks([3, "Starboard - Lower"], [4, "Port - Lower"]) }),
+    ];
+    const { placed } = computeTable(rows, {}, containers, at).byPosition.get("Starboard - Lower")!;
+    /* y runs aft to fore here. In each lane across the grid, the first row's
+       cargo is all fore of the second's. */
+    const ends = (id: number, x: number) =>
+      placed.filter((p) => p.tag === id && p.x === x).flatMap(({ y, d }) => [y, y + d]);
+    expect(sum(placed, (p) => p.size)).toBe(128); // all of it still fits
+    expect(Math.max(...placed.filter((p) => p.tag === rows[0].id).map(({ y, d }) => y + d))).toBe(16);
+    for (const x of [0, 2])
+      expect(Math.max(...ends(rows[1].id, x))).toBeLessThanOrEqual(Math.min(...ends(rows[0].id, x)));
   });
 
   test("a grid loads from its fore end", () => {

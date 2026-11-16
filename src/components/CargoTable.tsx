@@ -143,10 +143,16 @@ function SizeHead({
 }) {
   return (
     <th className={`size-toggle${on ? "" : " is-off"}${first ? " sep" : ""}`}>
-      <label title={`${on ? "Uncheck to skip" : "Check to use"} ${size} SCU containers`}>
-        <input type="checkbox" id={`size-${size}`} checked={on} onChange={(e) => onToggle(size, e.target.checked)} />
-        <span className="size">{size}</span>
-      </label>
+      <button
+        type="button"
+        className="size-btn"
+        aria-pressed={on}
+        aria-label={`${size} SCU containers`}
+        title={`${on ? "Using" : "Skipping"} ${size} SCU containers. Click to ${on ? "skip" : "use"} them.`}
+        onClick={() => onToggle(size, !on)}
+      >
+        {size}
+      </button>
     </th>
   );
 }

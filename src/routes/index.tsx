@@ -12,8 +12,9 @@ function Home() {
       <header>
         <h1>Cargo Splitter</h1>
         <p>
-          Enter the SCU on each row. Each row is filled with the biggest checked container size that fits its grid
-          first, then the next size down, until every SCU is placed. Uncheck a size in the header to skip it.
+          Enter the SCU on each row. Each row is filled with the biggest container size that's turned on and fits its
+          grid first, then the next size down, until every SCU is placed. Click a size in the header to turn it off and
+          skip it.
         </p>
       </header>
       {/* The table lives in this browser's localStorage, so the server renders

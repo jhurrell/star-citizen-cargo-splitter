@@ -3,9 +3,18 @@
    they can be unit tested. */
 
 import { fitsInside, parseScu, type Container, type Position, type Ship } from "./cargo";
-import { fmt } from "./format";
+import { fmt, sum } from "./format";
 import { foreAxis } from "./mount";
-import { addCounts, fillLargestFirst, packContainers, type Fill, type Load, type Placed, type Sweep } from "./packing";
+import {
+  addCounts,
+  fillLargestFirst,
+  packInTurn,
+  type Fill,
+  type Load,
+  type Packing,
+  type Placed,
+  type Sweep,
+} from "./packing";
 import { isEnabled, type Row, type State } from "./state";
 
 /* The selected ship and grid layout, falling back to the first of each. */
@@ -70,11 +79,22 @@ export function shortText({ parts, short }: Split): string {
   return `${fmt(short)} SCU more than ${where} room for. Choose another grid to split it.`;
 }
 
-/* Load a position from its fore end toward aft when its floor runs fore–aft;
-   otherwise (or with no place on the ship) a layer at a time from its floor. */
+/* Load a position from its fore end toward aft when its floor runs fore–aft
+   (so cargo added later loads from aft toward fore); otherwise (or with no
+   place on the ship) a layer at a time from its floor. */
 function sweepOf(position: Position): Sweep {
   const fore = position.mount && foreAxis(position.mount);
   return fore ? { axis: fore.axis, reverse: fore.pointsFore } : { axis: "z" };
+}
+
+/* Pack a position's rows apart, in turn; if that leaves out more than one
+   pile (biggest first) would, use the pile. */
+function packApart(position: Position, turns: Load<number>[][]): Packing<number> {
+  const apart = packInTurn(position, turns, sweepOf(position));
+  const unfitScu = ({ unfit }: Packing<number>) => sum(Object.entries(unfit), ([size, n]) => Number(size) * n);
+  if (!unfitScu(apart)) return apart;
+  const pile = packInTurn(position, [turns.flat()], sweepOf(position));
+  return unfitScu(pile) < unfitScu(apart) ? pile : apart;
 }
 
 /* A position's cargo: its SCU (more than its capacity when over) and where
@@ -88,8 +108,10 @@ export type Calc = {
   showLeftover: boolean;
 };
 
-/* Each part of a row only uses checked container sizes that fit its position
-   (a row with no position, any checked size); each position is then packed. */
+/* Each part of a row only uses the container sizes turned on that fit its position
+   (a row with no position, any checked size). Each position is then packed a
+   row at a time, in the order its rows picked it, to keep their cargo apart:
+   the first from the fore end, later ones from aft (see packApart). */
 export function computeTable(
   rows: Row[],
   enabled: State["enabled"],
@@ -102,7 +124,8 @@ export function computeTable(
     usable.filter((c) => !position || fitsInside(c, position)).map((c) => c.size);
 
   const splits = splitRows(rows, positions);
-  const loads = new Map<string, Load<number>[]>(positions.map((p) => [p.name, []]));
+  /* Each position's loads, a list per row with the order the row picked it. */
+  const loads = new Map<string, { order: number; load: Load<number>[] }[]>(positions.map((p) => [p.name, []]));
   const byPosition = new Map<string, GridLoad>(positions.map((p) => [p.name, { scu: 0, placed: [] }]));
   const byRow = new Map<number, Fill>();
   const totals: Calc["totals"] = { scu: 0, leftover: 0, counts: Object.fromEntries(usable.map((c) => [c.size, 0])) };
@@ -123,21 +146,24 @@ export function computeTable(
       fill.leftover += part.leftover;
       if (!position) continue;
       byPosition.get(position.name)!.scu += shareScu;
-      for (const container of containers) {
-        const count = part.counts[container.size];
-        if (count) loads.get(position.name)!.push({ container, count, tag: row.id });
-      }
+      const order = row.picks.find((p) => p.name === position.name)!.order;
+      const load = containers
+        .filter((container) => part.counts[container.size])
+        .map((container) => ({ container, count: part.counts[container.size], tag: row.id }));
+      loads.get(position.name)!.push({ order, load });
     }
     byRow.set(row.id, fill);
     totals.scu += scu;
     totals.leftover += fill.leftover;
     addCounts(totals.counts, fill.counts);
   }
-  for (const position of positions)
-    byPosition.get(position.name)!.placed = packContainers(
-      position,
-      loads.get(position.name)!,
-      sweepOf(position),
-    ).placed;
+  for (const position of positions) {
+    /* Ties (from older saves) keep table order. The sort is stable. */
+    const turns = loads
+      .get(position.name)!
+      .sort((a, b) => a.order - b.order)
+      .map((t) => t.load);
+    byPosition.get(position.name)!.placed = packApart(position, turns).placed;
+  }
   return { byRow, splits, byPosition, totals, showLeftover: totals.leftover > 0 };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import type { Container, Shape } from "../src/lib/cargo";
-import { addCounts, fillLargestFirst, packContainers } from "../src/lib/packing";
+import { addCounts, fillLargestFirst, packContainers, packInTurn } from "../src/lib/packing";
 import { container } from "./helpers";
 
 const box = (size: number, x: number, y: number, z: number) => container(size, x, y, z, false);
@@ -68,6 +68,29 @@ describe("packContainers", () => {
       z < 0 || placed.some((p) => x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.d && z >= p.z && z < p.z + p.h);
     for (const p of placed)
       for (let y = p.y; y < p.y + p.d; y++) for (let x = p.x; x < p.x + p.w; x++) expect(on(x, y, p.z - 1)).toBe(true);
+  });
+});
+
+describe("packInTurn", () => {
+  const scu8 = box(8, 2, 2, 2);
+  const space = { x: 2, y: 8, z: 2 };
+  const turn = (tag: number, count: number) => [{ container: scu8, count, tag }];
+  const spans = (sweep: Parameters<typeof packInTurn>[2]) =>
+    packInTurn(space, [turn(1, 1), turn(2, 1), turn(3, 1)], sweep).placed.map(({ tag, y }) => `${tag}@${y}`);
+
+  test("the first load goes at the start of the sweep, later ones build up from the far end", () => {
+    expect(spans({ axis: "y" })).toEqual(["1@0", "2@6", "3@4"]);
+    expect(spans({ axis: "y", reverse: true })).toEqual(["1@6", "2@0", "3@2"]); // fore end at the top
+  });
+
+  test("a later load from the far end still uses every spot", () => {
+    const { placed, unfit } = packInTurn(space, [turn(1, 1), turn(2, 3)], { axis: "y" });
+    expect(unfit).toEqual({});
+    expect(placed.map(({ tag, y }) => `${tag}@${y}`)).toEqual(["1@0", "2@6", "2@4", "2@2"]);
+  });
+
+  test("a z sweep has no far end, so loads just follow on", () => {
+    expect(spans({ axis: "z" })).toEqual(["1@0", "2@2", "3@4"]);
   });
 });
 

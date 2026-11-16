@@ -42,6 +42,14 @@ export type Sweep = { axis: "x" | "y" | "z"; reverse?: boolean };
    order. This can miss a packing that exists, so it may report a load as not
    fitting when a cleverer layout would. */
 export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Sweep = { axis: "z" }): Packing<Tag> {
+  return packInTurn(space, [load], sweep);
+}
+
+/* Pack loads one after another, each biggest first, to keep them apart: the
+   first from the start of a floor-axis sweep, every later one from its far
+   end, so the first sits at one end and the rest build up from the other. A
+   "z" sweep has no far end, so each just takes the next free spots. */
+export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep = { axis: "z" }): Packing<Tag> {
   const { x: X, y: Y, z: Z } = space;
   const filled = new Uint8Array(X * Y * Z);
   const cell = (x: number, y: number, z: number) => (z * Y + y) * X + x;
@@ -58,45 +66,58 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Swee
       filled[i] = 1;
       return true;
     });
+  const fits = (box: Box) =>
+    box.x >= 0 &&
+    box.y >= 0 &&
+    box.x + box.w <= X &&
+    box.y + box.d <= Y &&
+    box.z + box.h <= Z &&
+    isSupported(box) &&
+    isFree(box);
 
-  /* Every corner cell in sweep order: the sweep axis outermost, then height,
-     then the other floor axis. */
-  const corners: [number, number, number][] = [];
-  const [outer, inner] = sweep.axis === "x" ? [X, Y] : [Y, X];
-  if (sweep.axis === "z") {
-    for (let z = 0; z < Z; z++) for (let y = 0; y < Y; y++) for (let x = 0; x < X; x++) corners.push([x, y, z]);
-  } else {
-    for (let a = 0; a < outer; a++)
+  /* The first spot that takes a container, in sweep order. For "z": each
+     layer from the floor. For a floor axis: each step along it, then up, then
+     across; from its far end, the container's far edge goes at each step. */
+  function findSpot({ placements }: Container, fromEnd: boolean): Box | null {
+    if (sweep.axis === "z") {
       for (let z = 0; z < Z; z++)
-        for (let b = 0; b < inner; b++) corners.push(sweep.axis === "x" ? [a, b, z] : [b, a, z]);
-  }
-
-  function findSpot(container: Container): Box | null {
-    for (const [x, y, z] of corners)
-      for (const [w, d, h] of container.placements) {
-        const box = { x, y, z, w, d, h };
-        if (x + w <= X && y + d <= Y && z + h <= Z && isSupported(box) && isFree(box)) return box;
-      }
+        for (let y = 0; y < Y; y++)
+          for (let x = 0; x < X; x++)
+            for (const [w, d, h] of placements) if (fits({ x, y, z, w, d, h })) return { x, y, z, w, d, h };
+      return null;
+    }
+    const alongX = sweep.axis === "x";
+    const [length, width] = alongX ? [X, Y] : [Y, X];
+    for (let step = 0; step < length; step++)
+      for (let z = 0; z < Z; z++)
+        for (let b = 0; b < width; b++)
+          for (const [w, d, h] of placements) {
+            const a = fromEnd ? length - step - (alongX ? w : d) : step;
+            const box = alongX ? { x: a, y: b, z, w, d, h } : { x: b, y: a, z, w, d, h };
+            if (fits(box)) return box;
+          }
     return null;
   }
 
   const placed: Placed<Tag>[] = [];
   const unfit: Counts = {};
-  /* Biggest first; the sort is stable, so cargo of one size keeps its row order. */
-  const order = [...load].sort((a, b) => b.container.size - a.container.size);
-  for (const { container, count, tag } of order) {
-    const { size } = container;
-    for (let n = 0; n < count; n++) {
-      /* Space only shrinks, so once a size fails, the rest of that size fails too. */
-      const spot = unfit[size] ? null : findSpot(container);
-      if (!spot) {
-        unfit[size] = (unfit[size] ?? 0) + count - n;
-        break;
+  loads.forEach((load, turn) => {
+    /* Biggest first; the sort is stable, so cargo of one size keeps its order. */
+    const order = [...load].sort((a, b) => b.container.size - a.container.size);
+    for (const { container, count, tag } of order) {
+      const { size } = container;
+      for (let n = 0; n < count; n++) {
+        /* Space only shrinks, so once a size fails, the rest of that size fails too. */
+        const spot = unfit[size] ? null : findSpot(container, turn > 0);
+        if (!spot) {
+          unfit[size] = (unfit[size] ?? 0) + count - n;
+          break;
+        }
+        occupy(spot);
+        placed.push({ ...spot, size, tag });
       }
-      occupy(spot);
-      placed.push({ ...spot, size, tag });
     }
-  }
+  });
   if (sweep.reverse && sweep.axis === "x") for (const box of placed) box.x = X - box.x - box.w;
   if (sweep.reverse && sweep.axis === "y") for (const box of placed) box.y = Y - box.y - box.d;
   return { placed, unfit };

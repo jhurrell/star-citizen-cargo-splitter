@@ -184,16 +184,12 @@ export function CargoSplitter() {
               <ShipView positions={positions} loads={calc.byPosition} cargoByRow={colors.byRow} highlight={highlight} />
             </Suspense>
             <p className="hint">
-              Each grid placed on the ship as config.json says. Drag to turn, scroll to zoom, right-drag to pan. The
-              pale blue face of each grid is its floor; containers stack away from it. Point at a container to see what
-              it holds.
+              Drag to turn, scroll to zoom, right-drag to pan. The pale blue face of each grid is its floor; containers
+              stack away from it. Point at a container to see what it holds.
             </p>
           </>
         ) : (
-          <p className="hint">
-            config.json doesn't say where this ship's grids sit on it yet. Give each of its positions an "at" (and, if
-            it's turned, a "rotate") to see it here.
-          </p>
+          <p className="hint">Ship's grid is not configured yet.</p>
         )}
       </section>
     </>

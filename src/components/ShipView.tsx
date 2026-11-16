@@ -51,7 +51,7 @@ export default function ShipView({
   const bounds = useMemo(() => boundsOf(mounted), [mounted]);
   const [view, setView] = useState<View>("3d");
   const [hover, setHover] = useState("");
-  const [showLabels, setShowLabels] = useState(true);
+  const [showLabels, setShowLabels] = useState(false);
   const labels = useMemo(() => [...mounted.map(gridLabel), ...directionLabels(bounds)], [mounted, bounds]);
   const labelEls = useRef(new Map<string, HTMLElement>());
 
@@ -71,7 +71,7 @@ export default function ShipView({
         ))}
         <label className="ship-toggle">
           <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
-          Labels
+          Show direction labels
         </label>
         <span className="status">{hover}</span>
       </div>
