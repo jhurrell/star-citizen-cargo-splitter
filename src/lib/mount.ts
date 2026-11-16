@@ -66,6 +66,10 @@ export function rotationOf({ roll, pitch, yaw }: Mount): Matrix3 {
   return r.map((row) => row.map((n) => Math.round(n * 1e9) / 1e9 + 0)) as Matrix3;
 }
 
+/* Whether a position's floor faces down, so its containers hang from it
+   toward the ground (a grid under the ship). */
+export const hangsDown = (mount: Mount): boolean => rotationOf(mount)[2][2] < 0;
+
 /* A point in the position's own cells (x, y along its floor, z up from it) as a ship point. */
 export function toShip(mount: Mount, size: Vec3, local: Vec3): Vec3 {
   const r = rotationOf(mount);

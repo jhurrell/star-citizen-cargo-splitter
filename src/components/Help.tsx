@@ -28,7 +28,7 @@ export function Help() {
             grid first, then the next size down, until every SCU is placed. A row takes up to 9,999 SCU.
           </li>
           <li>Click a size in the table header to turn it off and skip it.</li>
-          <li>Click the arrow beside Material, Pick-up or Drop-off to sort by that column, and again to reverse it.</li>
+          <li>Click the arrow beside Cargo, Pick-up or Drop-off to sort by that column, and again to reverse it.</li>
           <li>
             Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row.
           </li>
@@ -58,8 +58,8 @@ export function Help() {
           <li>The pale blue face of each grid is its floor; containers stack away from it.</li>
           <li>Point at a container to see what it holds, or at a grid button in the table to light that grid up.</li>
           <li>
-            Click a row in the legend to dim its containers, or point at a row's Material, Pick-up or Drop-off in the
-            table to dim all the others.
+            Click a row in the legend to dim its containers, or point at a row's Cargo, Pick-up or Drop-off in the table
+            to dim all the others.
           </li>
         </ul>
       </div>

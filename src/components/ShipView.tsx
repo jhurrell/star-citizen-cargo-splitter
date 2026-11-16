@@ -5,7 +5,7 @@ import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, type InstancedMes
 import type { GridLoad } from "../lib/calc";
 import type { Position } from "../lib/cargo";
 import { OTHER_COLOR, type Cargo } from "../lib/colors";
-import { mountMatrix, rotationOf, type Vec3 } from "../lib/mount";
+import { hangsDown, mountMatrix, type Vec3 } from "../lib/mount";
 import type { Placed } from "../lib/packing";
 import {
   boundsOf,
@@ -152,8 +152,6 @@ function GridMesh({
   );
   const describe = (box: string) => onHover(box ? `${box} · ${position.name}` : "");
   const matrix = useMemo(() => new Matrix4().fromArray(mountMatrix(position.mount, sizeOf(position))), [position]);
-  /* A grid under the ship stacks its containers downward. */
-  const hangs = rotationOf(position.mount)[2][2] < 0;
   return (
     <group matrix={matrix} matrixAutoUpdate={false}>
       <mesh position={[X / 2, Y / 2, 0]}>
@@ -169,7 +167,7 @@ function GridMesh({
       <HoldOutline size={[X, Y, Z]} lit={lit} />
       <Containers capacity={position.capacity} placed={solid} cargoByRow={cargoByRow} onHover={describe} />
       <Containers capacity={position.capacity} placed={faded} cargoByRow={cargoByRow} dim onHover={describe} />
-      {showSizes && <SizeMarks placed={solid} hangs={hangs} />}
+      {showSizes && <SizeMarks placed={solid} hangs={hangsDown(position.mount)} />}
     </group>
   );
 }

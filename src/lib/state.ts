@@ -4,9 +4,9 @@ import { collator } from "./format";
 /* The page's saved state: the chosen ship and grid, which container sizes are
    on, the last sort and the cargo rows. Kept in localStorage. */
 
-export type TextKey = "material" | "pickup" | "dropoff";
+export type TextKey = "cargo" | "pickup" | "dropoff";
 export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
-  { key: "material", label: "Material" },
+  { key: "cargo", label: "Cargo" },
   { key: "pickup", label: "Pick-up" },
   { key: "dropoff", label: "Drop-off" },
 ];
@@ -49,7 +49,7 @@ export function makeRow(values: Partial<Record<RowField | "picks" | "positions" 
   const text = (key: RowField) => asText(values[key]);
   return {
     id: nextId++,
-    material: text("material"),
+    cargo: text("cargo"),
     pickup: text("pickup"),
     dropoff: text("dropoff"),
     scu: text("scu"),
@@ -80,9 +80,9 @@ export function defaultState(): State {
     enabled: {},
     sort: null,
     rows: [
-      makeRow({ material: "Example A", scu: "57" }),
-      makeRow({ material: "Example B", scu: "100" }),
-      makeRow({ material: "Example C", scu: "13" }),
+      makeRow({ cargo: "Example A", scu: "57" }),
+      makeRow({ cargo: "Example B", scu: "100" }),
+      makeRow({ cargo: "Example C", scu: "13" }),
     ],
   };
 }

@@ -1,18 +1,10 @@
 import { unassignedText, type Calc, type Split } from "../lib/calc";
-import { fitsInside, isOverMaxScu, type Container, type Position } from "../lib/cargo";
+import { isOverMaxScu, type Container, type Position } from "../lib/cargo";
 import type { Cargo } from "../lib/colors";
 import { fmt, initials, plural, sum } from "../lib/format";
 import type { Counts, Fill } from "../lib/packing";
-import {
-  enabledContainers,
-  isEnabled,
-  TEXT_COLUMNS,
-  type Row,
-  type RowField,
-  type Sort,
-  type State,
-  type TextKey,
-} from "../lib/state";
+import { isEnabled, TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
+import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
 
 type Props = {
@@ -27,28 +19,25 @@ type Props = {
   onTogglePick: (id: number, name: string) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
   onHighlight: (name: string | null) => void;
-  /* The row whose Material, Pick-up or Drop-off the pointer or focus is in,
+  /* The row whose Cargo, Pick-up or Drop-off the pointer or focus is in,
      so the ship view can fade the rest; null when none. */
   onPointRow: (id: number | null) => void;
   onDelete: (id: number) => void;
   onSort: (key: TextKey) => void;
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
-  /* The Grids heading's Clear button: waiting for its second click, whether
-     any row is in a grid, and what it does. */
-  gridsArmed: boolean;
-  canClearGrids: boolean;
+  /* Take every row out of its grids (the Grids heading's Clear, once confirmed). */
   onClearGrids: () => void;
 };
 type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRow" | "onDelete" | "onScuEnter">;
 
 /* A container size's column, on unless turned off in its header. */
 type SizeColumn = { size: number; on: boolean };
-/* A grid's button: its short tag, the SCU it has free, and whether that's
-   too little for any container, so other rows can't pick it. */
+/* A grid's button: its name, short tag, the SCU it has free, and whether
+   that's too little for any container, so other rows can't pick it. */
 type GridButton = { name: string; tag: string; free: number; full: boolean };
 
-/* The editable cargo table: Material / Pick-up / Drop-off, SCU, Remaining (SCU
+/* The editable cargo table: Cargo / Pick-up / Drop-off, SCU, Remaining (SCU
    not in a grid yet), a column per container size, Left over (only when some
    SCU can't be made of the sizes turned on), Grids. */
 export function CargoTable({
@@ -59,27 +48,19 @@ export function CargoTable({
   cargoByRow,
   onSort,
   onToggleSize,
-  gridsArmed,
-  canClearGrids,
   onClearGrids,
   ...rowActions
 }: Props) {
   const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
   const tags = initials(positions.map((p) => p.name));
-  const usable = enabledContainers(containers, state.enabled);
-  const grids: GridButton[] = positions.map((p, i) => {
-    const free = p.capacity - calc.byPosition.get(p.name)!.scu;
-    return {
-      name: p.name,
-      tag: tags[i],
-      free,
-      full: !usable.some((c) => c.size <= free && fitsInside(c, p)),
-    };
+  const grids: GridButton[] = positions.map(({ name }, i) => {
+    const { free, full } = calc.byPosition.get(name)!;
+    return { name, tag: tags[i], free, full };
   });
-  const unassigned = sum([...calc.splits.values()], (s) => s.unassigned);
+  const anyInGrid = [...calc.splits.values()].some((s) => s.parts.length > 0);
   /* Room still free across all the grids. */
   const unused = sum(grids, (g) => g.free);
-  /* Material, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
+  /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
     <table className="grid" id="cargo">
@@ -102,15 +83,14 @@ export function CargoTable({
           <th className="label sep">
             <div className="grids-head">
               Grids
-              <button
-                type="button"
-                className={`btn clear-grids${gridsArmed ? " is-armed" : ""}`}
-                onClick={onClearGrids}
-                disabled={!canClearGrids && !gridsArmed}
-                aria-label={gridsArmed ? "Confirm clearing every row's grids" : "Clear every row's grids"}
-              >
-                {gridsArmed ? "Confirm" : "Clear"}
-              </button>
+              <ConfirmButton
+                label="Clear"
+                ariaLabel="Clear every row's grids"
+                confirmAriaLabel="Confirm clearing every row's grids"
+                className="clear-grids"
+                disabled={!anyInGrid}
+                onConfirm={onClearGrids}
+              />
             </div>
           </th>
         </tr>
@@ -144,7 +124,7 @@ export function CargoTable({
             Total · {plural(state.rows.length, "row")}
           </td>
           <td className="foot-scu">{fmt(calc.totals.scu)}</td>
-          <RemainingCell scu={unassigned} />
+          <RemainingCell scu={calc.totals.unassigned} />
           <CalcCells fill={calc.totals} sizes={sizes} showLeftover={calc.showLeftover} />
           <td className="sep foot-free" title={unused ? `${fmt(unused)} SCU of grid space not used yet` : undefined}>
             {unused > 0 && `${fmt(unused)} free`}
@@ -252,7 +232,7 @@ function CargoRow({
       {TEXT_COLUMNS.map(({ key, label }, i) => {
         const input = <input className="field" aria-label={label} {...field(key)} />;
         return (
-          /* Pointing at (or tabbing to) Material, Pick-up or Drop-off picks out
+          /* Pointing at (or tabbing to) Cargo, Pick-up or Drop-off picks out
              this row in the ship view. */
           <td
             className="edit"
@@ -265,7 +245,7 @@ function CargoRow({
             {i > 0 ? (
               input
             ) : (
-              <div className="material-cell">
+              <div className="cargo-cell">
                 <button
                   type="button"
                   className="icon-btn row-del"

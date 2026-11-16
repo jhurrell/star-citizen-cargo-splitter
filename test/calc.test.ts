@@ -37,6 +37,41 @@ describe("computeTable", () => {
   });
 });
 
+describe("computeTable grid room", () => {
+  const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
+
+  test("each grid has its free SCU, and is full when no size turned on fits that", () => {
+    const rows = [makeRow({ scu: "6", picks: [{ name: "Small", order: 1 }] })];
+    expect(computeTable(rows, {}, containers, positions).byPosition.get("Small")).toMatchObject({
+      free: 2,
+      full: false, // a 1 SCU container still fits
+    });
+    expect(computeTable(rows, { 1: false }, containers, positions).byPosition.get("Small")).toMatchObject({
+      free: 2,
+      full: true,
+    });
+    expect(computeTable(rows, {}, containers, positions).byPosition.get("Big")).toMatchObject({
+      free: 32,
+      full: false,
+    });
+  });
+
+  test("a grid with no size turned on that fits its shape is full, even when empty", () => {
+    const calc = computeTable([], { 1: false, 8: false }, containers, positions);
+    expect(calc.byPosition.get("Small")).toMatchObject({ free: 8, full: true }); // 32 SCU is too long for it
+    expect(calc.byPosition.get("Big")).toMatchObject({ free: 32, full: false });
+  });
+
+  test("totals the SCU in no grid, across rows", () => {
+    const rows = [
+      makeRow({ scu: "40", picks: [{ name: "Small", order: 1 }] }), // 32 over
+      makeRow({ scu: "5" }), // no grid
+      makeRow({ scu: "4", picks: [{ name: "Big", order: 2 }] }),
+    ];
+    expect(computeTable(rows, {}, containers, positions).totals.unassigned).toBe(37);
+  });
+});
+
 describe("splitRows", () => {
   const positions = [bay("A", 2, 4, 2), bay("B", 2, 4, 2), bay("C", 2, 4, 2)]; // 16 SCU each
   const parts = (rows: ReturnType<typeof makeRow>[], at = positions) => rows.map((r) => splitRows(rows, at).get(r.id));

@@ -26,11 +26,11 @@ the ship.
   has no grid or its grids are out of room, with the table's total at the foot. While a row has some, its edge and
   SCU turn amber; point at the SCU to see why. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
-  - The first delivery in a grid loads from the fore end; later ones load from the aft end, so materials stay
-    apart.
+  - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
+    stays apart.
   - Each row has its own color, and each container shows its size in SCU.
   - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row's
-    Material, Pick-up or Drop-off in the table to make every other row see-through while you do.
+    Cargo, Pick-up or Drop-off in the table to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Kept in your browser.** The table, ship and settings are saved in local storage.

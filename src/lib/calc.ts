@@ -82,21 +82,24 @@ function packApart(position: Position, turns: Load<number>[][]): Packing<number>
   return unfitScu(pile) < unfitScu(apart) ? pile : apart;
 }
 
-/* A position's cargo: its SCU (more than its capacity when over) and where
-   each container sits, tagged with its row's id. */
-export type GridLoad = { scu: number; placed: Placed<number>[] };
+/* A position's cargo: its SCU, the SCU it has free, whether that's too
+   little for any container turned on (so it's full), and where each
+   container sits, tagged with its row's id. */
+export type GridLoad = { scu: number; free: number; full: boolean; placed: Placed<number>[] };
 export type Calc = {
   byRow: Map<number, Fill>;
   splits: Map<number, Split>;
   byPosition: Map<string, GridLoad>;
-  totals: Fill & { scu: number };
+  /* `unassigned`: the SCU in no grid yet, across all rows. */
+  totals: Fill & { scu: number; unassigned: number };
   showLeftover: boolean;
 };
 
-/* Each part of a row only uses the container sizes turned on that fit its position;
-   a row with no position, and what a row's grids have no room for, any size turned on. Each position is then packed a
-   row at a time, in the order its rows picked it, to keep their cargo apart:
-   the first from the fore end, later ones from aft (see packApart). */
+/* Each part of a row only uses the container sizes turned on that fit its
+   position; a row with no position, and what its grids have no room for, any
+   size turned on. Each position is then packed a row at a time, in the order
+   its rows picked it, to keep their cargo apart: the first from the fore end,
+   later ones from aft (see packApart). */
 export function computeTable(
   rows: Row[],
   enabled: State["enabled"],
@@ -111,9 +114,16 @@ export function computeTable(
   const splits = splitRows(rows, positions);
   /* Each position's loads, a list per row with the order the row picked it. */
   const loads = new Map<string, { order: number; load: Load<number>[] }[]>(positions.map((p) => [p.name, []]));
-  const byPosition = new Map<string, GridLoad>(positions.map((p) => [p.name, { scu: 0, placed: [] }]));
+  const byPosition = new Map<string, GridLoad>(
+    positions.map((p) => [p.name, { scu: 0, free: p.capacity, full: false, placed: [] }]),
+  );
   const byRow = new Map<number, Fill>();
-  const totals: Calc["totals"] = { scu: 0, leftover: 0, counts: Object.fromEntries(usable.map((c) => [c.size, 0])) };
+  const totals: Calc["totals"] = {
+    scu: 0,
+    unassigned: sum([...splits.values()], (s) => s.unassigned),
+    leftover: 0,
+    counts: Object.fromEntries(usable.map((c) => [c.size, 0])),
+  };
 
   for (const row of rows) {
     const scu = parseScu(row.scu);
@@ -147,12 +157,15 @@ export function computeTable(
     addCounts(totals.counts, fill.counts);
   }
   for (const position of positions) {
+    const load = byPosition.get(position.name)!;
+    load.free = position.capacity - load.scu;
+    load.full = !usable.some((c) => c.size <= load.free && fitsInside(c, position));
     /* Ties (from older saves) keep table order. The sort is stable. */
     const turns = loads
       .get(position.name)!
       .sort((a, b) => a.order - b.order)
       .map((t) => t.load);
-    byPosition.get(position.name)!.placed = packApart(position, turns).placed;
+    load.placed = packApart(position, turns).placed;
   }
   return { byRow, splits, byPosition, totals, showLeftover: totals.leftover > 0 };
 }

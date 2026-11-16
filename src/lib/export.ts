@@ -2,7 +2,7 @@
 
 import { parseScu } from "./cargo";
 import type { Calc, Split } from "./calc";
-import { fmt, sum } from "./format";
+import { fmt } from "./format";
 import { TEXT_COLUMNS, type Row } from "./state";
 
 type Cell = string | number;
@@ -46,7 +46,7 @@ export function exportTable(rows: Row[], calc: Calc, sizes: number[]): ExportedT
     "Total",
     ...TEXT_COLUMNS.slice(1).map(() => ""),
     calc.totals.scu,
-    sum([...calc.splits.values()], (s) => s.unassigned),
+    calc.totals.unassigned,
     ...sizes.map((s) => calc.totals.counts[s] ?? 0),
     ...leftover(calc.totals.leftover),
     "",

@@ -3,7 +3,16 @@ import rawContainers from "../src/config/containers.json";
 import rawShips from "../src/config/ships.json";
 import { parseContainers, parseShips, type Position } from "../src/lib/cargo";
 import { packContainers } from "../src/lib/packing";
-import { foreAxis, mountMatrix, parseMount, rotationOf, toShip, type Mount, type Vec3 } from "../src/lib/mount";
+import {
+  foreAxis,
+  hangsDown,
+  mountMatrix,
+  parseMount,
+  rotationOf,
+  toShip,
+  type Mount,
+  type Vec3,
+} from "../src/lib/mount";
 
 const mount = (roll = 0, pitch = 0, yaw = 0, at: Vec3 = [0, 0, 0]): Mount => ({ at, roll, pitch, yaw });
 /* Where the position's own x, y and z axes point on the ship. */
@@ -47,6 +56,16 @@ describe("foreAxis", () => {
     expect(foreAxis(mount(0, 0, 180))).toEqual({ axis: "y", pointsFore: false });
     expect(foreAxis(mount(0, 0, -90))).toEqual({ axis: "x", pointsFore: true });
     expect(foreAxis(mount(0, 90))).toBeNull(); // a Hull C rack: stacks fore–aft
+  });
+});
+
+describe("hangsDown", () => {
+  test("is true only when the floor faces down", () => {
+    expect(hangsDown(mount(180))).toBe(true); // the Argo RAFT's grid, under the ship
+    expect(hangsDown(mount(0, 180))).toBe(true);
+    expect(hangsDown(mount())).toBe(false);
+    expect(hangsDown(mount(0, -45))).toBe(false); // the Railen's sloped sections
+    expect(hangsDown(mount(90))).toBe(false); // a wall, facing starboard
   });
 });
 

@@ -6,13 +6,13 @@ import { bay, containers } from "./helpers";
 
 describe("copy formats", () => {
   const positions = [bay("Bay", 2, 8, 2)];
-  const rows = [makeRow({ material: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
+  const rows = [makeRow({ cargo: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
   const calc = computeTable(rows, {}, containers, positions);
   const table = exportTable(rows, calc, [32, 8, 1]);
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
-      "Material\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
+      "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
       "Gold | Ore\tArea18\t\t1033\t1001\t32\t1\t1\tBay",
     ]);
   });

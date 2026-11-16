@@ -1,4 +1,4 @@
-/* Layout: an editable cargo table (Material / Pick-up / Drop-off, SCU, one column
+/* Layout: an editable cargo table (Cargo / Pick-up / Drop-off, SCU, one column
    per container size, an optional Left over column, Grid), which scrolls
    sideways inside its frame on phones, then the 3D ship view.
    Look: a single dark theme by choice (deep-space navy panels, sky-blue accent,
@@ -480,7 +480,7 @@ h2 {
   gap: 4px;
   min-width: 8em;
 }
-/* Line the Material heading up with the text after each row's delete button
+/* Line the Cargo heading up with the text after each row's delete button
    and swatch; its sort button sits over them. */
 #cargo thead th:first-child {
   padding-left: calc(var(--del-size) + var(--swatch-room) + 10px - var(--sort-size) - 4px);
@@ -618,7 +618,7 @@ select.field option {
   color: var(--warn);
 }
 
-.material-cell {
+.cargo-cell {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -631,7 +631,7 @@ select.field option {
   width: calc(var(--swatch-room) - 4px);
   margin-right: 4px;
 }
-.material-cell .field {
+.cargo-cell .field {
   padding-left: 4px;
 }
 

@@ -12,33 +12,33 @@ export type Cargo = { name: string; color: string };
 export type CargoColors = { byRow: Map<number, Cargo>; legend: (Cargo & { rowId: number })[] };
 
 /* A color per row with cargo, in the order rows were added, so sorting never
-   repaints a row. Each is named by its material. Rows that share a material
+   repaints a row. Each is named by its cargo. Rows that share a cargo
    add their drop-off, "Gold (Lorville)", or their row number in the table,
-   "Gold (#3)", when it's blank or another row of that material has it too. */
+   "Gold (#3)", when it's blank or another row of that cargo has it too. */
 export function cargoColors(rows: Row[]): CargoColors {
   const loaded = rows.filter((row) => parseScu(row.scu));
-  const material = (row: Row) => row.material.trim() || "No material";
-  const tags = dropoffTags(loaded, material, new Map(rows.map((row, i) => [row.id, i + 1])));
+  const cargo = (row: Row) => row.cargo.trim() || "No cargo";
+  const tags = dropoffTags(loaded, cargo, new Map(rows.map((row, i) => [row.id, i + 1])));
   const byRow = new Map<number, Cargo>();
   for (const row of [...loaded].sort((a, b) => a.id - b.id)) {
     const tag = tags.get(row.id);
     byRow.set(row.id, {
-      name: tag ? `${material(row)} (${tag})` : material(row),
+      name: tag ? `${cargo(row)} (${tag})` : cargo(row),
       color: CARGO_COLORS[byRow.size] ?? OTHER_COLOR,
     });
   }
   return { byRow, legend: [...byRow].map(([rowId, cargo]) => ({ ...cargo, rowId })) };
 }
 
-/* A tag for each row whose material another row shares, keyed by row id. */
-function dropoffTags(rows: Row[], material: (row: Row) => string, rowNumber: Map<number, number>) {
+/* A tag for each row whose cargo another row shares, keyed by row id. */
+function dropoffTags(rows: Row[], cargoOf: (row: Row) => string, rowNumber: Map<number, number>) {
   const tags = new Map<number, string>();
-  const byMaterial = new Map<string, Row[]>();
+  const byCargo = new Map<string, Row[]>();
   for (const row of rows) {
-    const key = material(row).toLowerCase();
-    byMaterial.set(key, [...(byMaterial.get(key) ?? []), row]);
+    const key = cargoOf(row).toLowerCase();
+    byCargo.set(key, [...(byCargo.get(key) ?? []), row]);
   }
-  for (const group of byMaterial.values()) {
+  for (const group of byCargo.values()) {
     if (group.length < 2) continue;
     const dropoffs = group.map((row) => row.dropoff.trim());
     const key = (dropoff: string) => dropoff.toLowerCase();

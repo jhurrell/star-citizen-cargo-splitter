@@ -6,9 +6,11 @@ import { cargoColors } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
-import { useIdSet, useTimedFlag, useTimedMessage } from "../lib/hooks";
+import { useIdSet, useTimedMessage } from "../lib/hooks";
 import { enabledContainers, loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
+import { ConfirmButton } from "./ConfirmButton";
+import { MarkdownIcon, SpreadsheetIcon } from "./icons";
 import { Legend } from "./Legend";
 import { ShipPicker } from "./ShipPicker";
 
@@ -16,7 +18,23 @@ import { ShipPicker } from "./ShipPicker";
 const ShipView = lazy(() => import("./ShipView"));
 
 const STATUS_MS = 2200; // how long a copy or clear message stays
-const DISARM_MS = 3000; // how long Clear table waits for the second click
+
+/* The copy buttons: what each is called, how it writes the table and what it
+   says once copied. */
+const COPY_FORMATS = [
+  {
+    label: "Copy for a spreadsheet",
+    toText: tableAsTsv,
+    done: "Copied. Paste into a spreadsheet.",
+    Icon: SpreadsheetIcon,
+  },
+  {
+    label: "Copy as a Markdown table",
+    toText: tableAsMarkdown,
+    done: "Copied as a Markdown table.",
+    Icon: MarkdownIcon,
+  },
+];
 
 /* "512 SCU in 4 grids of 128 SCU": the layout's total, and each grid's size when they're all alike. */
 function gridSummary(grid: Grid): string {
@@ -59,25 +77,21 @@ export function CargoVisualizer() {
     document.getElementById(focusNext.current)?.focus();
     focusNext.current = null;
   });
-  const focusMaterial = (row: Row | undefined) => {
-    focusNext.current = row ? `r${row.id}-material` : "add-row";
+  const focusCargo = (row: Row | undefined) => {
+    focusNext.current = row ? `r${row.id}-cargo` : "add-row";
   };
 
   const [status, showStatus] = useTimedMessage(STATUS_MS);
-  const [clearArmed, setClearArmed] = useTimedFlag(DISARM_MS);
-  const [gridsArmed, setGridsArmed] = useTimedFlag(DISARM_MS);
-  const gridNames = new Set(positions.map((p) => p.name));
-  const hasPicks = state.rows.some((r) => r.picks.some((p) => gridNames.has(p.name)));
 
   function addRow() {
     const row = makeRow();
-    focusMaterial(row);
+    focusCargo(row);
     dispatch({ type: "addRow", row });
   }
 
   function deleteRow(id: number) {
     const index = state.rows.findIndex((r) => r.id === id);
-    focusMaterial(state.rows[index + 1] ?? state.rows[index - 1]);
+    focusCargo(state.rows[index + 1] ?? state.rows[index - 1]);
     dispatch({ type: "deleteRow", id });
   }
 
@@ -89,28 +103,22 @@ export function CargoVisualizer() {
   }
 
   function clearTable() {
-    if (!clearArmed) return setClearArmed(true);
-    setClearArmed(false);
     const row = makeRow();
-    focusMaterial(row);
+    focusCargo(row);
     dispatch({ type: "clearRows", row });
     showStatus("Table cleared");
   }
 
-  /* Take every row out of this layout's grids, on a second click. */
+  /* Take every row out of this layout's grids. */
   function clearGrids() {
-    if (!gridsArmed) return setGridsArmed(true);
-    setGridsArmed(false);
-    dispatch({ type: "clearPicks", names: [...gridNames] });
+    dispatch({ type: "clearPicks", names: positions.map((p) => p.name) });
     showStatus("Grids cleared");
   }
 
-  async function copy(format: "tsv" | "markdown") {
+  async function copy({ toText, done }: (typeof COPY_FORMATS)[number]) {
     const sizes = enabledContainers(containers, state.enabled).map((c) => c.size);
-    const table = exportTable(state.rows, calc, sizes);
-    const ok = await copyText(format === "tsv" ? tableAsTsv(table) : tableAsMarkdown(table));
-    if (!ok) showStatus("Copy isn't available here");
-    else showStatus(format === "tsv" ? "Copied. Paste into a spreadsheet." : "Copied as a Markdown table.");
+    const ok = await copyText(toText(exportTable(state.rows, calc, sizes)));
+    showStatus(ok ? done : "Copy isn't available here");
   }
 
   const shipInfo = configError || (grid ? gridSummary(grid) : "");
@@ -151,36 +159,28 @@ export function CargoVisualizer() {
           </button>
           {/* The copy formats as icons; each says what it does in its tooltip and to screen readers. */}
           <div className="btn-pair">
-            <button
-              type="button"
-              className="btn icon"
-              onClick={() => void copy("tsv")}
-              aria-label="Copy for a spreadsheet"
-              data-tip="Copy for a spreadsheet"
-            >
-              <SpreadsheetIcon />
-            </button>
-            <button
-              type="button"
-              className="btn icon"
-              onClick={() => void copy("markdown")}
-              aria-label="Copy as a Markdown table"
-              data-tip="Copy as a Markdown table"
-            >
-              <MarkdownIcon />
-            </button>
+            {COPY_FORMATS.map((format) => (
+              <button
+                key={format.label}
+                type="button"
+                className="btn icon"
+                onClick={() => void copy(format)}
+                aria-label={format.label}
+                data-tip={format.label}
+              >
+                <format.Icon />
+              </button>
+            ))}
           </div>
-          <button
-            type="button"
-            className={`btn clear-table${clearArmed ? " is-armed" : ""}`}
-            onClick={clearTable}
-            aria-label={clearArmed ? "Confirm clearing the table" : undefined}
-          >
-            {clearArmed ? "Confirm" : "Clear table"}
-          </button>
+          <ConfirmButton
+            label="Clear table"
+            confirmAriaLabel="Confirm clearing the table"
+            className="clear-table"
+            onConfirm={clearTable}
+          />
         </div>
       </div>
-      {/* Copy and clear messages, over the table's top edge so they never move it. */}
+      {/* Copy and clear messages, as a toast at the foot of the window, so they never move the page. */}
       <p className="status" aria-live="polite" hidden={!status}>
         {status}
       </p>
@@ -200,8 +200,6 @@ export function CargoVisualizer() {
           onSort={(key) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
           onScuEnter={focusNextScu}
-          gridsArmed={gridsArmed}
-          canClearGrids={hasPicks}
           onClearGrids={clearGrids}
         />
       </div>
@@ -213,41 +211,19 @@ export function CargoVisualizer() {
           {isMounted && <Legend entries={colors.legend} dimmed={dimmed} onDim={dimRows} />}
         </div>
         {isMounted ? (
-          <>
-            <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
-              <ShipView
-                positions={positions}
-                loads={calc.byPosition}
-                cargoByRow={colors.byRow}
-                dimmed={shipDimmed}
-                highlight={highlight}
-              />
-            </Suspense>
-          </>
+          <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
+            <ShipView
+              positions={positions}
+              loads={calc.byPosition}
+              cargoByRow={colors.byRow}
+              dimmed={shipDimmed}
+              highlight={highlight}
+            />
+          </Suspense>
         ) : (
           <p className="hint">Ship's grid is not configured yet.</p>
         )}
       </section>
     </>
-  );
-}
-
-/* A table: copy for a spreadsheet. */
-function SpreadsheetIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className="btn-icon">
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M3 10h18M3 15h18M9 10v10M15 10v10" />
-    </svg>
-  );
-}
-
-/* The Markdown mark: an M and a down arrow in a box. */
-function MarkdownIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className="btn-icon">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M6 15V9l2.5 3L11 9v6M16 9v6M13.5 12.5 16 15l2.5-2.5" />
-    </svg>
   );
 }
