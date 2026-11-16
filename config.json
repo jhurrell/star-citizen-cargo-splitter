@@ -4,24 +4,27 @@
       "id": "scu-32",
       "name": "32",
       "capacity": 32,
-      "x": 8,
-      "y": 2,
+      "lieFlat": true,
+      "x": 2,
+      "y": 8,
       "z": 2
     },
     {
       "id": "scu-24",
       "name": "24",
       "capacity": 24,
-      "x": 6,
-      "y": 2,
+      "lieFlat": true,
+      "x": 2,
+      "y": 6,
       "z": 2
     },
     {
       "id": "scu-16",
       "name": "16",
       "capacity": 16,
-      "x": 4,
-      "y": 2,
+      "lieFlat": true,
+      "x": 2,
+      "y": 4,
       "z": 2
     },
     {
@@ -36,6 +39,7 @@
       "id": "scu-4",
       "name": "4",
       "capacity": 4,
+      "lieFlat": true,
       "x": 2,
       "y": 2,
       "z": 1
@@ -44,8 +48,9 @@
       "id": "scu-2",
       "name": "2",
       "capacity": 2,
-      "x": 2,
-      "y": 1,
+      "lieFlat": true,
+      "x": 1,
+      "y": 2,
       "z": 1
     },
     {
@@ -69,98 +74,98 @@
           "positions": [
             {
               "name": "Top Right - Upper - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Right - Upper - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Right - Lower - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Right - Lower - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Right - Upper - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Right - Upper - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Right - Lower - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Right - Lower - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Left - Upper - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Left - Upper - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Left - Lower - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Top Left - Lower - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Left - Upper - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Left - Upper - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Left - Lower - Fore",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             },
             {
               "name": "Bottom Left - Lower - Aft",
-              "x": 8,
-              "y": 2,
+              "x": 2,
+              "y": 8,
               "z": 2
             }
           ]
@@ -171,26 +176,26 @@
           "positions": [
             {
               "name": "Port - Upper",
-              "x": 32,
-              "y": 2,
+              "x": 2,
+              "y": 32,
               "z": 2
             },
             {
               "name": "Port - Lower",
-              "x": 32,
-              "y": 2,
+              "x": 2,
+              "y": 32,
               "z": 2
             },
             {
               "name": "Starboard - Upper",
-              "x": 32,
-              "y": 2,
+              "x": 2,
+              "y": 32,
               "z": 2
             },
             {
               "name": "Starboard - Lower",
-              "x": 32,
-              "y": 2,
+              "x": 2,
+              "y": 32,
               "z": 2
             }
           ]
@@ -208,51 +213,51 @@
           "positions": [
             {
               "name": "Upper - Fore",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Upper - Aft",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Starboard - Fore",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Starboard - Aft",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Lower - Fore",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Lower - Aft",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Port - Fore",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             },
             {
               "name": "Port - Aft",
-              "x": 32,
-              "y": 6,
-              "z": 3
+              "x": 8,
+              "y": 12,
+              "z": 6
             }
           ]
         }
@@ -269,14 +274,14 @@
           "positions": [
             {
               "name": "Port",
-              "x": 18,
-              "y": 4,
+              "x": 4,
+              "y": 18,
               "z": 2
             },
             {
               "name": "Starboard",
-              "x": 18,
-              "y": 4,
+              "x": 4,
+              "y": 18,
               "z": 2
             }
           ]
@@ -294,8 +299,8 @@
           "positions": [
             {
               "name": "Grid",
-              "x": 12,
-              "y": 8,
+              "x": 8,
+              "y": 12,
               "z": 2
             }
           ]

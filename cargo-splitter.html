@@ -228,7 +228,7 @@ select.field option { background: var(--surface); color: var(--fg); }
 
 /* ---------- SCU by position (read-only) ---------- */
 .summary { display: flex; flex-direction: column; gap: 10px; }
-.summary .frame { max-width: 720px; }
+.summary .frame { max-width: 960px; }
 #positions th, #positions td { padding: 9px 12px; }
 #positions tbody th { text-align: left; font-weight: 600; }
 #positions .num { font-family: var(--font-mono); }
@@ -236,7 +236,10 @@ select.field option { background: var(--surface); color: var(--fg); }
 #positions tbody tr.is-empty > * { color: var(--off-fg); font-weight: 400; }
 #positions tfoot td { color: var(--fg); }
 #positions tbody tr.is-warn > * { background: var(--warn-soft); color: var(--warn); }
-.needs-position { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.warn-note { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.fit { white-space: nowrap; }
+.fit[data-state="ok"] { color: var(--muted); }
+.fit[data-state="warn"] { color: var(--warn); }
 .warn-badge {
   flex: none;
   display: grid;
@@ -266,7 +269,7 @@ select.field option { background: var(--surface); color: var(--fg); }
 <div class="wrap">
   <header>
     <h1>Cargo Splitter</h1>
-    <p>Enter the SCU on each row. Each row is filled with the biggest checked container size first, then the next size down, until every SCU is placed. Uncheck a size in the header to skip it.</p>
+    <p>Enter the SCU on each row. Each row is filled with the biggest checked container size that fits its position first, then the next size down, until every SCU is placed. Uncheck a size in the header to skip it.</p>
   </header>
 
   <div class="ship-bar">
@@ -295,6 +298,7 @@ select.field option { background: var(--surface); color: var(--fg); }
     <div class="frame">
       <table class="grid" id="positions"></table>
     </div>
+    <p class="hint">Fit packs each position's containers using their shapes from config.json. Containers lie flat, with their longest side level, and can turn to point fore–aft or port–starboard. Every container sits on the floor or fully on other containers. The packing is a quick estimate, so a tight load it says won't fit may still fit by hand.</p>
   </section>
 </div>
 
@@ -330,6 +334,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (ch) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 const hiddenAttr = (show) => (show ? "" : " hidden");
 const list = (value) => (Array.isArray(value) ? value : []);
+const positiveInt = (n) => (Number.isInteger(n) && n > 0 ? n : 0);
 
 /* ================= Pure logic ================= */
 
@@ -360,16 +365,41 @@ function compareText(a, b, dir) {
   return dir * collator.compare(a, b);
 }
 
-/* Container sizes in SCU from config.json, largest first, without duplicates. */
-function parseContainerSizes(config) {
-  const sizes = list(config?.containers).map((c) => c?.capacity).filter((n) => Number.isInteger(n) && n > 0);
-  return [...new Set(sizes)].sort((a, b) => b - a);
+/* Read x × y × z as whole SCU cells, or null if any is missing. Axes follow
+   Star Citizen: x is port–starboard, y is fore–aft and z is height. */
+function parseShape(item) {
+  const [x, y, z] = [item?.x, item?.y, item?.z].map(positiveInt);
+  return x && y && z ? { x, y, z } : null;
+}
+
+/* The ways a container can sit, as [x, y, z] extents, lowest first. A lieFlat
+   container keeps its long side horizontal; any other may be turned any way. */
+function placementsOf({ x, y, z }, lieFlat) {
+  const longest = Math.max(x, y, z);
+  const isCube = x === y && y === z;
+  const all = [[x, y, z], [y, x, z], [x, z, y], [z, x, y], [y, z, x], [z, y, x]]
+    .filter(([, , h]) => !lieFlat || isCube || h < longest);
+  const unique = [...new Map(all.map((p) => [p.join(), p])).values()];
+  return unique.sort((a, b) => a[2] - b[2]);
+}
+
+/* Containers from config.json as { size, x, y, z, placements }, largest first.
+   A size listed twice keeps its first entry; entries without a size or shape are skipped. */
+function parseContainers(config) {
+  const bySize = new Map();
+  for (const item of list(config?.containers)) {
+    const size = positiveInt(item?.capacity);
+    const shape = parseShape(item);
+    if (size && shape && !bySize.has(size)) {
+      bySize.set(size, { size, ...shape, placements: placementsOf(shape, item.lieFlat === true) });
+    }
+  }
+  return [...bySize.values()].sort((a, b) => b.size - a.size);
 }
 
 /* Read the ship list from config.json, skipping anything malformed, sorted by
-   name. A position's capacity is its volume in SCU (x × y × z). */
+   name. A position keeps its shape; its capacity is its volume in SCU (x × y × z). */
 function parseShips(config) {
-  const size = (n) => (Number.isFinite(n) && n > 0 ? n : 0);
   return list(config?.ships)
     .map((ship) => ({
       id: String(ship.id ?? ""),
@@ -379,13 +409,65 @@ function parseShips(config) {
           id: String(grid.id ?? ""),
           name: String(grid.name ?? grid.id ?? ""),
           positions: list(grid.positions)
-            .map((p) => ({ name: String(p.name ?? ""), capacity: size(p.x) * size(p.y) * size(p.z) }))
-            .filter((p) => p.name && p.capacity > 0),
+            .map((p) => ({ name: String(p.name ?? ""), shape: parseShape(p) }))
+            .filter((p) => p.name && p.shape)
+            .map(({ name, shape }) => ({ name, ...shape, capacity: shape.x * shape.y * shape.z })),
         }))
         .filter((grid) => grid.id && grid.positions.length > 0),
     }))
     .filter((ship) => ship.id && ship.grids.length > 0)
     .sort((a, b) => collator.compare(a.name, b.name));
+}
+
+/* Whether a container fits a space in at least one of its placements. */
+const fitsInside = (box, space) => box.placements.some(([w, d, h]) => w <= space.x && d <= space.y && h <= space.z);
+
+/* Pack containers into a space of x × y × z SCU cells (z is height) and return
+   the ones that don't fit, as { size: count }. `load` is [{ container, count }].
+   Each container sits in one of its placements (see placementsOf), on the floor
+   or wholly on top of other containers.
+   Greedy: biggest first, each in the first spot that takes it, filling the
+   bottom layer before the next. This can miss a packing that exists, so it may
+   report a load as not fitting when a cleverer layout would. */
+function packContainers(space, load) {
+  const { x: X, y: Y, z: Z } = space;
+  const filled = new Uint8Array(X * Y * Z);
+  const cell = (x, y, z) => (z * Y + y) * X + x;
+  const everyCell = (x0, y0, z0, w, d, h, test) => {
+    for (let z = z0; z < z0 + h; z++)
+      for (let y = y0; y < y0 + d; y++)
+        for (let x = x0; x < x0 + w; x++) if (!test(cell(x, y, z))) return false;
+    return true;
+  };
+  const isFree = (x, y, z, w, d, h) => everyCell(x, y, z, w, d, h, (i) => !filled[i]);
+  const isSupported = (x, y, z, w, d) => z === 0 || everyCell(x, y, z - 1, w, d, 1, (i) => filled[i]);
+
+  function findSpot(box) {
+    for (let z = 0; z < Z; z++)
+      for (let y = 0; y < Y; y++)
+        for (let x = 0; x < X; x++)
+          for (const [w, d, h] of box.placements) {
+            if (x + w <= X && y + d <= Y && z + h <= Z && isSupported(x, y, z, w, d) && isFree(x, y, z, w, d, h)) {
+              return { x, y, z, w, d, h };
+            }
+          }
+    return null;
+  }
+
+  const unfit = {};
+  const order = [...load].sort((a, b) => b.container.size - a.container.size);
+  for (const { container, count } of order) {
+    for (let placed = 0; placed < count; placed++) {
+      const spot = findSpot(container);
+      if (!spot) {
+        /* Space only shrinks, so the rest of this size won't fit either. */
+        unfit[container.size] = count - placed;
+        break;
+      }
+      everyCell(spot.x, spot.y, spot.z, spot.w, spot.d, spot.h, (i) => (filled[i] = 1));
+    }
+  }
+  return unfit;
 }
 
 /* How full `scu` makes a hold of `capacity` SCU. */
@@ -468,14 +550,17 @@ const rowIndex = (id) => state.rows.findIndex((r) => r.id === id);
 
 /* ---- Loaded from config.json at startup ---- */
 
-let containerSizes = []; // SCU, largest first
+let containers = []; // { size, x, y, z }, largest first
 let ships = [];
 let configError = ""; // shown in place of the ship summary when config.json can't be used
 
 const isEnabled = (size) => state.enabled[size] !== false;
-const enabledSizes = () => containerSizes.filter(isEnabled);
+const enabledSizes = () => containers.map((c) => c.size).filter(isEnabled);
+/* Checked sizes that fit `space`, largest first; with no space, every checked size. */
+const usableSizes = (space) =>
+  containers.filter((c) => isEnabled(c.size) && (!space || fitsInside(c, space))).map((c) => c.size);
 /* Text columns + SCU + sizes + Left over + Position */
-const columnCount = () => TEXT_COLUMNS.length + 1 + containerSizes.length + 1 + 1;
+const columnCount = () => TEXT_COLUMNS.length + 1 + containers.length + 1 + 1;
 
 /* ---- Selected ship ---- */
 
@@ -485,28 +570,39 @@ function currentGrid() {
   return ship?.grids.find((g) => g.id === state.gridId) ?? ship?.grids[0];
 }
 const currentPositions = () => currentGrid()?.positions ?? [];
-/* A row's position, or "" when it isn't one of the selected grid's positions. */
-const positionOf = (row) => (currentPositions().some((p) => p.name === row.position) ? row.position : "");
+/* A row's position on the selected grid, or undefined when it has none there. */
+const positionFor = (row) => currentPositions().find((p) => p.name === row.position);
+const positionOf = (row) => positionFor(row)?.name ?? "";
 
-/* Everything derived from state, computed once per update. */
+/* Everything derived from state, computed once per update. A row only uses
+   container sizes that fit its position; each position is then packed to find
+   any containers that don't fit (`unfit`, as { size: count }). */
 function computeTable() {
-  const sizes = enabledSizes();
-  const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(sizes.map((s) => [s, 0])) };
+  const totals = { scu: 0, leftover: 0, counts: Object.fromEntries(enabledSizes().map((s) => [s, 0])) };
   const byRow = new Map();
   /* "" collects cargo with no position chosen. Only rows with SCU count as rows. */
-  const byPosition = new Map(["", ...currentPositions().map((p) => p.name)].map((name) => [name, { rows: 0, scu: 0 }]));
+  const byPosition = new Map(["", ...currentPositions().map((p) => p.name)]
+    .map((name) => [name, { rows: 0, scu: 0, counts: {}, unfit: {} }]));
   for (const row of state.rows) {
     const scu = parseScu(row.scu);
-    const fill = fillLargestFirst(scu, sizes);
+    const position = positionFor(row);
+    const fill = fillLargestFirst(scu, usableSizes(position));
     byRow.set(row.id, fill);
     totals.scu += scu;
     totals.leftover += fill.leftover;
-    for (const s of sizes) totals.counts[s] += fill.counts[s];
-    if (scu > 0) {
-      const entry = byPosition.get(positionOf(row));
-      entry.rows += 1;
-      entry.scu += scu;
+    if (scu === 0) continue;
+    const entry = byPosition.get(position?.name ?? "");
+    entry.rows += 1;
+    entry.scu += scu;
+    for (const [size, n] of Object.entries(fill.counts)) {
+      totals.counts[size] += n;
+      entry.counts[size] = (entry.counts[size] ?? 0) + n;
     }
+  }
+  for (const position of currentPositions()) {
+    const entry = byPosition.get(position.name);
+    const load = containers.map((c) => ({ container: c, count: entry.counts[c.size] ?? 0 })).filter((l) => l.count > 0);
+    entry.unfit = packContainers(position, load);
   }
   return { byRow, byPosition, totals, showLeftover: totals.leftover > 0 };
 }
@@ -529,17 +625,21 @@ const els = {
 };
 
 /* Look and text for a calculated cell; shared by full renders and live updates. */
-function countCell(size, count) {
-  if (!isEnabled(size)) return { look: "off", text: "–" };
-  return { look: count ? "has" : "zero", text: fmt(count) };
+/* `counts` holds only the sizes the row could use: a checked size missing from
+   it is too big for the row's position. */
+function countCell(size, counts) {
+  if (!isEnabled(size)) return { look: "off", text: "–", title: "" };
+  if (!Object.hasOwn(counts, size)) return { look: "off", text: "–", title: `${size} SCU containers don't fit this position` };
+  const n = counts[size];
+  return { look: n ? "has" : "zero", text: fmt(n), title: "" };
 }
-const leftoverCell = (n) => ({ look: n ? "warn" : "zero", text: fmt(n) });
+const leftoverCell = (n) => ({ look: n ? "warn" : "zero", text: fmt(n), title: "" });
 
 /* Container counts and Left over for one row (or the total row). */
 function calcCellsHtml(fill, showLeftover) {
-  const counts = containerSizes.map((size, i) => {
-    const c = countCell(size, fill.counts[size] ?? 0);
-    return `<td class="count${i === 0 ? " sep" : ""}" data-size="${size}" data-state="${c.look}">${c.text}</td>`;
+  const counts = containers.map(({ size }, i) => {
+    const c = countCell(size, fill.counts);
+    return `<td class="count${i === 0 ? " sep" : ""}" data-size="${size}" data-state="${c.look}"${c.title ? ` title="${esc(c.title)}"` : ""}>${c.text}</td>`;
   }).join("");
   const l = leftoverCell(fill.leftover);
   return `${counts}<td class="leftover sep" data-state="${l.look}"${hiddenAttr(showLeftover)}>${l.text}</td>`;
@@ -547,10 +647,8 @@ function calcCellsHtml(fill, showLeftover) {
 
 /* Live update of the same cells, so typing never rebuilds the inputs. */
 function updateCalcCells(tr, fill, showLeftover) {
-  const apply = (td, { look, text }) => { td.dataset.state = look; td.textContent = text; };
-  for (const td of tr.querySelectorAll(".count")) {
-    apply(td, countCell(Number(td.dataset.size), fill.counts[td.dataset.size] ?? 0));
-  }
+  const apply = (td, { look, text, title }) => { td.dataset.state = look; td.textContent = text; td.title = title; };
+  for (const td of tr.querySelectorAll(".count")) apply(td, countCell(Number(td.dataset.size), fill.counts));
   const leftover = tr.querySelector(".leftover");
   apply(leftover, leftoverCell(fill.leftover));
   leftover.hidden = !showLeftover;
@@ -580,7 +678,7 @@ function cargoHeadHtml(calc) {
   return `<tr>
     ${TEXT_COLUMNS.map(sortHeadHtml).join("")}
     <th class="label num">SCU</th>
-    ${containerSizes.map(sizeHeadHtml).join("")}
+    ${containers.map((c, i) => sizeHeadHtml(c.size, i)).join("")}
     <th class="label num sep leftover"${hiddenAttr(calc.showLeftover)}>Left over</th>
     <th class="label sep">Position</th>
   </tr>`;
@@ -624,38 +722,61 @@ function cargoFootHtml(calc) {
   </tr>`;
 }
 
-/* Bar and Available cells. Unassigned cargo has no hold, so it gets a warning instead.
-   The bar's fill width travels in data-percent and is applied by applyBarWidths(). */
-function loadCellsHtml(scu, capacity) {
-  if (!capacity) {
-    return `<td colspan="2"><span class="needs-position"><span class="warn-badge" aria-hidden="true">!</span>Choose a position for this cargo</span></td>`;
-  }
+const warnNoteHtml = (text) =>
+  `<span class="warn-note"><span class="warn-badge" aria-hidden="true">!</span>${text}</span>`;
+
+/* Bar and Available cells. The bar turns to a warning when containers don't fit.
+   Its fill width travels in data-percent and is applied by applyBarWidths(). */
+function loadCellsHtml(scu, capacity, fits) {
   const load = loadOf(scu, capacity);
-  return `<td><div class="bar" data-state="${load.look}" role="presentation"><span class="bar-fill" data-percent="${load.percent.toFixed(2)}"></span></div></td>
+  return `<td><div class="bar" data-state="${fits ? load.look : "over"}" role="presentation"><span class="bar-fill" data-percent="${load.percent.toFixed(2)}"></span></div></td>
     <td class="num avail" data-state="${load.look}">${load.label}</td>`;
 }
 
+/* Fit cell: blank for an empty position, else "Fits" or which containers don't. */
+function fitCellHtml(scu, unfit) {
+  if (!scu) return "<td></td>";
+  const sizes = Object.keys(unfit).map(Number).sort((a, b) => b - a);
+  if (sizes.length === 0) return `<td class="fit" data-state="ok">Fits</td>`;
+  const list = sizes.map((size) => `${fmt(unfit[size])} × ${size} SCU`).join(", ");
+  return `<td class="fit" data-state="warn">${warnNoteHtml(`${list} won't fit`)}</td>`;
+}
+
 /* Read-only SCU-by-position table for the selected ship's grid. Every position
-   shows; Unassigned shows only when it holds cargo. */
+   shows; Unassigned shows only when it holds cargo, which has no hold to fit. */
 function positionsHtml(calc) {
   const positions = currentPositions();
-  const unassigned = { name: "", capacity: 0 };
-  const shown = calc.byPosition.get("").scu > 0 ? [...positions, unassigned] : positions;
-  const body = shown.map(({ name, capacity }) => {
-    const e = calc.byPosition.get(name);
-    const rowClass = !name ? "is-warn" : e.scu ? "" : "is-empty";
-    return `<tr${rowClass ? ` class="${rowClass}"` : ""}>
-      <th scope="row">${name ? esc(name) : "Unassigned"}</th>
+  const sum = (items, pick) => items.reduce((n, item) => n + pick(item), 0);
+  const unfitCount = (p) => sum(Object.values(calc.byPosition.get(p.name).unfit), (n) => n);
+
+  const rows = positions.map((p) => {
+    const e = calc.byPosition.get(p.name);
+    return `<tr${e.scu ? "" : ' class="is-empty"'}>
+      <th scope="row">${esc(p.name)}</th>
       <td class="num">${fmt(e.rows)}</td>
       <td class="num scu-sum">${fmt(e.scu)}</td>
-      <td class="num">${capacity ? fmt(capacity) : ""}</td>
-      ${loadCellsHtml(e.scu, capacity)}
+      <td class="num">${fmt(p.capacity)}</td>
+      ${loadCellsHtml(e.scu, p.capacity, unfitCount(p) === 0)}
+      ${fitCellHtml(e.scu, e.unfit)}
     </tr>`;
-  }).join("");
+  });
+  const unassigned = calc.byPosition.get("");
+  if (unassigned.scu > 0) {
+    rows.push(`<tr class="is-warn">
+      <th scope="row">Unassigned</th>
+      <td class="num">${fmt(unassigned.rows)}</td>
+      <td class="num scu-sum">${fmt(unassigned.scu)}</td>
+      <td></td>
+      <td colspan="3">${warnNoteHtml("Choose a position for this cargo")}</td>
+    </tr>`);
+  }
 
-  const sum = (list, pick) => list.reduce((n, p) => n + pick(p), 0);
   const capacity = sum(positions, (p) => p.capacity);
   const positioned = sum(positions, (p) => calc.byPosition.get(p.name).scu);
+  const unfit = sum(positions, unfitCount);
+  const totalFit = !positioned ? "<td></td>"
+    : unfit ? `<td class="fit" data-state="warn">${warnNoteHtml(`${plural(unfit, "container")} won't fit`)}</td>`
+    : `<td class="fit" data-state="ok">All fit</td>`;
   return `<thead><tr>
       <th class="label">Position</th>
       <th class="label num">Rows</th>
@@ -663,14 +784,16 @@ function positionsHtml(calc) {
       <th class="label num">Capacity</th>
       <th class="label">Load</th>
       <th class="label num">Available</th>
+      <th class="label">Fit</th>
     </tr></thead>
-    <tbody>${body || `<tr class="empty-row"><td colspan="6">No ship loaded.</td></tr>`}</tbody>
+    <tbody>${rows.join("") || `<tr class="empty-row"><td colspan="7">No ship loaded.</td></tr>`}</tbody>
     <tfoot><tr>
       <td class="label">Total</td>
-      <td class="num">${fmt(sum(shown, (p) => calc.byPosition.get(p.name).rows))}</td>
+      <td class="num">${fmt(sum([...calc.byPosition.values()], (e) => e.rows))}</td>
       <td class="num scu-sum">${fmt(calc.totals.scu)}</td>
       <td class="num">${capacity ? fmt(capacity) : ""}</td>
-      ${capacity ? loadCellsHtml(positioned, capacity) : "<td></td><td></td>"}
+      ${capacity ? loadCellsHtml(positioned, capacity, unfit === 0) : "<td></td><td></td>"}
+      ${totalFit}
     </tr></tfoot>`;
 }
 
@@ -813,7 +936,7 @@ function exportTable() {
   ];
   const rows = state.rows.map((row) => {
     const fill = calc.byRow.get(row.id);
-    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s]), ...leftover(fill.leftover), positionOf(row)];
+    return [...TEXT_KEYS.map((k) => row[k]), parseScu(row.scu), ...sizes.map((s) => fill.counts[s] ?? 0), ...leftover(fill.leftover), positionOf(row)];
   });
   const totals = [
     "Total", ...TEXT_KEYS.slice(1).map(() => ""), calc.totals.scu,
@@ -938,9 +1061,9 @@ async function loadConfig() {
     const response = await fetch(CONFIG_URL, { cache: "no-cache" });
     if (!response.ok) throw new Error(`the server answered ${response.status}`);
     const config = await response.json();
-    containerSizes = parseContainerSizes(config);
+    containers = parseContainers(config);
     ships = parseShips(config);
-    const missing = [containerSizes.length ? "" : "container sizes", ships.length ? "" : "ships"].filter(Boolean);
+    const missing = [containers.length ? "" : "containers", ships.length ? "" : "ships"].filter(Boolean);
     if (missing.length) throw new Error(`it lists no usable ${missing.join(" or ")}`);
   } catch (err) {
     configError = `Couldn't read ${CONFIG_URL}: ${err.message}.`;
