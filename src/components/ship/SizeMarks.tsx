@@ -5,7 +5,9 @@ import type { Placed } from "../../lib/packing";
 import { GAP } from "./scene";
 
 /* Each face of a container: the way it faces, and which way is up for the
-   number on it (away from the floor on the sides, fore-ish on top and bottom). */
+   number on it (away from the floor on the sides, fore-ish on top and bottom).
+   On a grid that hangs under the ship, away from the floor is toward the
+   ground, so there the side numbers turn over to stay upright. */
 const FACES: { normal: Vector3; up: Vector3 }[] = [
   { normal: new Vector3(0, 0, 1), up: new Vector3(0, 1, 0) },
   { normal: new Vector3(0, 0, -1), up: new Vector3(0, 1, 0) },
@@ -18,7 +20,7 @@ const MARK_LIFT = 0.01; // off the face, so the number doesn't flicker into it
 
 /* Each container's size in SCU, on all six of its faces so it reads from any
    side; one instanced mesh per size. */
-export function SizeMarks({ placed }: { placed: Placed<number>[] }) {
+export function SizeMarks({ placed, hangs }: { placed: Placed<number>[]; hangs: boolean }) {
   const bySize = useMemo(() => {
     const groups = new Map<number, Placed<number>[]>();
     for (const box of placed) groups.set(box.size, [...(groups.get(box.size) ?? []), box]);
@@ -27,13 +29,13 @@ export function SizeMarks({ placed }: { placed: Placed<number>[] }) {
   return (
     <>
       {[...bySize].map(([size, boxes]) => (
-        <SizeMark key={size} size={size} boxes={boxes} />
+        <SizeMark key={size} size={size} boxes={boxes} hangs={hangs} />
       ))}
     </>
   );
 }
 
-function SizeMark({ size, boxes }: { size: number; boxes: Placed<number>[] }) {
+function SizeMark({ size, boxes, hangs }: { size: number; boxes: Placed<number>[]; hangs: boolean }) {
   const ref = useRef<InstancedMesh>(null);
   const invalidate = useThree((s) => s.invalidate);
   const texture = useMemo(() => numberTexture(String(size)), [size]);
@@ -46,11 +48,15 @@ function SizeMark({ size, boxes }: { size: number; boxes: Placed<number>[] }) {
     const right = new Vector3();
     const at = new Vector3();
     const scale = new Vector3();
+    const up = new Vector3();
     let i = 0;
     for (const b of boxes) {
       const half = new Vector3(b.w, b.d, b.h).subScalar(GAP).multiplyScalar(0.5);
       const center = new Vector3(b.x + b.w / 2, b.y + b.d / 2, b.z + b.h / 2);
-      for (const { normal, up } of FACES) {
+      for (const face of FACES) {
+        const { normal } = face;
+        up.copy(face.up);
+        if (hangs && normal.z === 0) up.negate();
         right.crossVectors(up, normal);
         /* The face's width and height, from the container's half-sizes along them. */
         const across = Math.abs(right.dot(half)) * 2;
@@ -69,7 +75,7 @@ function SizeMark({ size, boxes }: { size: number; boxes: Placed<number>[] }) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
     invalidate();
-  }, [boxes, count, invalidate]);
+  }, [boxes, count, hangs, invalidate]);
   /* Keyed by count, as an instanced mesh can't grow; it never takes the pointer,
      so pointing at a container still says what it holds. */
   return (
