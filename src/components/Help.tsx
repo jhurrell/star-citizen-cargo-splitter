@@ -24,8 +24,8 @@ export function Help() {
         <h3>The table</h3>
         <ul>
           <li>
-            Enter the SCU on each row. Each row is filled with the biggest container size that's turned on and fits its
-            grid first, then the next size down, until every SCU is placed. A row takes up to 9,999 SCU.
+            Enter the SCU on each row. Each row is split into the biggest container size that's turned on first, then
+            the next size down, as the game hands a contract over. A row takes up to 9,999 SCU.
           </li>
           <li>Click a size in the table header to turn it off and skip it.</li>
           <li>Click the arrow beside Cargo, Pick-up or Drop-off to sort by that column, and again to reverse it.</li>

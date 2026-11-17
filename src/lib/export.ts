@@ -19,16 +19,12 @@ export function gridText({ parts }: { parts: Part[] }): string {
 
 /* Columns, rows and totals for the copy buttons: the table's columns, less
    the sizes turned off. Values stay raw (numbers as numbers) so each format
-   can render them its own way; a size that won't fit a row's grids is "–",
-   as in the table. */
+   can render them its own way. */
 export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): ExportedTable {
   const leftover = <T>(value: T): T[] => (showLeftover ? [value] : []);
-  const onSizes = sizes.flatMap((column, i) => (column.on ? [{ ...column, i }] : []));
-  const cellsOf = (cells: SizeCell[]) =>
-    onSizes.map(({ i }) => {
-      const cell = cells[i];
-      return cell.kind === "count" ? cell.count : "–";
-    });
+  const onSizes = sizes.filter((column) => column.on);
+  /* The counts of the sizes turned on, in column order. */
+  const cellsOf = (cells: SizeCell[]) => cells.flatMap((cell) => (cell.kind === "count" ? [cell.count] : []));
   const columns: Column[] = [
     ...TEXT_COLUMNS.map((c) => ({ label: c.label, numeric: false })),
     { label: "SCU", numeric: true },

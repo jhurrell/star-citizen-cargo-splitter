@@ -13,8 +13,8 @@ import { isEnabled, rowsOn, type LayoutRef, type Row, type State } from "./state
 export type SizeColumn = { size: number; on: boolean };
 
 /* One cell under a size column: how many containers of that size, or none
-   because the size is turned off, or because it won't fit the row's grids. */
-export type SizeCell = { kind: "count"; count: number } | { kind: "off" } | { kind: "wontFit" };
+   because the size is turned off. */
+export type SizeCell = { kind: "count"; count: number } | { kind: "off" };
 
 /* How much of a row goes in one of its grids. */
 export type Part = { name: string; scu: number };
@@ -25,8 +25,7 @@ export type UnassignedReason = "noGrid" | "outOfRoom";
 /* Why a row can't pick a grid it isn't in yet:
    - "full": the grid has no room for any container.
    - "allAssigned": all of the row is in its grids already.
-   - "tooSmall": the grid's free SCU is less than the smallest container the
-     rest of the row would need there, so none of them would go in. */
+   - "tooSmall": none of the row's containers still to place would go in it. */
 export type PickBlock = "full" | "allAssigned" | "tooSmall";
 
 /* A row's button for one grid: whether the row is in it, and if not, why it
@@ -41,7 +40,7 @@ export type Delivery = {
   parts: Part[];
   unassigned: number;
   unassignedReason: UnassignedReason | null;
-  /* One per size column, in column order. */
+  /* Its container split: one per size column, in column order. */
   cells: SizeCell[];
   /* SCU no turned-on size can make up. */
   leftover: number;
@@ -67,7 +66,6 @@ export type Haul = {
   totals: {
     scu: number;
     unassigned: number;
-    /* Only "count" or "off". */
     cells: SizeCell[];
     leftover: number;
     /* SCU free across all the grids. */
@@ -103,25 +101,12 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
   const sizesFor = (position: Position | undefined) => (position ? fitting.get(position.name)! : allSizes);
   const bySize = new Map(containers.map((c) => [c.size, c]));
 
-  const filled = fillGrids(rows, positions, containers, sizesFor);
-  const totalCounts: Counts = Object.fromEntries(allSizes.map((size) => [size, 0]));
-
-  /* Each row's containers: those its grids took, then what's left of it made
-     up with any size turned on. Counts list every size the row could use, so
-     the rest show as won't fit. Left over is what no size turned on makes up;
-     it takes no grid room and isn't unassigned, as no grid could take it. */
+  const filled = fillGrids(rows, positions, containers, allSizes);
   const counted = rows.map((row) => {
-    const { parts, placed, rest } = filled.rows.get(row.id)!;
-    const loose = fillLargestFirst(rest, allSizes);
+    const { parts, split, left } = filled.rows.get(row.id)!;
     /* A layout with no grids leaves nothing to assign. */
-    const unassigned = positions.length ? rest - loose.leftover : 0;
-    const counts: Counts = {};
-    for (const part of parts) for (const size of sizesFor(filled.byName.get(part.name))) counts[size] = 0;
-    if (!parts.length || unassigned) for (const size of allSizes) counts[size] = 0;
-    addCounts(counts, placed);
-    addCounts(counts, Object.fromEntries(Object.entries(loose.counts).filter(([, n]) => n > 0)));
-    addCounts(totalCounts, counts);
-    return { row, scu: parseScu(row.scu), parts, unassigned, counts, leftover: loose.leftover };
+    const unassigned = positions.length ? scuOf(left) : 0;
+    return { row, scu: parseScu(row.scu), parts, unassigned, left, ...split };
   });
 
   /* Whether a container of each size could still go in each grid. */
@@ -143,14 +128,8 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
   });
 
   const cellsOf = (counts: Counts): SizeCell[] =>
-    sizes.map(({ size, on }) =>
-      !on
-        ? { kind: "off" }
-        : Object.hasOwn(counts, size)
-          ? { kind: "count", count: counts[size] }
-          : { kind: "wontFit" },
-    );
-  const deliveries: Delivery[] = counted.map(({ row, scu, parts, unassigned, counts, leftover }) => ({
+    sizes.map(({ size, on }) => (on ? { kind: "count", count: counts[size] ?? 0 } : { kind: "off" }));
+  const deliveries: Delivery[] = counted.map(({ row, scu, parts, unassigned, left, counts, leftover }) => ({
     row,
     scu,
     parts,
@@ -161,7 +140,7 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
     grids: grids.map((grid) => {
       const picked = parts.some((p) => p.name === grid.position.name);
       /* A row that already has a grid can still give it up. */
-      const block = picked ? null : pickBlock(scu, unassigned, grid, sizesFor, room.get(grid.position.name)!);
+      const block = picked ? null : pickBlock(scu, unassigned, grid, left, room.get(grid.position.name)!);
       return { name: grid.position.name, picked, block };
     }),
   }));
@@ -178,7 +157,7 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
     totals: {
       scu: sum(deliveries, (d) => d.scu),
       unassigned: sum(deliveries, (d) => d.unassigned),
-      cells: cellsOf(totalCounts),
+      cells: cellsOf(counted.reduce((total, d) => addCounts(total, d.counts), {} as Counts)),
       leftover,
       free: sum(grids, (g) => g.free),
     },
@@ -187,63 +166,57 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
   };
 }
 
-/* Grids fill in the order they were picked, across all rows. Each pick makes
-   what's left of its row into containers, largest first with the sizes turned
-   on that fit its grid, and the grid takes those it can place (see loadGrid).
-   What it can't moves on to the row's next pick; what's left after the last
-   is the row's rest. So a later pick never takes room from an earlier one, a
-   grid never takes more than it holds, and the table and ship view agree.
-   Picks for grids not on this layout are ignored. */
-function fillGrids(
-  rows: Row[],
-  positions: Position[],
-  containers: Container[],
-  sizesFor: (position: Position) => number[],
-) {
-  const byName = new Map(positions.map((p) => [p.name, p]));
+/* Each row comes in its container split: its SCU made into containers once,
+   largest first, from the sizes turned on, as the game hands them over,
+   whatever grids it goes in. Grids then fill in the order they were picked,
+   across all rows: each pick offers its grid the row's containers still to
+   place, and the grid takes those it can (see loadGrid). The rest move on,
+   whole, to the row's next pick; what's left after the last is still to place.
+   So a later pick never takes room from an earlier one, a grid never takes
+   more than it holds, and the table and ship view agree. Picks for grids not
+   on this layout are ignored. */
+function fillGrids(rows: Row[], positions: Position[], containers: Container[], sizes: number[]) {
+  const byName = new Set(positions.map((p) => p.name));
   const bySize = new Map(containers.map((c) => [c.size, c]));
   const grids = new Map(positions.map((p) => [p.name, loadGrid<number>(p, sweepOf(p))]));
   const filled = new Map(
-    rows.map((row) => [row.id, { parts: [] as Part[], placed: {} as Counts, rest: parseScu(row.scu) }]),
+    rows.map((row) => {
+      const split = fillLargestFirst(parseScu(row.scu), sizes);
+      return [row.id, { parts: [] as Part[], split, left: { ...split.counts } }];
+    }),
   );
   /* Ties (from older saves) go by table order. The sort is stable. */
   const picks = rows
     .flatMap((row) => row.picks.filter((p) => byName.has(p.name)).map((p) => ({ ...p, rowId: row.id })))
     .sort((a, b) => a.order - b.order);
   for (const { rowId, name } of picks) {
-    const row = filled.get(rowId)!;
-    const sizes = sizesFor(byName.get(name)!);
-    const { counts } = fillLargestFirst(row.rest, sizes);
+    const { parts, left } = filled.get(rowId)!;
     const load = sizes
-      .filter((size) => counts[size])
-      .map((size) => ({ container: bySize.get(size)!, count: counts[size], tag: rowId }));
+      .filter((size) => left[size])
+      .map((size) => ({ container: bySize.get(size)!, count: left[size], tag: rowId }));
     const unfit = grids.get(name)!.add(load);
-    const placed = Object.fromEntries(load.map(({ container: { size }, count }) => [size, count - (unfit[size] ?? 0)]));
-    const scu = sum(Object.entries(placed), ([size, n]) => Number(size) * n);
-    addCounts(row.placed, placed);
-    row.parts.push({ name, scu });
-    row.rest -= scu;
+    const before = scuOf(left);
+    for (const { container } of load) left[container.size] = unfit[container.size] ?? 0;
+    parts.push({ name, scu: before - scuOf(left) });
   }
-  return { byName, grids, rows: filled };
+  return { grids, rows: filled };
 }
 
+/* The SCU of some containers. */
+const scuOf = (counts: Counts) => sum(Object.entries(counts), ([size, n]) => Number(size) * n);
+
 /* Why a row can't pick a grid it isn't in (see PickBlock), or null if it can.
-   The containers it would need there are its unassigned SCU filled largest
-   first with the sizes that fit the grid; the smallest must still go in, as
-   `canPlace` says. A row with no SCU yet can pick any grid with room. */
+   A row with no SCU yet can pick any grid with room. */
 function pickBlock(
   scu: number,
   unassigned: number,
   grid: HaulGrid,
-  sizesFor: (position: Position) => number[],
+  left: Counts,
   canPlace: (size: number) => boolean,
 ): PickBlock | null {
   if (grid.full) return "full";
   if (!unassigned) return scu > 0 ? "allAssigned" : null;
-  const sizes = sizesFor(grid.position);
-  const { counts } = fillLargestFirst(unassigned, sizes);
-  const needed = sizes.filter((size) => counts[size] > 0);
-  return needed.length && canPlace(Math.min(...needed)) ? null : "tooSmall";
+  return Object.keys(left).some((size) => left[Number(size)] > 0 && canPlace(Number(size))) ? null : "tooSmall";
 }
 
 /* Load a position from its fore end toward aft when its floor runs fore–aft

@@ -54,12 +54,12 @@ describe("copy formats", () => {
     expect(new Set(lines.map((line) => line.length)).size).toBe(1);
   });
 
-  test("a size that won't fit the row's grid shows a dash; one turned off is left out", () => {
+  test("a size turned off is left out", () => {
     const small = [bay("Small", 2, 2, 2)];
     const haul = haulOf([testRow({ scu: "8", positions: ["Small"] })], small, { 1: false });
     expect(tableAsTsv(exportTable(haul)).split("\n")).toEqual([
       "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\tGrids",
-      "\t\t\t8\t0\t–\t1\tSmall",
+      "\t\t\t8\t0\t0\t1\tSmall",
     ]);
   });
 });

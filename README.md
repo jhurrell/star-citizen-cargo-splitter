@@ -10,18 +10,19 @@ the ship.
 
 - **Toolbar.** Type in the ship field to find a ship, or pick one from its list, and choose a layout when the ship
   has more than one. **Add row** adds a row under the last one. The two copy icons copy the table for a spreadsheet
-  (tab-separated) or as a Markdown table, with a – for a size that won't fit the row's grids; point at either one to
-  see which is which. **How to use**, at the top right, opens a short guide.
-- **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
-  the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
-  turn it off and skip it.
+  (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**, at the top
+  right, opens a short guide.
+- **Container split per delivery.** Each row is split into the biggest container size first, then the next size
+  down, as the game splits a contract delivery, whatever grids it goes in. A row takes up to 9,999 SCU. Click a
+  size in the table header to turn it off, for the sizes a contract skips or above its max container size. A
+  container that no grid's shape can take stays in Remaining rather than being split smaller.
 - **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
   the grid has left. A grid takes only the containers it can actually place, so a grid can have SCU free and still
   have no spot left for a container's shape. A row can't pick a grid when no container turned on can go in it, when
-  all of the row is in its grids already, or when the smallest container the rest of the row needs there can't go
-  in; point at a greyed-out button to see which. Pick several to split a big delivery: grids fill in the order you
-  pick them, across all rows, so a later pick never takes room an earlier one already claimed. Containers a grid
-  can't place move on to the row's next grid.
+  all of the row is in its grids already, or when none of the row's containers still to place can go in; point at a
+  greyed-out button to see which. Pick several to split a big delivery: grids fill in the order you pick them,
+  across all rows, so a later pick never takes room an earlier one already claimed. Containers a grid can't place
+  move on, whole, to the row's next grid.
 - **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
   Grids heading, keeps the rows but takes every one out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.

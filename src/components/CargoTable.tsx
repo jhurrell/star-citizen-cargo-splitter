@@ -333,25 +333,17 @@ function RemainingCell({ scu, title }: { scu: number; title?: string }) {
   );
 }
 
-/* Look, text and tooltip for a container size cell. */
-function sizeCellView(cell: SizeCell, size: number) {
-  if (cell.kind === "off") return { look: "off", text: "–", title: undefined };
-  if (cell.kind === "wontFit")
-    return { look: "off", text: "–", title: `${size} SCU containers don't fit this row's grids` };
-  return { look: cell.count ? "has" : "zero", text: fmt(cell.count), title: undefined };
-}
-
-/* The container counts for one row, or the total row. */
+/* The container counts for one row, or the total row; "–" under a size turned off. */
 function SizeCells({ cells, sizes }: { cells: SizeCell[]; sizes: SizeColumn[] }) {
-  return cells.map((cell, i) => {
-    const { size } = sizes[i];
-    const view = sizeCellView(cell, size);
-    return (
-      <td key={size} className={`count${i === 0 ? " sep" : ""}`} data-state={view.look} title={view.title}>
-        {view.text}
-      </td>
-    );
-  });
+  return cells.map((cell, i) => (
+    <td
+      key={sizes[i].size}
+      className={`count${i === 0 ? " sep" : ""}`}
+      data-state={cell.kind === "off" ? "off" : cell.count ? "has" : "zero"}
+    >
+      {cell.kind === "off" ? "–" : fmt(cell.count)}
+    </td>
+  ));
 }
 
 /* SCU no turned-on size can make up; the column shows only when some row has any. */

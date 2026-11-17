@@ -7,7 +7,7 @@ import { bay, haulOf, haulOnShip, shipRow, testRow } from "./helpers";
 /* The parts of a Haul a test looks at, found by row or grid. */
 const deliveryOf = (haul: Haul, row: Row) => haul.deliveries.find((d) => d.row.id === row.id)!;
 const gridOf = (haul: Haul, name: string) => haul.grids.find((g) => g.position.name === name)!;
-/* Size cells in column order (32, 8, 1): a count, "off" or "wontFit". */
+/* Size cells in column order (32, 8, 1): a count or "off". */
 const show = (cells: SizeCell[]) => cells.map((cell) => (cell.kind === "count" ? cell.count : cell.kind));
 /* A row's picks, each [order, grid]. */
 const picks = (...list: [number, string][]) => list.map(([order, name]) => ({ name, order }));
@@ -30,10 +30,10 @@ describe("selection", () => {
 describe("container sizes", () => {
   const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
 
-  test("only uses sizes that fit the row's grid, and totals them", () => {
+  test("splits each delivery largest first, whatever its grid, and totals them", () => {
     const rows = [testRow({ scu: "8", picks: picks([1, "Small"]) }), testRow({ scu: "32", picks: picks([2, "Big"]) })];
     const haul = haulOf(rows, positions);
-    expect(show(deliveryOf(haul, rows[0]).cells)).toEqual(["wontFit", 1, 0]);
+    expect(show(deliveryOf(haul, rows[0]).cells)).toEqual([0, 1, 0]);
     expect(show(deliveryOf(haul, rows[1]).cells)).toEqual([1, 0, 0]);
     expect(show(haul.totals.cells)).toEqual([1, 1, 0]);
     expect(gridOf(haul, "Small").placed).toHaveLength(1);
@@ -58,12 +58,13 @@ describe("container sizes", () => {
     expect(haul.grids.map((g) => g.free)).toEqual([8, 32]); // no grid, no load
   });
 
-  test("a split row's containers are packed per grid and counted once", () => {
-    const grids = [bay("A", 2, 4, 2), bay("B", 2, 4, 2)];
+  test("a container no grid's shape takes stays unplaced, never split smaller", () => {
+    const grids = [bay("A", 2, 4, 2), bay("B", 2, 4, 2)]; // 16 SCU each, too short for a 32
     const row = testRow({ scu: "32", picks: picks([1, "A"], [2, "B"]) });
     const haul = haulOf([row], grids);
-    expect(show(deliveryOf(haul, row).cells)).toEqual(["wontFit", 4, 0]);
-    expect(haul.grids.map((g) => g.free)).toEqual([0, 0]);
+    expect(show(deliveryOf(haul, row).cells)).toEqual([1, 0, 0]); // the game hands over one 32
+    expect(deliveryOf(haul, row)).toMatchObject({ unassigned: 32, unassignedReason: "outOfRoom" });
+    expect(haul.grids.map((g) => g.free)).toEqual([16, 16]);
     expect(haul.totals.scu).toBe(32);
   });
 });
@@ -199,7 +200,7 @@ describe("splitting across grids", () => {
         unassigned: 0,
       },
     ]);
-    expect(show(deliveryOf(haul, row).cells)).toEqual(["wontFit", 3, 0]); // still three 8s, not 4s
+    expect(show(deliveryOf(haul, row).cells)).toEqual([0, 3, 0]); // still three 8s, not 4s
     expect(haul.grids.map((g) => g.placed.length)).toEqual([2, 1]);
   });
 
@@ -216,7 +217,7 @@ describe("splitting across grids", () => {
       testRow({ scu: "40", picks: picks([1, "A"], [2, "B"]) }),
       testRow({ scu: "20", picks: picks([3, "C"]) }),
     ];
-    expect(split(haulOf(rows, positions), rows)).toEqual([
+    expect(split(haulOf(rows, positions, { 32: false }), rows)).toEqual([
       {
         parts: [
           { name: "A", scu: 16 },
