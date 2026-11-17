@@ -4,7 +4,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, type InstancedMesh } from "three";
 import type { HaulGrid } from "../lib/haul";
 import type { Position } from "../lib/cargo";
-import { OTHER_COLOR, type Cargo } from "../lib/colors";
+import { OTHER_COLOR, type Cargo } from "../lib/emphasis";
 import { hangsDown, mountMatrix, type Vec3 } from "../lib/mount";
 import type { Placed } from "../lib/packing";
 import {

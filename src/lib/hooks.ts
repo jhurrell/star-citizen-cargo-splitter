@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { emphasize, type Slots } from "./emphasis";
+import type { Haul } from "./haul";
+import type { Row } from "./state";
 
 /* A message that clears itself `ms` after it was last shown. */
 export function useTimedMessage(ms: number): [string, (message: string) => void] {
@@ -24,20 +27,33 @@ export function useTimedFlag(ms: number): [boolean, (on: boolean) => void] {
   return [on, setOn];
 }
 
-/* A set of ids, and a way to add (or, with false, remove) several at once. */
-export function useIdSet(): [ReadonlySet<number>, (ids: number[], add: boolean) => void] {
-  const [ids, setIds] = useState<ReadonlySet<number>>(() => new Set());
-  const update = useCallback(
-    (changed: number[], add: boolean) =>
-      setIds((before) => {
+/* The page's emphasis (see emphasize), with the state it needs: the rows
+   turned off in the legend, the rows pointed at, and the colors handed out.
+   The colors are remembered from render to render, never saved. */
+export function useEmphasis(rows: Row[], haul: Haul) {
+  const [turnedOff, setTurnedOff] = useState<ReadonlySet<number>>(() => new Set());
+  const [pointed, point] = useState<number[] | null>(null);
+  const [slots, setSlots] = useState<Slots>(() => new Map());
+  const inView = useMemo(() => new Set(haul.grids.flatMap((g) => g.placed.map((p) => p.tag))), [haul]);
+  const emphasis = useMemo(
+    () => emphasize({ rows, inView, slots, turnedOff, pointed }),
+    [rows, inView, slots, turnedOff, pointed],
+  );
+  /* Remember newly handed-out colors; React re-renders straight away. */
+  if (emphasis.slots !== slots) setSlots(emphasis.slots);
+
+  /* Turn rows off in the legend, or (with false) back on. */
+  const turnOff = useCallback(
+    (ids: number[], off: boolean) =>
+      setTurnedOff((before) => {
         const after = new Set(before);
-        for (const id of changed) {
-          if (add) after.add(id);
+        for (const id of ids) {
+          if (off) after.add(id);
           else after.delete(id);
         }
         return after;
       }),
     [],
   );
-  return [ids, update];
+  return { ...emphasis, turnOff, point };
 }

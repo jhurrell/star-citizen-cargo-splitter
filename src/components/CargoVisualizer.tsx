@@ -1,12 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Grid } from "../lib/cargo";
 import { copyText } from "../lib/clipboard";
-import { cargoColors, rowsToDim } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
 import { computeHaul, selectLayout } from "../lib/haul";
-import { useIdSet, useTimedMessage } from "../lib/hooks";
+import { useEmphasis, useTimedMessage } from "../lib/hooks";
 import { loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { ConfirmButton } from "./ConfirmButton";
@@ -48,15 +47,11 @@ export function CargoVisualizer() {
   const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => selectLayout(ships, choice).at));
   const haul = useMemo(() => computeHaul(state, ships, containers), [state]);
   const { ship, layout, at, positions } = haul;
-  const colors = useMemo(() => cargoColors(state.rows), [state.rows]);
+  /* Each row's color, the legend, and which rows show see-through. */
+  const emphasis = useEmphasis(state.rows, haul);
   const isMounted = positions.length > 0 && positions.every((p) => p.mount);
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
-  /* Rows turned off in the legend, whose containers show dimmed. */
-  const [turnedOff, turnRows] = useIdSet();
-  /* The rows pointed at in the table or legend, which the ship view picks out. */
-  const [pointedRows, setPointedRows] = useState<number[] | null>(null);
-  const shipDimmed = useMemo(() => rowsToDim(state.rows, turnedOff, pointedRows), [state.rows, turnedOff, pointedRows]);
 
   useEffect(() => saveState(state), [state]);
 
@@ -179,11 +174,11 @@ export function CargoVisualizer() {
         <CargoTable
           haul={haul}
           sort={state.sort}
-          cargoByRow={colors.byRow}
+          cargoByRow={emphasis.byRow}
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
           onTogglePick={(id, name) => dispatch({ type: "togglePick", id, grid: { ...at, name } })}
           onHighlight={setHighlight}
-          onPointRows={setPointedRows}
+          onPointRows={emphasis.point}
           onDelete={deleteRow}
           onSort={(key) => dispatch({ type: "sortBy", key })}
           onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
@@ -196,17 +191,15 @@ export function CargoVisualizer() {
         {/* The heading and the legend share a line. */}
         <div className="section-head">
           <h2 id="ship-title">Ship view</h2>
-          {isMounted && (
-            <Legend entries={colors.legend} turnedOff={turnedOff} onTurnOff={turnRows} onPointRows={setPointedRows} />
-          )}
+          {isMounted && <Legend entries={emphasis.legend} onTurnOff={emphasis.turnOff} onPointRows={emphasis.point} />}
         </div>
         {isMounted ? (
           <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
             <ShipView
               positions={positions}
               grids={haul.grids}
-              cargoByRow={colors.byRow}
-              dimmed={shipDimmed}
+              cargoByRow={emphasis.byRow}
+              dimmed={emphasis.dimmed}
               highlight={highlight}
             />
           </Suspense>

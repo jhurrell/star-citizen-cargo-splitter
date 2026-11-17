@@ -1,10 +1,8 @@
-import { OTHER_COLOR, type CargoColors } from "../lib/colors";
+import type { LegendEntry } from "../lib/emphasis";
 import { pointHandlers } from "./pointing";
 
 type Props = {
-  entries: CargoColors["legend"];
-  /* Rows turned off, whose containers show dimmed. */
-  turnedOff: ReadonlySet<number>;
+  entries: LegendEntry[];
   /* Turn the given rows off, or (with false) back on. */
   onTurnOff: (rowIds: number[], off: boolean) => void;
   /* The rows a button is pointed at (or focused), for the ship view to pick
@@ -12,50 +10,28 @@ type Props = {
   onPointRows: (rowIds: number[] | null) => void;
 };
 
-/* A toggle button per row with cargo, with its swatch and name; past the
-   palette, one "Other rows" for the rest. Turning one off dims that row's
-   containers in the ship view; pointing at one dims every other row's. */
-export function Legend({ entries, ...actions }: Props) {
-  const named = entries.filter((entry) => entry.color !== OTHER_COLOR);
-  const others = entries.filter((entry) => entry.color === OTHER_COLOR).map((entry) => entry.rowId);
+/* A toggle button per legend entry, with its swatch and name. Turning one off
+   dims its rows' containers in the ship view; pointing at one dims every
+   other row's. */
+export function Legend({ entries, onTurnOff, onPointRows }: Props) {
   return (
     <ul className="legend" aria-label="Rows in the ship view">
-      {named.map((entry) => (
-        <li key={entry.rowId}>
-          <LegendButton name={entry.name} color={entry.color} rowIds={[entry.rowId]} {...actions} />
+      {entries.map(({ name, color, rowIds, on }) => (
+        <li key={rowIds.join()}>
+          <button
+            type="button"
+            className="legend-btn"
+            aria-pressed={on}
+            title={on ? `Dim ${name} in the ship view` : `Show ${name} in full in the ship view`}
+            onClick={() => onTurnOff(rowIds, on)}
+            {...pointHandlers((pointed) => onPointRows(pointed ? rowIds : null))}
+          >
+            <Swatch color={color} />
+            {name}
+          </button>
         </li>
       ))}
-      {others.length > 0 && (
-        <li>
-          <LegendButton name="Other rows" color={OTHER_COLOR} rowIds={others} {...actions} />
-        </li>
-      )}
     </ul>
-  );
-}
-
-/* On while any of its rows shows at full strength. */
-function LegendButton({
-  name,
-  color,
-  rowIds,
-  turnedOff,
-  onTurnOff,
-  onPointRows,
-}: Omit<Props, "entries"> & { name: string; color: string; rowIds: number[] }) {
-  const on = rowIds.some((id) => !turnedOff.has(id));
-  return (
-    <button
-      type="button"
-      className="legend-btn"
-      aria-pressed={on}
-      title={on ? `Dim ${name} in the ship view` : `Show ${name} in full in the ship view`}
-      onClick={() => onTurnOff(rowIds, on)}
-      {...pointHandlers((pointed) => onPointRows(pointed ? rowIds : null))}
-    >
-      <Swatch color={color} />
-      {name}
-    </button>
   );
 }
 

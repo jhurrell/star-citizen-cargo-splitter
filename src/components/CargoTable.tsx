@@ -1,5 +1,5 @@
 import { isOverMaxScu } from "../lib/cargo";
-import type { Cargo } from "../lib/colors";
+import type { Cargo } from "../lib/emphasis";
 import { fmt, initials, plural } from "../lib/format";
 import type { Delivery, Haul, HaulGrid, PickBlock, SizeCell, SizeColumn } from "../lib/haul";
 import { TEXT_COLUMNS, type RowField, type Sort, type TextKey } from "../lib/state";
