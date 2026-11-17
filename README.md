@@ -22,7 +22,7 @@ the ship.
   split a big delivery: grids fill in the order you pick them, across all rows, so a later pick never takes room an
   earlier one already claimed, and no grid is ever overloaded.
 - **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
-  Grids heading, keeps the rows but takes every one out of its grids; it's greyed out while no row is in a grid. Either turns to an amber
+  Grids heading, keeps the rows but takes every one out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
 - **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet, because it
   has no grid or its grids are out of room, with the table's total at the foot. While a row has some, its edge and
@@ -38,7 +38,8 @@ the ship.
     legend, or at its Cargo, Pick-up or Drop-off in the table, to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
-- **Kept in your browser.** The table, ship and settings are saved in local storage.
+- **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own grid
+  picks, so switching to another ship and back restores them.
 
 Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
 RAFT are placed to match the ships; the rest have grid sizes and SCU from the ITG Cargo Grid Reference Guide, with

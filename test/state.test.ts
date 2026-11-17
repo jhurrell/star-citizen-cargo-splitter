@@ -1,5 +1,19 @@
 import { describe, expect, test } from "vite-plus/test";
-import { compareRows, defaultState, hydrate, isEnabled, makeRow, reducer } from "../src/lib/state";
+import {
+  compareRows,
+  defaultState,
+  hydrate,
+  isEnabled,
+  makeRow,
+  reducer,
+  rowsOn,
+  type LayoutRef,
+  type State,
+} from "../src/lib/state";
+
+const hullA: LayoutRef = { ship: "ship-misc-hull-a", layout: "default" };
+const hullB: LayoutRef = { ship: "ship-misc-hull-b", layout: "relaxed" };
+const pickNames = (state: State, at: LayoutRef) => rowsOn(state.rows, at).map((r) => r.picks.map((p) => p.name));
 
 describe("compareRows", () => {
   test("sorts numerically and keeps blanks last in both directions", () => {
@@ -16,7 +30,11 @@ describe("hydrate", () => {
   test("moves old position names onto the Hull B relaxed grid", () => {
     const state = hydrate({ rows: [{ cargo: "Gold", scu: "8", position: "Left Upper" }] });
     expect(state).toMatchObject({ shipId: "ship-misc-hull-b", gridId: "relaxed" });
-    expect(state.rows[0]).toMatchObject({ cargo: "Gold", scu: "8", picks: [{ name: "Port - Upper", order: 1 }] });
+    expect(state.rows[0]).toMatchObject({
+      cargo: "Gold",
+      scu: "8",
+      picks: [{ ...hullB, name: "Port - Upper", order: 1 }],
+    });
   });
 
   test("reads an older list of positions in order, dropping blanks and repeats", () => {
@@ -25,12 +43,24 @@ describe("hydrate", () => {
   });
 
   test("reads saved picks, dropping ones without a grid or order", () => {
-    const picks = [{ name: "A", order: 4 }, { name: "", order: 5 }, { name: "B" }, { name: "C", order: 2 }];
+    const picks = [
+      { ...hullA, name: "A", order: 4 },
+      { ...hullA, name: "", order: 5 },
+      { ...hullA, name: "B" },
+      { ...hullB, name: "A", order: 2 }, // the same name on another ship is another grid
+      { ...hullA, name: "A", order: 6 }, // a repeat
+    ];
     const state = hydrate({ shipId: "x", rows: [{ scu: "8", picks }] });
     expect(state.rows[0].picks).toEqual([
-      { name: "A", order: 4 },
-      { name: "C", order: 2 },
+      { ...hullA, name: "A", order: 4 },
+      { ...hullB, name: "A", order: 2 },
     ]);
+  });
+
+  test("puts picks saved without a ship on the saved ship and layout, as the ship list resolves them", () => {
+    const saved = { shipId: "", gridId: "", rows: [{ scu: "8", picks: [{ name: "Port - Upper", order: 1 }] }] };
+    const state = hydrate(saved, () => hullA);
+    expect(state.rows[0].picks).toEqual([{ ...hullA, name: "Port - Upper", order: 1 }]);
   });
 
   test("keeps saved size choices and a valid sort only", () => {
@@ -62,32 +92,43 @@ describe("reducer togglePick", () => {
   test("a new pick comes after every pick so far, in any row; picking again removes it", () => {
     const [a, b] = [makeRow(), makeRow()];
     let state = { ...defaultState(), rows: [a, b] };
-    state = reducer(state, { type: "togglePick", id: a.id, name: "SU" });
-    state = reducer(state, { type: "togglePick", id: b.id, name: "SL" });
-    state = reducer(state, { type: "togglePick", id: a.id, name: "SL" });
+    state = reducer(state, { type: "togglePick", id: a.id, grid: { ...hullA, name: "SU" } });
+    state = reducer(state, { type: "togglePick", id: b.id, grid: { ...hullA, name: "SL" } });
+    state = reducer(state, { type: "togglePick", id: a.id, grid: { ...hullA, name: "SL" } });
     expect(state.rows.map((r) => r.picks)).toEqual([
       [
-        { name: "SU", order: 1 },
-        { name: "SL", order: 3 },
+        { ...hullA, name: "SU", order: 1 },
+        { ...hullA, name: "SL", order: 3 },
       ],
-      [{ name: "SL", order: 2 }],
+      [{ ...hullA, name: "SL", order: 2 }],
     ]);
-    state = reducer(state, { type: "togglePick", id: a.id, name: "SU" });
-    expect(state.rows[0].picks).toEqual([{ name: "SL", order: 3 }]);
+    state = reducer(state, { type: "togglePick", id: a.id, grid: { ...hullA, name: "SU" } });
+    expect(state.rows[0].picks).toEqual([{ ...hullA, name: "SL", order: 3 }]);
+  });
+
+  test("a pick stays on its ship: another ship's grid of the same name isn't picked", () => {
+    const row = makeRow();
+    const state = reducer(
+      { ...defaultState(), rows: [row] },
+      { type: "togglePick", id: row.id, grid: { ...hullB, name: "Port - Upper" } },
+    );
+    expect(pickNames(state, hullB)).toEqual([["Port - Upper"]]);
+    expect(pickNames(state, hullA)).toEqual([[]]); // switching ships: no grid
+    const back = reducer(reducer(state, { type: "selectShip", shipId: hullA.ship }), {
+      type: "selectShip",
+      shipId: hullB.ship,
+    });
+    expect(pickNames(back, hullB)).toEqual([["Port - Upper"]]); // switching back restores it
   });
 });
 
 describe("reducer clearPicks", () => {
-  test("takes every row out of the named grids and keeps other ships' picks", () => {
-    const a = makeRow({
-      picks: [
-        { name: "SU", order: 1 },
-        { name: "Elsewhere", order: 2 },
-      ],
-    });
-    const b = makeRow({ picks: [{ name: "SL", order: 3 }] });
-    const state = reducer({ ...defaultState(), rows: [a, b] }, { type: "clearPicks", names: ["SU", "SL"] });
-    expect(state.rows.map((r) => r.picks)).toEqual([[{ name: "Elsewhere", order: 2 }], []]);
+  test("takes every row out of one ship and layout's grids, keeping other ships' picks", () => {
+    const a = makeRow({ picks: [{ name: "Port - Upper", order: 1 }] }, hullA);
+    const b = makeRow({ picks: [{ name: "Port - Upper", order: 2 }] }, hullB);
+    const state = reducer({ ...defaultState(), rows: [a, b] }, { type: "clearPicks", at: hullA });
+    expect(pickNames(state, hullA)).toEqual([[], []]);
+    expect(pickNames(state, hullB)).toEqual([[], ["Port - Upper"]]);
   });
 });
 

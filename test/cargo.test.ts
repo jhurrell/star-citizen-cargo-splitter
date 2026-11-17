@@ -124,6 +124,14 @@ describe("containers.json and ships.json", () => {
           ).toBe(true);
   });
 
+  test("grid names are unique within each layout, as picks rely on", () => {
+    for (const ship of parseShips(rawShips))
+      for (const grid of ship.grids) {
+        const names = grid.positions.map((p) => p.name);
+        expect(new Set(names).size, `${ship.name} / ${grid.name}`).toBe(names.length);
+      }
+  });
+
   test("each ship's stated capacity matches every grid's volume", () => {
     for (const ship of rawShips)
       for (const grid of ship.grids) {

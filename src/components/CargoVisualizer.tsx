@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Grid } from "../lib/cargo";
-import { computeTable, selection } from "../lib/calc";
+import { computeTable, selectedLayout, selection } from "../lib/calc";
 import { copyText } from "../lib/clipboard";
 import { cargoColors, rowsToDim } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
 import { useIdSet, useTimedMessage } from "../lib/hooks";
-import { enabledContainers, loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
+import { enabledContainers, loadState, makeRow, reducer, rowsOn, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { ConfirmButton } from "./ConfirmButton";
 import { MarkdownIcon, SpreadsheetIcon } from "./icons";
@@ -45,11 +45,13 @@ function gridSummary(grid: Grid): string {
 
 /* The whole tool. It reads localStorage, so it renders in the browser only. */
 export function CargoVisualizer() {
-  const [state, dispatch] = useReducer(reducer, undefined, loadState);
+  const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => selectedLayout(ships, choice)));
   const { ship, grid, positions } = selection(ships, state);
+  /* Rows keep picks for every ship and layout; only this one's count here. */
+  const at = useMemo(() => selectedLayout(ships, state), [state.shipId, state.gridId]);
   const calc = useMemo(
-    () => computeTable(state.rows, state.enabled, containers, positions),
-    [state.rows, state.enabled, positions],
+    () => computeTable(rowsOn(state.rows, at), state.enabled, containers, positions),
+    [state.rows, at, state.enabled, positions],
   );
   const colors = useMemo(() => cargoColors(state.rows), [state.rows]);
   const isMounted = positions.length > 0 && positions.every((p) => p.mount);
@@ -105,7 +107,7 @@ export function CargoVisualizer() {
 
   /* Take every row out of this layout's grids. */
   function clearGrids() {
-    dispatch({ type: "clearPicks", names: positions.map((p) => p.name) });
+    dispatch({ type: "clearPicks", at });
     showStatus("Grids cleared");
   }
 
@@ -187,7 +189,7 @@ export function CargoVisualizer() {
           positions={positions}
           cargoByRow={colors.byRow}
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
-          onTogglePick={(id, name) => dispatch({ type: "togglePick", id, name })}
+          onTogglePick={(id, name) => dispatch({ type: "togglePick", id, grid: { ...at, name } })}
           onHighlight={setHighlight}
           onPointRows={setPointedRows}
           onDelete={deleteRow}

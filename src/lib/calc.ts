@@ -15,13 +15,19 @@ import {
   type Placed,
   type Sweep,
 } from "./packing";
-import { enabledContainers, type Row, type State } from "./state";
+import { enabledContainers, type LayoutRef, type Row, type State } from "./state";
 
 /* The selected ship and grid layout, falling back to the first of each. */
 export function selection(ships: Ship[], state: Pick<State, "shipId" | "gridId">) {
   const ship = ships.find((s) => s.id === state.shipId) ?? ships[0];
   const grid = ship?.grids.find((g) => g.id === state.gridId) ?? ship?.grids[0];
   return { ship, grid, positions: grid?.positions ?? [] };
+}
+
+/* The ids of the ship and layout a state's choice selects. */
+export function selectedLayout(ships: Ship[], state: Pick<State, "shipId" | "gridId">): LayoutRef {
+  const { ship, grid } = selection(ships, state);
+  return { ship: ship?.id ?? "", layout: grid?.id ?? "" };
 }
 
 /* How much of a row goes in each of its grids, in the order it picked them,
