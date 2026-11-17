@@ -2,7 +2,7 @@ import { Line } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, type InstancedMesh } from "three";
-import type { GridLoad } from "../lib/calc";
+import type { HaulGrid } from "../lib/haul";
 import type { Position } from "../lib/cargo";
 import { OTHER_COLOR, type Cargo } from "../lib/colors";
 import { hangsDown, mountMatrix, type Vec3 } from "../lib/mount";
@@ -33,14 +33,14 @@ const DIM_OPACITY = 0.18;
    ships.json says, with its containers as packed. */
 export default function ShipView({
   positions,
-  loads,
+  grids,
   cargoByRow,
   dimmed,
   highlight = null,
 }: {
   positions: Position[];
-  /* Each position's packed containers, by name. */
-  loads: Map<string, GridLoad>;
+  /* Each position's packed containers. */
+  grids: HaulGrid[];
   cargoByRow: Map<number, Cargo>;
   /* Rows whose containers show dimmed. */
   dimmed: ReadonlySet<number>;
@@ -88,7 +88,7 @@ export default function ShipView({
             <GridMesh
               key={position.name}
               position={position}
-              placed={loads.get(position.name)?.placed ?? []}
+              placed={grids.find((g) => g.position === position)?.placed ?? []}
               cargoByRow={cargoByRow}
               dimmed={dimmed}
               lit={position.name === highlight}

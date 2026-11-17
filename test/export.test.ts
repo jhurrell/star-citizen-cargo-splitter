@@ -1,14 +1,11 @@
 import { describe, expect, test } from "vite-plus/test";
-import { computeTable } from "../src/lib/calc";
 import { exportTable, gridText, tableAsMarkdown, tableAsTsv } from "../src/lib/export";
-import { makeRow } from "../src/lib/state";
-import { bay, containers } from "./helpers";
+import { bay, haulOf, testRow } from "./helpers";
 
 describe("copy formats", () => {
   const positions = [bay("Bay", 2, 8, 2)];
-  const rows = [makeRow({ cargo: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
-  const calc = computeTable(rows, {}, containers, positions);
-  const table = exportTable(rows, calc, [32, 8, 1]);
+  const rows = [testRow({ cargo: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
+  const table = exportTable(haulOf(rows, positions));
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
@@ -56,26 +53,33 @@ describe("copy formats", () => {
     ]);
     expect(new Set(lines.map((line) => line.length)).size).toBe(1);
   });
+
+  test("a size that won't fit the row's grid shows a dash; one turned off is left out", () => {
+    const small = [bay("Small", 2, 2, 2)];
+    const haul = haulOf([testRow({ scu: "8", positions: ["Small"] })], small, { 1: false });
+    expect(tableAsTsv(exportTable(haul)).split("\n")).toEqual([
+      "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\tGrids",
+      "\t\t\t8\t0\t–\t1\tSmall",
+    ]);
+  });
 });
 
 describe("gridText", () => {
   test("names one grid, or each grid's share of a split row", () => {
-    expect(gridText({ parts: [{ name: "A", scu: 8 }], unassigned: 0 })).toBe("A");
+    expect(gridText({ parts: [{ name: "A", scu: 8 }] })).toBe("A");
     const split = {
       parts: [
         { name: "A", scu: 1200 },
         { name: "B", scu: 16 },
       ],
-      unassigned: 0,
     };
     expect(gridText(split)).toBe("A (1,200), B (16)");
-    expect(gridText({ parts: [], unassigned: 0 })).toBe("");
+    expect(gridText({ parts: [] })).toBe("");
     const full = {
       parts: [
         { name: "A", scu: 0 },
         { name: "B", scu: 10 },
       ],
-      unassigned: 0,
     };
     expect(gridText(full)).toBe("B"); // A was full when it was picked
   });

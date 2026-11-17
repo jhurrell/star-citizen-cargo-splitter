@@ -1,18 +1,15 @@
-import { pickBlock, unassignedText, type Calc, type GridLoad, type PickBlock, type Split } from "../lib/calc";
-import { isOverMaxScu, parseScu, type Container, type Position } from "../lib/cargo";
+import { isOverMaxScu } from "../lib/cargo";
 import type { Cargo } from "../lib/colors";
-import { fmt, initials, plural, sum } from "../lib/format";
-import type { Counts, Fill } from "../lib/packing";
-import { isEnabled, TEXT_COLUMNS, type Row, type RowField, type Sort, type State, type TextKey } from "../lib/state";
+import { fmt, initials, plural } from "../lib/format";
+import type { Delivery, Haul, HaulGrid, PickBlock, SizeCell, SizeColumn } from "../lib/haul";
+import { TEXT_COLUMNS, type RowField, type Sort, type TextKey } from "../lib/state";
 import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
 import { pointHandlers } from "./pointing";
 
 type Props = {
-  state: State;
-  calc: Calc;
-  containers: Container[];
-  positions: Position[];
+  haul: Haul;
+  sort: Sort;
   /* Each row's color in the ship view, for its swatch. */
   cargoByRow: Map<number, Cargo>;
   onUpdate: (id: number, field: RowField, value: string) => void;
@@ -32,35 +29,16 @@ type Props = {
 };
 type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
 
-/* A container size's column, on unless turned off in its header. */
-type SizeColumn = { size: number; on: boolean };
-/* A grid's button: its name, short tag and what's in the grid. */
-type GridButton = { name: string; tag: string; load: GridLoad };
+/* A grid's button: its short tag and what's in the grid. */
+type GridButton = { tag: string; grid: HaulGrid };
 
 /* The editable cargo table: Cargo / Pick-up / Drop-off, SCU, Remaining (SCU
    not in a grid yet), a column per container size, Left over (only when some
    SCU can't be made of the sizes turned on), Grids. */
-export function CargoTable({
-  state,
-  calc,
-  containers,
-  positions,
-  cargoByRow,
-  onSort,
-  onToggleSize,
-  onClearGrids,
-  ...rowActions
-}: Props) {
-  const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
-  const tags = initials(positions.map((p) => p.name));
-  const grids: GridButton[] = positions.map(({ name }, i) => ({
-    name,
-    tag: tags[i],
-    load: calc.byPosition.get(name)!,
-  }));
-  const anyInGrid = [...calc.splits.values()].some((s) => s.parts.length > 0);
-  /* Room still free across all the grids. */
-  const unused = sum(grids, (g) => g.load.free);
+export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onClearGrids, ...rowActions }: Props) {
+  const { sizes, deliveries, totals, showLeftover } = haul;
+  const tags = initials(haul.grids.map((g) => g.position.name));
+  const grids: GridButton[] = haul.grids.map((grid, i) => ({ tag: tags[i], grid }));
   /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
@@ -68,7 +46,7 @@ export function CargoTable({
       <thead>
         <tr>
           {TEXT_COLUMNS.map(({ key, label }) => (
-            <SortHead key={key} sortKey={key} label={label} sort={state.sort} onSort={onSort} />
+            <SortHead key={key} sortKey={key} label={label} sort={sort} onSort={onSort} />
           ))}
           <th className="label num narrow">SCU</th>
           {/* Δ for Remaining, to keep the column narrow. */}
@@ -78,7 +56,7 @@ export function CargoTable({
           {sizes.map(({ size, on }, i) => (
             <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onToggleSize} />
           ))}
-          <th className="label num sep leftover" hidden={!calc.showLeftover}>
+          <th className="label num sep leftover" hidden={!showLeftover}>
             Left over
           </th>
           <th className="label sep">
@@ -89,7 +67,7 @@ export function CargoTable({
                 ariaLabel="Clear every row's grids"
                 confirmAriaLabel="Confirm clearing every row's grids"
                 className="clear-grids"
-                disabled={!anyInGrid}
+                disabled={!haul.anyAssigned}
                 onConfirm={onClearGrids}
               />
             </div>
@@ -97,23 +75,21 @@ export function CargoTable({
         </tr>
       </thead>
       <tbody>
-        {state.rows.length === 0 ? (
+        {deliveries.length === 0 ? (
           <tr className="empty-row">
             <td colSpan={columnCount}>
               No rows yet. Click <strong>Add row</strong> to start.
             </td>
           </tr>
         ) : (
-          state.rows.map((row) => (
+          deliveries.map((delivery) => (
             <CargoRow
-              key={row.id}
-              row={row}
-              fill={calc.byRow.get(row.id)!}
-              split={calc.splits.get(row.id)!}
-              cargo={cargoByRow.get(row.id)}
+              key={delivery.row.id}
+              delivery={delivery}
+              cargo={cargoByRow.get(delivery.row.id)}
               sizes={sizes}
               grids={grids}
-              showLeftover={calc.showLeftover}
+              showLeftover={showLeftover}
               {...rowActions}
             />
           ))
@@ -122,13 +98,17 @@ export function CargoTable({
       <tfoot>
         <tr>
           <td className="label" colSpan={TEXT_COLUMNS.length}>
-            Total · {plural(state.rows.length, "row")}
+            Total · {plural(deliveries.length, "row")}
           </td>
-          <td className="foot-scu">{fmt(calc.totals.scu)}</td>
-          <RemainingCell scu={calc.totals.unassigned} />
-          <CalcCells fill={calc.totals} sizes={sizes} showLeftover={calc.showLeftover} />
-          <td className="sep foot-free" title={unused ? `${fmt(unused)} SCU of grid space not used yet` : undefined}>
-            {unused > 0 && `${fmt(unused)} free`}
+          <td className="foot-scu">{fmt(totals.scu)}</td>
+          <RemainingCell scu={totals.unassigned} />
+          <SizeCells cells={totals.cells} sizes={sizes} />
+          <LeftoverCell scu={totals.leftover} shown={showLeftover} />
+          <td
+            className="sep foot-free"
+            title={totals.free ? `${fmt(totals.free)} SCU of grid space not used yet` : undefined}
+          >
+            {totals.free > 0 && `${fmt(totals.free)} free`}
           </td>
         </tr>
       </tfoot>
@@ -195,10 +175,16 @@ function SizeHead({
   );
 }
 
+/* What of a row isn't in a grid yet, and what to do about it. */
+function unassignedText({ unassigned, unassignedReason, parts }: Delivery): string | undefined {
+  if (!unassignedReason) return undefined;
+  if (unassignedReason === "noGrid") return `${fmt(unassigned)} SCU not in a grid yet. Choose a grid for it.`;
+  const where = parts.length === 1 ? "this grid has" : "these grids have";
+  return `${fmt(unassigned)} SCU more than ${where} room for. Choose another grid to split it.`;
+}
+
 function CargoRow({
-  row,
-  fill,
-  split,
+  delivery,
   cargo,
   sizes,
   grids,
@@ -210,15 +196,15 @@ function CargoRow({
   onDelete,
   onScuEnter,
 }: RowActions & {
-  row: Row;
-  fill: Fill;
-  split: Split;
+  delivery: Delivery;
   cargo: Cargo | undefined;
   sizes: SizeColumn[];
+  /* In layout order, as the delivery's grid choices are. */
   grids: GridButton[];
   showLeftover: boolean;
 }) {
-  const why = unassignedText(split) || undefined;
+  const { row, unassigned } = delivery;
+  const why = unassignedText(delivery);
   const field = (key: RowField) => ({
     id: `r${row.id}-${key}`,
     value: row[key],
@@ -229,7 +215,7 @@ function CargoRow({
     },
   });
   return (
-    <tr className={split.unassigned ? "has-unassigned" : undefined}>
+    <tr className={unassigned ? "has-unassigned" : undefined}>
       {TEXT_COLUMNS.map(({ key, label }, i) => {
         const input = <input className="field" aria-label={label} {...field(key)} />;
         return (
@@ -260,7 +246,7 @@ function CargoRow({
         );
       })}
       {/* Amber while some of the row isn't in a grid; the tooltip says how much and why. */}
-      <td className="edit scu-cell" data-unassigned={split.unassigned ? "" : undefined} title={why}>
+      <td className="edit scu-cell" data-unassigned={unassigned ? "" : undefined} title={why}>
         <input
           className="field scu"
           inputMode="numeric"
@@ -275,10 +261,11 @@ function CargoRow({
           }}
         />
       </td>
-      <RemainingCell scu={split.unassigned} title={why} />
-      <CalcCells fill={fill} sizes={sizes} showLeftover={showLeftover} />
+      <RemainingCell scu={unassigned} title={why} />
+      <SizeCells cells={delivery.cells} sizes={sizes} />
+      <LeftoverCell scu={delivery.leftover} shown={showLeftover} />
       <td className="edit sep">
-        <GridPicks row={row} split={split} grids={grids} onTogglePick={onTogglePick} onHighlight={onHighlight} />
+        <GridPicks delivery={delivery} grids={grids} onTogglePick={onTogglePick} onHighlight={onHighlight} />
       </td>
     </tr>
   );
@@ -291,23 +278,18 @@ const BLOCK_TEXT: Record<PickBlock, string> = {
   tooSmall: "Too little room for this row's containers",
 };
 
-/* The Grids cell: a toggle button per grid showing the SCU it has available.
-   A grid this row isn't in is disabled when the row can't use it (see
-   pickBlock). Pointing at (or tabbing to) a button lights that grid up in the
-   ship view. */
+/* The Grids cell: a toggle button per grid showing the SCU it has available,
+   disabled when the row can't pick it. Pointing at (or tabbing to) a button
+   lights that grid up in the ship view. */
 function GridPicks({
-  row,
-  split,
+  delivery,
   grids,
   onTogglePick,
   onHighlight,
 }: Pick<RowActions, "onTogglePick" | "onHighlight"> & {
-  row: Row;
-  split: Split;
+  delivery: Delivery;
   grids: GridButton[];
 }) {
-  const picked = new Set(split.parts.map((p) => p.name));
-  const scu = parseScu(row.scu);
   return (
     <div className="grid-cell">
       {/* At most four buttons a line, so a ship with many grids stays narrow. */}
@@ -317,25 +299,23 @@ function GridPicks({
         aria-label="Grids for this row"
         style={{ gridTemplateColumns: `repeat(${Math.min(grids.length, 4)}, auto)` }}
       >
-        {grids.map(({ name, tag, load }) => {
-          const on = picked.has(name);
-          /* A row that already has this grid can still give it up. */
-          const block = on ? null : pickBlock(scu, split, load);
-          const lines = [name, `${fmt(load.free)} SCU available`, ...(block ? [BLOCK_TEXT[block]] : [])];
+        {delivery.grids.map(({ name, picked, block }, i) => {
+          const { tag, grid } = grids[i];
+          const lines = [name, `${fmt(grid.free)} SCU available`, ...(block ? [BLOCK_TEXT[block]] : [])];
           return (
             <button
               key={name}
               type="button"
               className="grid-pick"
-              aria-pressed={on}
+              aria-pressed={picked}
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
               disabled={block !== null}
-              onClick={() => onTogglePick(row.id, name)}
+              onClick={() => onTogglePick(delivery.row.id, name)}
               {...pointHandlers((pointed) => onHighlight(pointed ? name : null))}
             >
               <span className="grid-tag">{tag}</span>
-              <span className="grid-free">{fmt(load.free)}</span>
+              <span className="grid-free">{fmt(grid.free)}</span>
             </button>
           );
         })}
@@ -353,32 +333,32 @@ function RemainingCell({ scu, title }: { scu: number; title?: string }) {
   );
 }
 
-/* Look, text and tooltip for a container count. `counts` holds only the sizes
-   the row could use, so a checked size missing from it is too big for the
-   row's position. */
-function countCell(size: number, counts: Counts, on: boolean) {
-  if (!on) return { look: "off", text: "–", title: undefined };
-  if (!Object.hasOwn(counts, size))
+/* Look, text and tooltip for a container size cell. */
+function sizeCellView(cell: SizeCell, size: number) {
+  if (cell.kind === "off") return { look: "off", text: "–", title: undefined };
+  if (cell.kind === "wontFit")
     return { look: "off", text: "–", title: `${size} SCU containers don't fit this row's grids` };
-  const n = counts[size];
-  return { look: n ? "has" : "zero", text: fmt(n), title: undefined };
+  return { look: cell.count ? "has" : "zero", text: fmt(cell.count), title: undefined };
 }
 
-/* Container counts and Left over for one row, or the total row. */
-function CalcCells({ fill, sizes, showLeftover }: { fill: Fill; sizes: SizeColumn[]; showLeftover: boolean }) {
-  return (
-    <>
-      {sizes.map(({ size, on }, i) => {
-        const cell = countCell(size, fill.counts, on);
-        return (
-          <td key={size} className={`count${i === 0 ? " sep" : ""}`} data-state={cell.look} title={cell.title}>
-            {cell.text}
-          </td>
-        );
-      })}
-      <td className="leftover sep" data-state={fill.leftover ? "warn" : "zero"} hidden={!showLeftover}>
-        {fmt(fill.leftover)}
+/* The container counts for one row, or the total row. */
+function SizeCells({ cells, sizes }: { cells: SizeCell[]; sizes: SizeColumn[] }) {
+  return cells.map((cell, i) => {
+    const { size } = sizes[i];
+    const view = sizeCellView(cell, size);
+    return (
+      <td key={size} className={`count${i === 0 ? " sep" : ""}`} data-state={view.look} title={view.title}>
+        {view.text}
       </td>
-    </>
+    );
+  });
+}
+
+/* SCU no turned-on size can make up; the column shows only when some row has any. */
+function LeftoverCell({ scu, shown }: { scu: number; shown: boolean }) {
+  return (
+    <td className="leftover sep" data-state={scu ? "warn" : "zero"} hidden={!shown}>
+      {fmt(scu)}
+    </td>
   );
 }

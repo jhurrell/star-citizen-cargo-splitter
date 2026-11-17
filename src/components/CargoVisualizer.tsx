@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Grid } from "../lib/cargo";
-import { computeTable, selectedLayout, selection } from "../lib/calc";
 import { copyText } from "../lib/clipboard";
 import { cargoColors, rowsToDim } from "../lib/colors";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
+import { computeHaul, selectLayout } from "../lib/haul";
 import { useIdSet, useTimedMessage } from "../lib/hooks";
-import { enabledContainers, loadState, makeRow, reducer, rowsOn, saveState, type Row } from "../lib/state";
+import { loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { ConfirmButton } from "./ConfirmButton";
 import { MarkdownIcon, SpreadsheetIcon } from "./icons";
@@ -45,14 +45,9 @@ function gridSummary(grid: Grid): string {
 
 /* The whole tool. It reads localStorage, so it renders in the browser only. */
 export function CargoVisualizer() {
-  const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => selectedLayout(ships, choice)));
-  const { ship, grid, positions } = selection(ships, state);
-  /* Rows keep picks for every ship and layout; only this one's count here. */
-  const at = useMemo(() => selectedLayout(ships, state), [state.shipId, state.gridId]);
-  const calc = useMemo(
-    () => computeTable(rowsOn(state.rows, at), state.enabled, containers, positions),
-    [state.rows, at, state.enabled, positions],
-  );
+  const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => selectLayout(ships, choice).at));
+  const haul = useMemo(() => computeHaul(state, ships, containers), [state]);
+  const { ship, layout, at, positions } = haul;
   const colors = useMemo(() => cargoColors(state.rows), [state.rows]);
   const isMounted = positions.length > 0 && positions.every((p) => p.mount);
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
@@ -112,12 +107,11 @@ export function CargoVisualizer() {
   }
 
   async function copy({ toText, done }: (typeof COPY_FORMATS)[number]) {
-    const sizes = enabledContainers(containers, state.enabled).map((c) => c.size);
-    const ok = await copyText(toText(exportTable(state.rows, calc, sizes)));
+    const ok = await copyText(toText(exportTable(haul)));
     showStatus(ok ? done : "Copy isn't available here");
   }
 
-  const shipInfo = configError || (grid ? gridSummary(grid) : "");
+  const shipInfo = configError || (layout ? gridSummary(layout) : "");
 
   return (
     <>
@@ -134,7 +128,7 @@ export function CargoVisualizer() {
             <span>Layout</span>
             <select
               id="grid"
-              value={grid?.id ?? ""}
+              value={layout?.id ?? ""}
               onChange={(e) => dispatch({ type: "selectGrid", gridId: e.target.value })}
             >
               {ship?.grids.map((g) => (
@@ -183,10 +177,8 @@ export function CargoVisualizer() {
 
       <div className="frame">
         <CargoTable
-          state={state}
-          calc={calc}
-          containers={containers}
-          positions={positions}
+          haul={haul}
+          sort={state.sort}
           cargoByRow={colors.byRow}
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
           onTogglePick={(id, name) => dispatch({ type: "togglePick", id, grid: { ...at, name } })}
@@ -212,7 +204,7 @@ export function CargoVisualizer() {
           <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
             <ShipView
               positions={positions}
-              loads={calc.byPosition}
+              grids={haul.grids}
               cargoByRow={colors.byRow}
               dimmed={shipDimmed}
               highlight={highlight}

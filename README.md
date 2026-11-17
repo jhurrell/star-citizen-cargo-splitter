@@ -10,8 +10,8 @@ the ship.
 
 - **Toolbar.** Type in the ship field to find a ship, or pick one from its list, and choose a layout when the ship
   has more than one. **Add row** adds a row under the last one. The two copy icons copy the table for a spreadsheet
-  (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**,
-  at the top right, opens a short guide.
+  (tab-separated) or as a Markdown table, with a – for a size that won't fit the row's grids; point at either one to
+  see which is which. **How to use**, at the top right, opens a short guide.
 - **Container counts per delivery.** Each row is filled with the biggest container size that fits its grid, then
   the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
   turn it off and skip it.
@@ -73,14 +73,14 @@ and publishes `dist/client` to GitHub Pages. To publish without a push, run the 
 
 ### Project layout
 
-| Path                   | What's in it                                                                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `src/config/`          | `containers.json` and `ships.json` (see below)                                                                                      |
-| `src/lib/`             | The logic, as pure functions: reading the config, splitting rows across grids, each grid's free room and the totals, packing, state |
-| `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`), plus the shared pieces below                      |
-| `src/components/ship/` | The 3D ship view's parts, below                                                                                                     |
-| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                              |
-| `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                         |
+| Path                   | What's in it                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/config/`          | `containers.json` and `ships.json` (see below)                                                                                                                           |
+| `src/lib/`             | The logic, as pure functions: reading the config, state, packing, the copy formats, and `haul.ts`, whose `computeHaul` works out everything the table and ship view show |
+| `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`), plus the shared pieces below                                                           |
+| `src/components/ship/` | The 3D ship view's parts, below                                                                                                                                          |
+| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                                                                   |
+| `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                                                              |
 
 Three pieces in `src/components/` are shared by the page:
 
