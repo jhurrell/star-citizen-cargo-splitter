@@ -16,17 +16,19 @@ the ship.
   the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
   turn it off and skip it.
 - **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
-  the grid has left. A row can't pick a grid when the grid has no room for another container, when all of the row
-  is in its grids already, or when the grid has less room than the smallest container the rest of the row needs
-  there; point at a greyed-out button to see which. Pick several to
-  split a big delivery: grids fill in the order you pick them, across all rows, so a later pick never takes room an
-  earlier one already claimed, and no grid is ever overloaded.
+  the grid has left. A grid takes only the containers it can actually place, so a grid can have SCU free and still
+  have no spot left for a container's shape. A row can't pick a grid when no container turned on can go in it, when
+  all of the row is in its grids already, or when the smallest container the rest of the row needs there can't go
+  in; point at a greyed-out button to see which. Pick several to split a big delivery: grids fill in the order you
+  pick them, across all rows, so a later pick never takes room an earlier one already claimed. Containers a grid
+  can't place move on to the row's next grid.
 - **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
   Grids heading, keeps the rows but takes every one out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
-- **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet, because it
-  has no grid or its grids are out of room, with the table's total at the foot. While a row has some, its edge and
-  SCU turn amber; point at the SCU to see why. The foot of the Grids column shows how much grid space is still free.
+- **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet,
+  because it has no grid or doesn't fit in its grids, with the table's total at the foot. While a row has some, its
+  edge and SCU turn amber; point at the SCU to see why. SCU that no size turned on can make up shows under Left over
+  instead, and takes no grid room. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
     stays apart. A row's containers sit on the grid's floor or on its own containers while there's room, and on

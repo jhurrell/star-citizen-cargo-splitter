@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import type { Container, Shape } from "../src/lib/cargo";
-import { addCounts, fillLargestFirst, packContainers, packInTurn } from "../src/lib/packing";
+import { addCounts, fillLargestFirst, loadGrid, packContainers, packInTurn } from "../src/lib/packing";
 import { container } from "./helpers";
 
 const box = (size: number, x: number, y: number, z: number) => container(size, x, y, z, false);
@@ -114,6 +114,42 @@ describe("packInTurn", () => {
 
   test("a z sweep has no far end, so loads just follow on", () => {
     expect(spans({ axis: "z" })).toEqual(["1@0", "2@2", "3@4"]);
+  });
+});
+
+describe("loadGrid", () => {
+  const scu8 = box(8, 2, 2, 2);
+  const scu1 = box(1, 1, 1, 1);
+  const load = (tag: number, ...items: [Container, number][]) =>
+    items.map(([c, count]) => ({ container: c, count, tag }));
+
+  test("adds a load at a time, apart, and says what didn't fit", () => {
+    const grid = loadGrid<number>({ x: 2, y: 8, z: 2 }, { axis: "y" });
+    expect(grid.add(load(1, [scu8, 1]))).toEqual({});
+    expect(grid.add(load(2, [scu8, 4]))).toEqual({ 8: 1 });
+    expect(grid.placed().map(({ tag, y }) => `${tag}@${y}`)).toEqual(["1@0", "2@6", "2@4", "2@2"]);
+  });
+
+  test("repacks as one pile when that keeps everything and places more of the new load", () => {
+    /* Apart, the 1 sits on the floor and the 8 has nowhere to stand. */
+    const grid = loadGrid<number>({ x: 2, y: 2, z: 3 }, { axis: "y" });
+    grid.add(load(1, [scu1, 1]));
+    expect(grid.add(load(2, [scu8, 1]))).toEqual({});
+    expect(grid.placed().map(({ tag, z }) => `${tag}@z${z}`)).toEqual(["2@z0", "1@z2"]);
+  });
+
+  test("never drops what's already in it for a later load", () => {
+    const grid = loadGrid<number>({ x: 2, y: 2, z: 2 }, { axis: "y" });
+    grid.add(load(1, [scu1, 1]));
+    expect(grid.add(load(2, [scu8, 1]))).toEqual({ 8: 1 }); // a pile would place the 8 and drop the 1
+    expect(grid.placed().map((p) => p.tag)).toEqual([1]);
+  });
+
+  test("says whether a container could still go in", () => {
+    const grid = loadGrid<number>({ x: 2, y: 2, z: 3 });
+    grid.add(load(1, [scu8, 1]));
+    expect(grid.canPlace(scu8)).toBe(false); // 4 cells free, but only 1 high
+    expect(grid.canPlace(scu1)).toBe(true);
   });
 });
 

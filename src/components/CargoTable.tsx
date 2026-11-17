@@ -179,8 +179,8 @@ function SizeHead({
 function unassignedText({ unassigned, unassignedReason, parts }: Delivery): string | undefined {
   if (!unassignedReason) return undefined;
   if (unassignedReason === "noGrid") return `${fmt(unassigned)} SCU not in a grid yet. Choose a grid for it.`;
-  const where = parts.length === 1 ? "this grid has" : "these grids have";
-  return `${fmt(unassigned)} SCU more than ${where} room for. Choose another grid to split it.`;
+  const where = parts.length === 1 ? "this grid" : "these grids";
+  return `${fmt(unassigned)} SCU doesn't fit in ${where}. Choose another grid to split it.`;
 }
 
 function CargoRow({

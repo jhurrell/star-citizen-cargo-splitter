@@ -71,11 +71,28 @@ describe("container sizes", () => {
 describe("grid room", () => {
   const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
 
-  test("each grid has its free SCU, and is full when no size turned on fits that", () => {
-    const rows = [testRow({ scu: "6", picks: picks([1, "Small"]) })];
-    expect(gridOf(haulOf(rows, positions), "Small")).toMatchObject({ free: 2, full: false }); // a 1 still fits
-    expect(gridOf(haulOf(rows, positions, { 1: false }), "Small")).toMatchObject({ free: 2, full: true });
+  test("each grid has its free SCU, and is full when no size turned on can still go in", () => {
+    const tall = [bay("Tall", 2, 2, 3)]; // an 8 on the floor leaves a layer 1 SCU high
+    const rows = [testRow({ scu: "8", picks: picks([1, "Tall"]) })];
+    expect(gridOf(haulOf(rows, tall), "Tall")).toMatchObject({ free: 4, full: false }); // a 1 still fits
+    expect(gridOf(haulOf(rows, tall, { 1: false }), "Tall")).toMatchObject({ free: 4, full: true });
     expect(gridOf(haulOf(rows, positions), "Big")).toMatchObject({ free: 32, full: false });
+  });
+
+  test("full goes by what can still be placed, not the SCU free", () => {
+    /* Two 8s fill the floor; a third would stand 4 high, so 8 SCU is free but no 8 fits. */
+    const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)];
+    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"]) });
+    const haul = haulOf([row], bays, { 1: false });
+    expect(gridOf(haul, "Bay 1")).toMatchObject({ free: 8, full: true });
+    expect(deliveryOf(haul, row).grids.map((g) => g.block)).toEqual([null, null]);
+  });
+
+  test("left over SCU takes no room in its grid", () => {
+    const rows = [testRow({ scu: "6", picks: picks([1, "Small"]) })];
+    const haul = haulOf(rows, positions, { 1: false }); // 6 SCU with only 8s and 32s
+    expect(gridOf(haul, "Small")).toMatchObject({ free: 8, placed: [] });
+    expect(deliveryOf(haul, rows[0])).toMatchObject({ leftover: 6, unassigned: 0, unassignedReason: null });
   });
 
   test("a grid with no size turned on that fits its shape is full, even when empty", () => {
@@ -162,10 +179,36 @@ describe("splitting across grids", () => {
 
   test("ties from older saves go by table order", () => {
     const rows = [testRow({ scu: "10", positions: ["A"] }), testRow({ scu: "10", positions: ["A", "B"] })];
+    /* The first row's 8 and two 1s leave A 6 SCU, too broken up for the second's 8. */
     expect(split(haulOf(rows, positions), rows)[1].parts).toEqual([
-      { name: "A", scu: 6 },
-      { name: "B", scu: 4 },
+      { name: "A", scu: 2 },
+      { name: "B", scu: 8 },
     ]);
+  });
+
+  test("containers a grid can't place move on to the row's next grid, whole", () => {
+    const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)]; // 24 SCU each, but only two 8s
+    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"], [2, "Bay 2"]) });
+    const haul = haulOf([row], bays);
+    expect(split(haul, [row])).toEqual([
+      {
+        parts: [
+          { name: "Bay 1", scu: 16 },
+          { name: "Bay 2", scu: 8 },
+        ],
+        unassigned: 0,
+      },
+    ]);
+    expect(show(deliveryOf(haul, row).cells)).toEqual(["wontFit", 3, 0]); // still three 8s, not 4s
+    expect(haul.grids.map((g) => g.placed.length)).toEqual([2, 1]);
+  });
+
+  test("with no next grid, what can't be placed is unassigned", () => {
+    const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)];
+    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"]) });
+    const delivery = deliveryOf(haulOf([row], bays), row);
+    expect(delivery).toMatchObject({ unassigned: 8, unassignedReason: "outOfRoom" });
+    expect(delivery.grids.map((g) => g.block)).toEqual([null, null]); // Bay 2 can take it
   });
 
   test("what there's no room for stays out of every grid and counts as unassigned", () => {

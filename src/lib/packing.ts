@@ -52,9 +52,83 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Swee
    containers go on the floor or on its own containers where they can, and on
    another load's only when there's nowhere else. */
 export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep = { axis: "z" }): Packing<Tag> {
+  const packing = startPacking<Tag>(space, sweep);
+  const unfit: Counts = {};
+  for (const load of loads) addCounts(unfit, packing.add(load));
+  return { placed: packing.placed(), unfit };
+}
+
+/* A grid filled a load (one row's containers) at a time, as packInTurn packs
+   them. A load that doesn't all fit apart from the loads before it may make
+   the grid repack everything as one pile, mixing loads, when that keeps every
+   container already in it and places more of the new load. So a load never
+   loses room to a later one, though its containers may move. */
+export type GridLoad<Tag> = {
+  /* Place what of a load fits, and say what doesn't, by size. */
+  add(load: Load<Tag>[]): Counts;
+  /* Whether a container could still go in, on the floor or on others. */
+  canPlace(container: Container): boolean;
+  placed(): Placed<Tag>[];
+};
+
+export function loadGrid<Tag>(space: Shape, sweep: Sweep = { axis: "z" }): GridLoad<Tag> {
+  let packing = startPacking<Tag>(space, sweep);
+  /* What's in the grid, in the order it was added. */
+  const kept: Load<Tag>[] = [];
+  return {
+    add(load) {
+      const apart = startPacking(space, sweep, packing.state);
+      let unfit = apart.add(load);
+      packing = apart;
+      if (scuOf(unfit)) {
+        const pile = startPacking<Tag>(space, sweep);
+        const pileUnfit = pile.add([...kept, ...load]);
+        /* A pile places each size in the order added, so what it leaves out
+           of a size is the last of it: the new load's, when there's no more
+           of that size than the new load has. */
+        const loadCounts = countsOf(load);
+        const keepsAll = Object.entries(pileUnfit).every(([size, n]) => n <= (loadCounts[Number(size)] ?? 0));
+        if (keepsAll && scuOf(pileUnfit) < scuOf(unfit)) [packing, unfit] = [pile, pileUnfit];
+      }
+      kept.push(...without(load, unfit));
+      return unfit;
+    },
+    canPlace: (container) => packing.canPlace(container),
+    placed: () => packing.placed(),
+  };
+}
+
+/* The SCU of some containers. */
+const scuOf = (counts: Counts) => Object.entries(counts).reduce((total, [size, n]) => total + Number(size) * n, 0);
+
+const countsOf = <Tag>(load: Load<Tag>[]) =>
+  addCounts({}, Object.fromEntries(load.map((l) => [l.container.size, l.count])));
+
+/* A load less `unfit`, taken from the last of each size. */
+function without<Tag>(load: Load<Tag>[], unfit: Counts): Load<Tag>[] {
+  const left = { ...unfit };
+  return [...load]
+    .reverse()
+    .map((l) => {
+      const out = Math.min(l.count, left[l.container.size] ?? 0);
+      left[l.container.size] = (left[l.container.size] ?? 0) - out;
+      return { ...l, count: l.count - out };
+    })
+    .reverse()
+    .filter((l) => l.count > 0);
+}
+
+/* What a packing so far holds: each cell's load (its turn + 1, or 0 while
+   empty), the containers placed (unmirrored, see Sweep), and how many loads. */
+type PackState<Tag> = { filled: Uint16Array; boxes: Placed<Tag>[]; turns: number };
+
+/* A space packed a load at a time, carrying on from `from` if given. */
+function startPacking<Tag>(space: Shape, sweep: Sweep, from?: PackState<Tag>) {
   const { x: X, y: Y, z: Z } = space;
-  /* Each cell's load: its turn + 1, or 0 while empty. */
-  const filled = new Uint16Array(X * Y * Z);
+  const state: PackState<Tag> = from
+    ? { filled: from.filled.slice(), boxes: [...from.boxes], turns: from.turns }
+    : { filled: new Uint16Array(X * Y * Z), boxes: [], turns: 0 };
+  const { filled } = state;
   const cell = (x: number, y: number, z: number) => (z * Y + y) * X + x;
   const everyCell = (box: Box, test: (i: number) => boolean) => {
     for (let z = box.z; z < box.z + box.h; z++)
@@ -111,26 +185,35 @@ export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep
     return null;
   }
 
-  const placed: Placed<Tag>[] = [];
-  const unfit: Counts = {};
-  loads.forEach((load, turn) => {
-    /* Biggest first; the sort is stable, so cargo of one size keeps its order. */
-    const order = [...load].sort((a, b) => b.container.size - a.container.size);
-    for (const { container, count, tag } of order) {
-      const { size } = container;
-      for (let n = 0; n < count; n++) {
-        /* Space only shrinks, so once a size fails, the rest of that size fails too. */
-        const spot = unfit[size] ? null : findSpot(container, turn);
-        if (!spot) {
-          unfit[size] = (unfit[size] ?? 0) + count - n;
-          break;
+  return {
+    state,
+    /* Pack a load, biggest first, and say what doesn't fit, by size. */
+    add(load: Load<Tag>[]): Counts {
+      const turn = state.turns++;
+      const unfit: Counts = {};
+      /* The sort is stable, so cargo of one size keeps its order. */
+      for (const { container, count, tag } of [...load].sort((a, b) => b.container.size - a.container.size)) {
+        const { size } = container;
+        for (let n = 0; n < count; n++) {
+          /* Space only shrinks, so once a size fails, the rest of that size fails too. */
+          const spot = unfit[size] ? null : findSpot(container, turn);
+          if (!spot) {
+            unfit[size] = (unfit[size] ?? 0) + count - n;
+            break;
+          }
+          occupy(spot, turn);
+          state.boxes.push({ ...spot, size, tag });
         }
-        occupy(spot, turn);
-        placed.push({ ...spot, size, tag });
       }
-    }
-  });
-  if (sweep.reverse && sweep.axis === "x") for (const box of placed) box.x = X - box.x - box.w;
-  if (sweep.reverse && sweep.axis === "y") for (const box of placed) box.y = Y - box.y - box.d;
-  return { placed, unfit };
+      return unfit;
+    },
+    canPlace: (container: Container) => findSpotOn(container, false) !== null,
+    /* Where each container sits, mirrored for a reverse sweep. */
+    placed: (): Placed<Tag>[] =>
+      state.boxes.map((box) => ({
+        ...box,
+        x: sweep.reverse && sweep.axis === "x" ? X - box.x - box.w : box.x,
+        y: sweep.reverse && sweep.axis === "y" ? Y - box.y - box.d : box.y,
+      })),
+  };
 }

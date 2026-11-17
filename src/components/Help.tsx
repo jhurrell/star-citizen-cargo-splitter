@@ -43,7 +43,7 @@ export function Help() {
           </li>
           <li>
             To split a big delivery, turn on several grids: grids fill in the order you pick them, and a later pick only
-            takes the room an earlier one left.
+            takes the room an earlier one left. Containers a grid's shape can't fit move on to the row's next grid.
           </li>
           <li>Clear, in the Grids heading, takes every row out of its grids. Click it again to confirm.</li>
           <li>
