@@ -1,9 +1,11 @@
-/* The ship view's layout in ship coordinates: the box around the cargo, the
-   axes and labels around it, and where the camera looks from. Pure functions,
-   so they can be unit tested. */
+/* The ship view's layout: each container's box and size numbers in its
+   grid, and in ship coordinates the box around the cargo, the axes and labels
+   around it, and where the camera looks from. Pure functions, so they can be
+   unit tested; the components only hand the numbers to three.js. */
 
 import type { Position } from "../../lib/cargo";
-import { toShip, type Mount, type Vec3 } from "../../lib/mount";
+import { rotationOf, toShip, type Mount, type Vec3 } from "../../lib/mount";
+import type { Box } from "../../lib/packing";
 
 export type Mounted = Position & { mount: Mount };
 /* A text label pinned to a ship point; drawn as HTML over the canvas. */
@@ -25,7 +27,66 @@ export const VIEWS: Record<View, { label: string; from: Vec3 }> = {
 export const FOV = 40;
 export const GAP = 0.08; // between neighbouring containers, so each one shows
 
+const MARK_LIFT = 0.01; // a size number's gap off its face, so it doesn't flicker into it
+const MARK_SIZE = 0.7; // of the face's shorter edge
+
 export const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
+
+/* A container's box in its grid's cells: its centre, and its size less GAP. */
+export function containerBox(b: Box): { center: Vec3; scale: Vec3 } {
+  return { center: [b.x + b.w / 2, b.y + b.d / 2, b.z + b.h / 2], scale: [b.w - GAP, b.d - GAP, b.h - GAP] };
+}
+
+/* A size number on one face of a container, in its grid's cells: where it
+   sits, the way it faces, which way its top and its right point, and its
+   width and height. */
+export type SizeMark = { at: Vec3; normal: Vec3; up: Vec3; right: Vec3; side: number };
+
+/* The grid's axes, in the order a number's top prefers them when two point
+   up (or fore) as much: the grid's own up first. */
+const AXES: Vec3[] = [
+  [0, 0, 1],
+  [0, 1, 0],
+  [1, 0, 0],
+  [0, 0, -1],
+  [0, -1, 0],
+  [-1, 0, 0],
+];
+const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const SIDEWAYS = Math.SQRT1_2 + 1e-9; // a face this far from level, or less, counts as a side
+
+/* A container's size on each of its six faces, so it reads from any side.
+   Upright in the ship's terms: on a face that faces sideways in the ship, the
+   number's top points to the ship's up; on one facing up or down, fore. Of
+   the face's edges, its top runs along the one that points most that way, so
+   it stays square on the face. */
+export function sizeMarksOf(b: Box, mount: Mount): SizeMark[] {
+  const r = rotationOf(mount);
+  const inShip = (v: Vec3): Vec3 => r.map((row) => dot(row, v)) as Vec3;
+  const { center } = containerBox(b);
+  const half: Vec3 = [(b.w - GAP) / 2, (b.d - GAP) / 2, (b.h - GAP) / 2];
+  return AXES.map((normal) => {
+    const facing = inShip(normal);
+    const toward: Vec3 = Math.abs(facing[2]) <= SIDEWAYS ? [0, 0, 1] : [0, 1, 0];
+    const edges = AXES.filter((axis) => dot(axis, normal) === 0);
+    const up = edges.reduce((best, axis) =>
+      dot(inShip(axis), toward) > dot(inShip(best), toward) + 1e-9 ? axis : best,
+    );
+    const right: Vec3 = [
+      up[1] * normal[2] - up[2] * normal[1],
+      up[2] * normal[0] - up[0] * normal[2],
+      up[0] * normal[1] - up[1] * normal[0],
+    ];
+    const depth = Math.abs(dot(normal, half)) + MARK_LIFT;
+    return {
+      at: center.map((c, i) => c + normal[i] * depth) as Vec3,
+      normal,
+      up,
+      right,
+      side: Math.min(Math.abs(dot(right, half)), Math.abs(dot(up, half))) * 2 * MARK_SIZE,
+    };
+  });
+}
 export const isMounted = (p: Position): p is Mounted => p.mount !== null;
 
 /* The box around every mounted position, in ship coordinates. */

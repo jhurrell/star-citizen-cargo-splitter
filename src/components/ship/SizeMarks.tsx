@@ -2,25 +2,12 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { CanvasTexture, Matrix4, SRGBColorSpace, Vector3, type InstancedMesh } from "three";
 import type { Placed } from "../../lib/packing";
-import { GAP } from "./scene";
-
-/* Each face of a container: the way it faces, and which way is up for the
-   number on it (away from the floor on the sides, fore-ish on top and bottom).
-   On a grid that hangs under the ship, away from the floor is toward the
-   ground, so there the side numbers turn over to stay upright. */
-const FACES: { normal: Vector3; up: Vector3 }[] = [
-  { normal: new Vector3(0, 0, 1), up: new Vector3(0, 1, 0) },
-  { normal: new Vector3(0, 0, -1), up: new Vector3(0, 1, 0) },
-  { normal: new Vector3(1, 0, 0), up: new Vector3(0, 0, 1) },
-  { normal: new Vector3(-1, 0, 0), up: new Vector3(0, 0, 1) },
-  { normal: new Vector3(0, 1, 0), up: new Vector3(0, 0, 1) },
-  { normal: new Vector3(0, -1, 0), up: new Vector3(0, 0, 1) },
-];
-const MARK_LIFT = 0.01; // off the face, so the number doesn't flicker into it
+import type { Mount } from "../../lib/mount";
+import { sizeMarksOf } from "./scene";
 
 /* Each container's size in SCU, on all six of its faces so it reads from any
-   side; one instanced mesh per size. */
-export function SizeMarks({ placed, hangs }: { placed: Placed<number>[]; hangs: boolean }) {
+   side (see sizeMarksOf); one instanced mesh per size. */
+export function SizeMarks({ placed, mount }: { placed: Placed<number>[]; mount: Mount }) {
   const bySize = useMemo(() => {
     const groups = new Map<number, Placed<number>[]>();
     for (const box of placed) groups.set(box.size, [...(groups.get(box.size) ?? []), box]);
@@ -29,53 +16,36 @@ export function SizeMarks({ placed, hangs }: { placed: Placed<number>[]; hangs: 
   return (
     <>
       {[...bySize].map(([size, boxes]) => (
-        <SizeMark key={size} size={size} boxes={boxes} hangs={hangs} />
+        <SizeMark key={size} size={size} boxes={boxes} mount={mount} />
       ))}
     </>
   );
 }
 
-function SizeMark({ size, boxes, hangs }: { size: number; boxes: Placed<number>[]; hangs: boolean }) {
+function SizeMark({ size, boxes, mount }: { size: number; boxes: Placed<number>[]; mount: Mount }) {
   const ref = useRef<InstancedMesh>(null);
   const invalidate = useThree((s) => s.invalidate);
   const texture = useMemo(() => numberTexture(String(size)), [size]);
   useEffect(() => () => texture.dispose(), [texture]);
-  const count = boxes.length * FACES.length;
+  const count = boxes.length * 6;
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
     const matrix = new Matrix4();
-    const right = new Vector3();
-    const at = new Vector3();
-    const scale = new Vector3();
-    const up = new Vector3();
+    const [right, up, normal] = [new Vector3(), new Vector3(), new Vector3()];
     let i = 0;
-    for (const b of boxes) {
-      const half = new Vector3(b.w, b.d, b.h).subScalar(GAP).multiplyScalar(0.5);
-      const center = new Vector3(b.x + b.w / 2, b.y + b.d / 2, b.z + b.h / 2);
-      for (const face of FACES) {
-        const { normal } = face;
-        up.copy(face.up);
-        if (hangs && normal.z === 0) up.negate();
-        right.crossVectors(up, normal);
-        /* The face's width and height, from the container's half-sizes along them. */
-        const across = Math.abs(right.dot(half)) * 2;
-        const tall = Math.abs(up.dot(half)) * 2;
-        const side = Math.min(across, tall) * 0.7;
-        at.copy(normal)
-          .multiplyScalar(Math.abs(normal.dot(half)) + MARK_LIFT)
-          .add(center);
+    for (const box of boxes)
+      for (const mark of sizeMarksOf(box, mount)) {
         matrix
-          .makeBasis(right, up, normal)
-          .scale(scale.set(side, side, 1))
-          .setPosition(at);
+          .makeBasis(right.set(...mark.right), up.set(...mark.up), normal.set(...mark.normal))
+          .scale(new Vector3(mark.side, mark.side, 1))
+          .setPosition(...mark.at);
         mesh.setMatrixAt(i++, matrix);
       }
-    }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
     invalidate();
-  }, [boxes, count, hangs, invalidate]);
+  }, [boxes, count, mount, invalidate]);
   /* Keyed by count, as an instanced mesh can't grow; it never takes the pointer,
      so pointing at a container still says what it holds. */
   return (

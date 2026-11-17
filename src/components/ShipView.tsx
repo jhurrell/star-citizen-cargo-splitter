@@ -5,13 +5,13 @@ import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, type InstancedMes
 import type { HaulGrid } from "../lib/haul";
 import type { Position } from "../lib/cargo";
 import { OTHER_COLOR, type Cargo } from "../lib/emphasis";
-import { hangsDown, mountMatrix, type Vec3 } from "../lib/mount";
+import { mountMatrix, type Vec3 } from "../lib/mount";
 import type { Placed } from "../lib/packing";
 import {
   boundsOf,
   directionLabels,
   FOV,
-  GAP,
+  containerBox,
   gridLabel,
   isMounted,
   sizeOf,
@@ -167,7 +167,7 @@ function GridMesh({
       <HoldOutline size={[X, Y, Z]} lit={lit} />
       <Containers capacity={position.capacity} placed={solid} cargoByRow={cargoByRow} onHover={describe} />
       <Containers capacity={position.capacity} placed={faded} cargoByRow={cargoByRow} dim onHover={describe} />
-      {showSizes && <SizeMarks placed={solid} hangs={hangsDown(position.mount)} />}
+      {showSizes && <SizeMarks placed={solid} mount={position.mount} />}
     </group>
   );
 }
@@ -228,7 +228,8 @@ function Containers({
     const matrix = new Matrix4();
     const color = new Color();
     placed.forEach((b, i) => {
-      matrix.makeScale(b.w - GAP, b.d - GAP, b.h - GAP).setPosition(b.x + b.w / 2, b.y + b.d / 2, b.z + b.h / 2);
+      const { center, scale } = containerBox(b);
+      matrix.makeScale(...scale).setPosition(...center);
       mesh.setMatrixAt(i, matrix);
       mesh.setColorAt(i, color.set(cargoByRow.get(b.tag)?.color ?? OTHER_COLOR));
     });

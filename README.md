@@ -96,11 +96,11 @@ Three pieces in `src/components/` are shared by the page:
 `ShipView.tsx` draws each grid with its containers and loads only when a grid has placements, as three.js is large.
 The rest of the 3D view lives in `src/components/ship/`:
 
-- [`scene.ts`](src/components/ship/scene.ts): the scene's layout in ship coordinates, as pure functions with no
-  three.js: the camera views, the box around the cargo, the axes and the labels' positions. Tested in
-  `test/scene.test.ts`.
-- [`SizeMarks.tsx`](src/components/ship/SizeMarks.tsx): each container's SCU on all six of its faces, kept upright
-  on a grid that hangs under the ship.
+- [`scene.ts`](src/components/ship/scene.ts): the scene's layout, as pure functions with no three.js: each
+  container's box and size numbers, the camera views, the box around the cargo, the axes and the labels'
+  positions. Size numbers read upright in the ship: on a face facing sideways their top points up, and on one
+  facing up or down it points fore, however the grid is mounted. Tested in `test/scene.test.ts`.
+- [`SizeMarks.tsx`](src/components/ship/SizeMarks.tsx): draws each container's SCU on all six of its faces.
 - [`Surroundings.tsx`](src/components/ship/Surroundings.tsx): everything around the cargo: the axes and fore cone,
   the ground, the camera presets and the HTML labels that follow the camera.
 
