@@ -16,7 +16,7 @@ export function useTimedMessage(ms: number): [string, (message: string) => void]
 }
 
 /* A flag that turns itself off `ms` after it was turned on, for two-step
-   actions such as Clear table. */
+   actions such as Reset all. */
 export function useTimedFlag(ms: number): [boolean, (on: boolean) => void] {
   const [on, setOn] = useState(false);
   useEffect(() => {

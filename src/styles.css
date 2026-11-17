@@ -267,7 +267,7 @@ h2 {
 .toolbar .spacer {
   flex: 1;
 }
-/* Copy and clear messages, as a toast at the foot of the window. */
+/* Copy and reset messages, as a toast at the foot of the window. */
 .status {
   position: fixed;
   bottom: 16px;
@@ -320,9 +320,58 @@ h2 {
   opacity: 0.4;
   cursor: default;
 }
-/* Wide enough for "Clear table", so turning to "Confirm" moves nothing. */
+/* Wide enough for "Reset all", so turning to "Confirm" moves nothing. */
 .btn.clear-table {
   width: 10em;
+  white-space: nowrap;
+}
+
+/* ---------- Contracts: each a bar (its name, Add row and Delete contract) over its table ---------- */
+.contracts {
+  display: grid;
+  gap: 20px;
+}
+.contract-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.contract-bar .contract-name {
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-width: 0;
+  flex: 0 1 22em;
+}
+.contract-bar .contract-name::placeholder {
+  color: var(--off-fg);
+}
+.contract-bar .contract-name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* The show/hide toggle: its chevron points down while the table shows, and
+   right while it's hidden. */
+.contract-toggle.is-collapsed .chevron {
+  transform: rotate(-90deg);
+}
+/* What a hidden table holds, after the bar's buttons. */
+.contract-summary {
+  color: var(--off-fg);
+  font-variant-numeric: tabular-nums;
+}
+.frame[hidden] {
+  display: none;
+}
+/* Wide enough for "Delete contract", so turning to "Confirm" moves nothing. */
+.btn.delete-contract {
+  width: 13em;
   white-space: nowrap;
 }
 /* Two buttons that belong together, a little closer than the rest. */
@@ -482,7 +531,7 @@ h2 {
 }
 /* Line the Cargo heading up with the text after each row's delete button
    and swatch; its sort button sits over them. */
-#cargo thead th:first-child {
+.cargo thead th:first-child {
   padding-left: calc(var(--del-size) + var(--swatch-room) + 10px - var(--sort-size) - 4px);
 }
 
@@ -608,13 +657,13 @@ select.field option {
 }
 /* A row with SCU in no grid yet: an amber edge down its left side, an amber
    SCU whose tooltip says why, and the amount under its grid buttons. */
-#cargo tr.has-remaining > td:first-child {
+.cargo tr.has-remaining > td:first-child {
   box-shadow: inset 4px 0 0 var(--warn);
 }
-#cargo .scu-cell[data-remaining] {
+.cargo .scu-cell[data-remaining] {
   background: var(--warn-soft);
 }
-#cargo .scu-cell[data-remaining] .field {
+.cargo .scu-cell[data-remaining] .field {
   color: var(--warn);
 }
 
@@ -691,7 +740,7 @@ select.field option {
   text-align: center;
   white-space: nowrap;
 }
-/* The Grids heading, with its Clear button at the right. */
+/* The Grids heading, with its Reset button at the right. */
 .grids-head {
   display: flex;
   align-items: center;
@@ -787,6 +836,9 @@ select.field option {
       background 120ms,
       border-color 120ms,
       color 120ms;
+  }
+  .contract-toggle .chevron {
+    transition: transform 150ms;
   }
 }
 

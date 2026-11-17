@@ -6,17 +6,17 @@ import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
 import { computeHaul, layoutOf } from "../lib/haul";
 import { useEmphasis, useTimedMessage } from "../lib/hooks";
-import { loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
+import { allRows, loadState, makeContract, makeRow, reducer, saveState, type Contract, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { ConfirmButton } from "./ConfirmButton";
-import { MarkdownIcon, SpreadsheetIcon } from "./icons";
+import { ChevronIcon, MarkdownIcon, SpreadsheetIcon } from "./icons";
 import { Legend } from "./Legend";
 import { ShipPicker } from "./ShipPicker";
 
 /* three.js is big, so the 3D view loads only when a grid has placements to show. */
 const ShipView = lazy(() => import("./ShipView"));
 
-const STATUS_MS = 2200; // how long a copy or clear message stays
+const STATUS_MS = 2200; // how long a copy or reset message stays
 
 /* The copy buttons: what each is called, how it writes the table and what it
    says once copied. */
@@ -48,7 +48,8 @@ export function CargoVisualizer() {
   const haul = useMemo(() => computeHaul(state, ships, containers), [state]);
   const { ship, layout, at } = haul;
   /* Each row's color, the legend, and which rows show see-through. */
-  const emphasis = useEmphasis(state.rows, haul);
+  const rows = useMemo(() => allRows(state), [state]);
+  const emphasis = useEmphasis(rows, haul);
   const isMounted = !!layout && layout.grids.every((g) => g.mount);
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -63,42 +64,69 @@ export function CargoVisualizer() {
     document.getElementById(focusNext.current)?.focus();
     focusNext.current = null;
   });
-  const focusCargo = (row: Row | undefined) => {
-    focusNext.current = row ? `r${row.id}-cargo` : "add-row";
+  const focusCargo = (row: Row) => {
+    focusNext.current = `r${row.id}-cargo`;
+  };
+  /* The contract a row is in, and the row's place in it. */
+  const findRow = (id: number) => {
+    const contract = state.contracts.find((c) => c.rows.some((r) => r.id === id))!;
+    return { contract, index: contract.rows.findIndex((r) => r.id === id) };
   };
 
   const [status, showStatus] = useTimedMessage(STATUS_MS);
 
-  function addRow() {
-    const row = makeRow();
-    focusCargo(row);
-    dispatch({ type: "addRow", row });
+  /* A new contract with one blank row, its name ready to type. */
+  function newContract(): Contract {
+    const contract = makeContract({ rows: [{}] });
+    focusNext.current = `c${contract.id}-name`;
+    return contract;
   }
 
+  function addContract() {
+    dispatch({ type: "addContract", contract: newContract() });
+  }
+
+  function deleteContract(id: number) {
+    const index = state.contracts.findIndex((c) => c.id === id);
+    const next = state.contracts[index + 1] ?? state.contracts[index - 1];
+    focusNext.current = next ? `c${next.id}-name` : "add-contract";
+    dispatch({ type: "deleteContract", id });
+  }
+
+  function addRow(contractId: number) {
+    const row = makeRow();
+    focusCargo(row);
+    dispatch({ type: "addRow", contractId, row });
+  }
+
+  /* Focus the next row in the deleted row's contract, or the one before, or
+     the contract's Add row when it was the last. */
   function deleteRow(id: number) {
-    const index = state.rows.findIndex((r) => r.id === id);
-    focusCargo(state.rows[index + 1] ?? state.rows[index - 1]);
+    const { contract, index } = findRow(id);
+    const next = contract.rows[index + 1] ?? contract.rows[index - 1];
+    if (next) focusCargo(next);
+    else focusNext.current = `c${contract.id}-add-row`;
     dispatch({ type: "deleteRow", id });
   }
 
-  /* Move to the next row's SCU, or add a row when already on the last one. */
+  /* Move to the next row's SCU in the contract, or add a row to it when
+     already on its last one. */
   function focusNextScu(id: number) {
-    const next = state.rows[state.rows.findIndex((r) => r.id === id) + 1];
+    const { contract, index } = findRow(id);
+    const next = contract.rows[index + 1];
     if (next) document.getElementById(`r${next.id}-scu`)?.focus();
-    else addRow();
+    else addRow(contract.id);
   }
 
   function clearTable() {
-    const row = makeRow();
-    focusCargo(row);
-    dispatch({ type: "clearRows", row });
-    showStatus("Table cleared");
+    dispatch({ type: "clearTable", contract: newContract() });
+    showStatus("All reset");
   }
 
-  /* Take every row out of this layout's grids. */
-  function clearGrids() {
-    dispatch({ type: "clearPlan", at });
-    showStatus("Grids cleared");
+  /* Take a contract's rows out of this layout's grids. */
+  function clearGrids(id: number) {
+    dispatch({ type: "clearPlan", id, at });
+    showStatus("Grids reset");
   }
 
   async function copy({ toText, done }: (typeof COPY_FORMATS)[number]) {
@@ -139,8 +167,8 @@ export function CargoVisualizer() {
         </div>
         <span className="spacer" />
         <div className="toolbar-group">
-          <button type="button" className="btn primary" id="add-row" onClick={addRow}>
-            Add row
+          <button type="button" className="btn primary" id="add-contract" onClick={addContract}>
+            Add contract
           </button>
           {/* The copy formats as icons; each says what it does in its tooltip and to screen readers. */}
           <div className="btn-pair">
@@ -158,8 +186,8 @@ export function CargoVisualizer() {
             ))}
           </div>
           <ConfirmButton
-            label="Clear table"
-            confirmAriaLabel="Confirm clearing the table"
+            label="Reset all"
+            confirmAriaLabel="Confirm resetting all contracts"
             className="clear-table"
             onConfirm={clearTable}
           />
@@ -170,21 +198,69 @@ export function CargoVisualizer() {
         {status}
       </p>
 
-      <div className="frame">
-        <CargoTable
-          haul={haul}
-          sort={state.sort}
-          cargoByRow={emphasis.byRow}
-          onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
-          onToggleGrid={(id, name) => dispatch({ type: "toggleGrid", id, grid: { ...at, name } })}
-          onHighlight={setHighlight}
-          onPointRows={emphasis.point}
-          onDelete={deleteRow}
-          onSort={(key) => dispatch({ type: "sortBy", key })}
-          onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", size, on })}
-          onScuEnter={focusNextScu}
-          onClearGrids={clearGrids}
-        />
+      {/* Each contract: a bar with its show/hide toggle, name, Add row and Delete
+          contract, over its table. */}
+      <div className="contracts">
+        {haul.contracts.map((section, i) => (
+          <section key={section.id} className="contract" aria-label={section.label}>
+            <div className="contract-bar">
+              <button
+                type="button"
+                className={`btn icon contract-toggle${section.collapsed ? " is-collapsed" : ""}`}
+                aria-expanded={!section.collapsed}
+                aria-controls={`c${section.id}-table`}
+                aria-label={`${section.label}'s table`}
+                data-tip={section.collapsed ? "Show table" : "Hide table"}
+                onClick={() => dispatch({ type: "setCollapsed", id: section.id, collapsed: !section.collapsed })}
+              >
+                <ChevronIcon />
+              </button>
+              <input
+                className="contract-name"
+                id={`c${section.id}-name`}
+                aria-label="Contract name"
+                placeholder={`Contract ${i + 1}`}
+                value={section.name}
+                onChange={(e) => dispatch({ type: "renameContract", id: section.id, name: e.target.value })}
+              />
+              <button type="button" className="btn" id={`c${section.id}-add-row`} onClick={() => addRow(section.id)}>
+                Add row
+              </button>
+              {haul.contracts.length > 1 && (
+                <ConfirmButton
+                  label="Delete contract"
+                  ariaLabel={`Delete ${section.label} and its rows`}
+                  confirmAriaLabel={`Confirm deleting ${section.label} and its rows`}
+                  className="delete-contract"
+                  onConfirm={() => deleteContract(section.id)}
+                />
+              )}
+              {/* While the table is hidden, what's in it. */}
+              {section.collapsed && (
+                <span className="contract-summary">
+                  {plural(section.deliveries.length, "row")} · {fmt(section.totals.scu)} SCU
+                </span>
+              )}
+            </div>
+            <div className="frame" id={`c${section.id}-table`} hidden={section.collapsed}>
+              <CargoTable
+                section={section}
+                grids={haul.grids}
+                free={haul.totals.free}
+                cargoByRow={emphasis.byRow}
+                onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
+                onToggleGrid={(id, name) => dispatch({ type: "toggleGrid", id, grid: { ...at, name } })}
+                onHighlight={setHighlight}
+                onPointRows={emphasis.point}
+                onDelete={deleteRow}
+                onSort={(key) => dispatch({ type: "sortBy", id: section.id, key })}
+                onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", id: section.id, size, on })}
+                onScuEnter={focusNextScu}
+                onClearGrids={() => clearGrids(section.id)}
+              />
+            </div>
+          </section>
+        ))}
       </div>
 
       <section className="section" aria-labelledby="ship-title">

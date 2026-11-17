@@ -1,15 +1,19 @@
 import { isOverMaxScu } from "../lib/cargo";
 import type { Cargo } from "../lib/emphasis";
 import { fmt, initials, plural } from "../lib/format";
-import type { Delivery, GridBlock, Haul, HaulGrid, SizeCell, SizeColumn } from "../lib/haul";
+import type { ContractSection, Delivery, GridBlock, HaulGrid, SizeCell, SizeColumn } from "../lib/haul";
 import { TEXT_COLUMNS, type RowField, type Sort, type TextKey } from "../lib/state";
 import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
 import { pointHandlers } from "./pointing";
 
 type Props = {
-  haul: Haul;
-  sort: Sort;
+  /* The contract this table shows. */
+  section: ContractSection;
+  /* Every cargo grid on the layout, in layout order. */
+  grids: HaulGrid[];
+  /* SCU free across all the grids. */
+  free: number;
   /* Each row's color in the ship view, for its swatch. */
   cargoByRow: Map<number, Cargo>;
   onUpdate: (id: number, field: RowField, value: string) => void;
@@ -21,10 +25,12 @@ type Props = {
      a list of one), so the ship view can fade the rest; null when none. */
   onPointRows: (ids: number[] | null) => void;
   onDelete: (id: number) => void;
+  /* Sort this contract's rows. */
   onSort: (key: TextKey) => void;
+  /* Skip a size in this contract, or hand it out again. */
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
-  /* Take every row out of its grids (the Grids heading's Clear, once confirmed). */
+  /* Take this contract's rows out of their grids (the Grids heading's Reset, once confirmed). */
   onClearGrids: () => void;
 };
 type RowActions = Pick<Props, "onUpdate" | "onToggleGrid" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
@@ -32,21 +38,31 @@ type RowActions = Pick<Props, "onUpdate" | "onToggleGrid" | "onHighlight" | "onP
 /* A grid's button: its short tag and what's in the grid. */
 type GridButton = { tag: string; grid: HaulGrid };
 
-/* The editable cargo table: Cargo / Pick-up / Drop-off, SCU, Remaining (SCU
-   not in a grid yet), a column per container size, Left over (only when some
-   SCU can't be made of the sizes turned on), Grids. */
-export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onClearGrids, ...rowActions }: Props) {
-  const { sizes, deliveries, totals, showLeftover } = haul;
-  const tags = initials(haul.grids.map((g) => g.grid.name));
-  const grids: GridButton[] = haul.grids.map((grid, i) => ({ tag: tags[i], grid }));
+/* One contract's editable cargo table: Cargo / Pick-up / Drop-off, SCU,
+   Remaining (SCU not in a grid yet), a column per container size, whose
+   heading turns the size on or off for this contract, Left over (only when
+   some SCU can't be made of the sizes it hands out), Grids. */
+export function CargoTable({
+  section,
+  grids: haulGrids,
+  free,
+  cargoByRow,
+  onSort,
+  onToggleSize,
+  onClearGrids,
+  ...rowActions
+}: Props) {
+  const { id, label, sort, sizes, deliveries, totals, showLeftover } = section;
+  const tags = initials(haulGrids.map((g) => g.grid.name));
+  const grids: GridButton[] = haulGrids.map((grid, i) => ({ tag: tags[i], grid }));
   /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
-    <table className="grid" id="cargo">
+    <table className="grid cargo" aria-label={label}>
       <thead>
         <tr>
           {TEXT_COLUMNS.map(({ key, label }) => (
-            <SortHead key={key} sortKey={key} label={label} sort={sort} onSort={onSort} />
+            <SortHead key={key} id={`c${id}-sort-${key}`} sortKey={key} label={label} sort={sort} onSort={onSort} />
           ))}
           <th className="label num narrow">SCU</th>
           {/* Δ for Remaining, to keep the column narrow. */}
@@ -63,11 +79,11 @@ export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onCle
             <div className="grids-head">
               Grids
               <ConfirmButton
-                label="Clear"
-                ariaLabel="Clear every row's grids"
-                confirmAriaLabel="Confirm clearing every row's grids"
+                label="Reset"
+                ariaLabel={`Reset the grids of every row in ${label}`}
+                confirmAriaLabel={`Confirm resetting the grids of every row in ${label}`}
                 className="clear-grids"
-                disabled={!haul.anyPlanned}
+                disabled={!section.anyPlanned}
                 onConfirm={onClearGrids}
               />
             </div>
@@ -104,11 +120,8 @@ export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onCle
           <RemainingCell scu={totals.remaining} />
           <SizeCells cells={totals.cells} sizes={sizes} />
           <LeftoverCell scu={totals.leftover} shown={showLeftover} />
-          <td
-            className="sep foot-free"
-            title={totals.free ? `${fmt(totals.free)} SCU of grid space not used yet` : undefined}
-          >
-            {totals.free > 0 && `${fmt(totals.free)} free`}
+          <td className="sep foot-free" title={free ? `${fmt(free)} SCU of grid space not used yet` : undefined}>
+            {free > 0 && `${fmt(free)} free`}
           </td>
         </tr>
       </tfoot>
@@ -117,11 +130,14 @@ export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onCle
 }
 
 function SortHead({
+  id,
   sortKey,
   label,
   sort,
   onSort,
 }: {
+  /* Unique on the page, as each contract has its own table. */
+  id: string;
   sortKey: TextKey;
   label: string;
   sort: Sort;
@@ -135,7 +151,7 @@ function SortHead({
         <button
           type="button"
           className={`icon-btn sort-btn${dir ? " is-active" : ""}`}
-          id={`sort-${sortKey}`}
+          id={id}
           aria-label={`Sort by ${label}`}
           title={`Sort by ${label}`}
           onClick={() => onSort(sortKey)}
@@ -333,7 +349,7 @@ function RemainingCell({ scu, title }: { scu: number; title?: string }) {
   );
 }
 
-/* The container counts for one row, or the total row; "–" under a size turned off. */
+/* The container counts for one row, or the total row; "–" under a size the contract skips. */
 function SizeCells({ cells, sizes }: { cells: SizeCell[]; sizes: SizeColumn[] }) {
   return cells.map((cell, i) => (
     <td
@@ -346,7 +362,7 @@ function SizeCells({ cells, sizes }: { cells: SizeCell[]; sizes: SizeColumn[] })
   ));
 }
 
-/* SCU no turned-on size can make up; the column shows only when some row has any. */
+/* SCU no size the contract hands out can make up; the column shows only when some row has any. */
 function LeftoverCell({ scu, shown }: { scu: number; shown: boolean }) {
   return (
     <td className="leftover sep" data-state={scu ? "warn" : "zero"} hidden={!shown}>

@@ -36,6 +36,10 @@ in.
 The largest container size a contract hands out, shown when the player accepts it. A contract hands out sizes up
 to it, less any it skips.
 
+**Rank**:
+The reputation tier a contract requires, such as Senior. Higher-rank contracts usually hand out larger containers.
+_Avoid_: Level
+
 **Contract Delivery**:
 A delivery that is part of a contract; the game splits it into containers largest first, from the sizes the
 contract hands out, whatever ship carries it.

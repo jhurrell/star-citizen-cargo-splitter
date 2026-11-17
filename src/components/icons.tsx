@@ -1,6 +1,16 @@
 /* Icons for buttons, drawn with the button's text color. Each is decorative:
    the button it's in carries the name. */
 
+/* A chevron pointing down: a contract's table is showing. Turned to point
+   right while it's hidden. */
+export function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className="btn-icon chevron">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 /* A table: copy for a spreadsheet. */
 export function SpreadsheetIcon() {
   return (

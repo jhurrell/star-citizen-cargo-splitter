@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import { exportTable, gridText, tableAsMarkdown, tableAsTsv } from "../src/lib/export";
-import { bay, haulOf, testRow } from "./helpers";
+import { bay, contractOf, haulOf, haulOfContracts, testRow } from "./helpers";
 
 describe("copy formats", () => {
   const grids = [bay("Bay", 2, 8, 2)];
@@ -9,8 +9,8 @@ describe("copy formats", () => {
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
-      "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
-      "Gold | Ore\tArea18\t\t1033\t1001\t32\t1\t1\tBay",
+      "Contract\tCargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
+      "Contract 1\tGold | Ore\tArea18\t\t1033\t1001\t32\t1\t1\tBay",
     ]);
   });
 
@@ -18,6 +18,7 @@ describe("copy formats", () => {
     const lines = tableAsMarkdown(table).split("\n");
     const cells = (line: string) => line.slice(2, -2).split(" | ");
     expect(cells(lines[1]).map((rule) => rule.endsWith(":"))).toEqual([
+      false,
       false,
       false,
       false,
@@ -29,6 +30,7 @@ describe("copy formats", () => {
       false,
     ]);
     expect(cells(lines[2]).map((cell) => cell.trim())).toEqual([
+      "Contract 1",
       "Gold \\| Ore",
       "Area18",
       "",
@@ -39,9 +41,10 @@ describe("copy formats", () => {
       "1",
       "Bay",
     ]);
-    expect(cells(lines[2])[3]).toBe("    1,033"); // padded to the bold total's width
+    expect(cells(lines[2])[4]).toBe("    1,033"); // padded to the bold total's width
     expect(cells(lines[3]).map((cell) => cell.trim())).toEqual([
       "**Total**",
+      "",
       "",
       "",
       "**1,033**",
@@ -54,12 +57,27 @@ describe("copy formats", () => {
     expect(new Set(lines.map((line) => line.length)).size).toBe(1);
   });
 
-  test("a size turned off is left out", () => {
+  test("a size no contract hands out is left out", () => {
     const small = [bay("Small", 2, 2, 2)];
     const haul = haulOf([testRow({ scu: "8", plan: [{ name: "Small", order: 1 }] })], small, { 1: false });
     expect(tableAsTsv(exportTable(haul)).split("\n")).toEqual([
-      "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\tGrids",
-      "\t\t\t8\t0\t0\t1\tSmall",
+      "Contract\tCargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\tGrids",
+      "Contract 1\t\t\t\t8\t0\t0\t1\tSmall",
+    ]);
+  });
+
+  test('each row names its contract, with "–" under a size another contract hands out', () => {
+    const haul = haulOfContracts(
+      [
+        contractOf([testRow({ cargo: "Gold", scu: "40" })], { name: "Senior", enabled: { 32: false } }),
+        contractOf([testRow({ cargo: "Tin", scu: "33" })]),
+      ],
+      [],
+    );
+    expect(tableAsTsv(exportTable(haul)).split("\n")).toEqual([
+      "Contract\tCargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\t1\tGrids",
+      "Senior\tGold\t\t\t40\t0\t–\t5\t0\t",
+      "Contract 2\tTin\t\t\t33\t0\t1\t0\t1\t",
     ]);
   });
 });

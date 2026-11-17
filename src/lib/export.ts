@@ -17,15 +17,18 @@ export function gridText({ parts }: { parts: Part[] }): string {
   return shown.map((p) => `${p.name} (${fmt(p.scu)})`).join(", ");
 }
 
-/* Columns, rows and totals for the copy buttons: the table's columns, less
-   the sizes turned off. Values stay raw (numbers as numbers) so each format
-   can render them its own way. */
+/* Columns, rows and totals for the copy buttons: each row's contract, then
+   the table's columns, less the sizes no contract hands out. A size the row's
+   contract doesn't hand out shows "–". Values stay raw (numbers as numbers)
+   so each format can render them its own way. */
 export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): ExportedTable {
   const leftover = <T>(value: T): T[] => (showLeftover ? [value] : []);
   const onSizes = sizes.filter((column) => column.on);
-  /* The counts of the sizes turned on, in column order. */
-  const cellsOf = (cells: SizeCell[]) => cells.flatMap((cell) => (cell.kind === "count" ? [cell.count] : []));
+  /* The cells under the sizes some contract hands out, in column order. */
+  const cellsOf = (cells: SizeCell[]): Cell[] =>
+    cells.flatMap((cell, i): Cell[] => (!sizes[i].on ? [] : cell.kind === "count" ? [cell.count] : ["–"]));
   const columns: Column[] = [
+    { label: "Contract", numeric: false },
     ...TEXT_COLUMNS.map((c) => ({ label: c.label, numeric: false })),
     { label: "SCU", numeric: true },
     { label: "Remaining", numeric: true },
@@ -34,6 +37,7 @@ export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): 
     { label: "Grids", numeric: false },
   ];
   const body = deliveries.map((delivery) => [
+    delivery.contract,
     ...TEXT_COLUMNS.map((c) => delivery.row[c.key]),
     delivery.scu,
     delivery.remaining,
@@ -43,7 +47,7 @@ export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): 
   ]);
   const totalRow = [
     "Total",
-    ...TEXT_COLUMNS.slice(1).map(() => ""),
+    ...TEXT_COLUMNS.map(() => ""),
     totals.scu,
     totals.remaining,
     ...cellsOf(totals.cells),

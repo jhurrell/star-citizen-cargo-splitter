@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { sum } from "../src/lib/format";
 import type { Haul, SizeCell } from "../src/lib/haul";
 import { makeRow, type Row } from "../src/lib/state";
-import { bay, haulOf, haulOnShip, shipRow, testRow } from "./helpers";
+import { bay, contractOf, haulOf, haulOfContracts, haulOnShip, shipRow, testRow } from "./helpers";
 
 /* The parts of a Haul a test looks at, found by row or grid. */
 const deliveryOf = (haul: Haul, row: Row) => haul.deliveries.find((d) => d.row.id === row.id)!;
@@ -303,5 +303,76 @@ describe("grid choices", () => {
   test("the rows come out in table order with their text", () => {
     const rows = [testRow({ cargo: "Gold", scu: "1" }), makeRow({ cargo: "Tin" })];
     expect(haulOf(rows, cargoGrids).deliveries.map((d) => d.row.cargo)).toEqual(["Gold", "Tin"]);
+  });
+});
+
+describe("contracts", () => {
+  test("each delivery is split from the sizes its own contract hands out", () => {
+    const junior = testRow({ scu: "40" });
+    const senior = testRow({ scu: "40" });
+    const haul = haulOfContracts([contractOf([junior], { enabled: { 32: false } }), contractOf([senior])], []);
+    expect(show(deliveryOf(haul, junior).cells)).toEqual(["off", 5, 0]);
+    expect(show(deliveryOf(haul, senior).cells)).toEqual([1, 1, 0]);
+    expect(show(haul.totals.cells)).toEqual([1, 6, 0]);
+  });
+
+  test("a size no contract hands out is off for the haul", () => {
+    const row = testRow({ scu: "40" });
+    const haul = haulOfContracts([contractOf([row], { enabled: { 32: false } })], []);
+    expect(haul.sizes.map((s) => s.on)).toEqual([false, true, true]);
+  });
+
+  test("each section has its label, sizes and totals", () => {
+    const haul = haulOfContracts(
+      [
+        contractOf([testRow({ scu: "40" }), testRow({ scu: "9" })], {
+          name: "Senior",
+          enabled: { 32: false, 1: false },
+        }),
+        contractOf([]),
+      ],
+      [],
+    );
+    expect(
+      haul.contracts.map(({ label, totals, showLeftover, sizes }) => ({ label, totals, showLeftover, sizes })),
+    ).toEqual([
+      {
+        label: "Senior",
+        totals: {
+          scu: 49,
+          remaining: 0,
+          cells: [{ kind: "off" }, { kind: "count", count: 6 }, { kind: "off" }],
+          leftover: 1,
+        },
+        showLeftover: true,
+        sizes: [
+          { size: 32, on: false },
+          { size: 8, on: true },
+          { size: 1, on: false },
+        ],
+      },
+      {
+        label: "Contract 2",
+        totals: { scu: 0, remaining: 0, cells: [0, 0, 0].map((count) => ({ kind: "count", count })), leftover: 0 },
+        showLeftover: false,
+        sizes: [
+          { size: 32, on: true },
+          { size: 8, on: true },
+          { size: 1, on: true },
+        ],
+      },
+    ]);
+    expect(haul.deliveries.map((d) => d.contract)).toEqual(["Senior", "Senior"]);
+  });
+
+  test("a grid too small for a contract's containers is blocked for that contract's rows only", () => {
+    const big = testRow({ scu: "32" });
+    const small = testRow({ scu: "8" });
+    const haul = haulOfContracts(
+      [contractOf([big], { enabled: { 8: false, 1: false } }), contractOf([small])],
+      [bay("Small", 2, 2, 2)],
+    );
+    expect(deliveryOf(haul, big).grids[0].block).toBe("tooSmall");
+    expect(deliveryOf(haul, small).grids[0].block).toBeNull();
   });
 });

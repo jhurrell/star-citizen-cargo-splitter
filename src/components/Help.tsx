@@ -24,13 +24,31 @@ export function Help() {
         <h3>The table</h3>
         <ul>
           <li>
-            Enter the SCU on each row. Each row is split into the biggest container size that's turned on first, then
-            the next size down, as the game hands a contract over. A row takes up to 9,999 SCU.
+            Click <strong>Add contract</strong> for each contract you accept, and give it a row per delivery. Its{" "}
+            <strong>Add row</strong> adds another.
           </li>
-          <li>Click a size in the table header to turn it off and skip it.</li>
-          <li>Click the arrow beside Cargo, Pick-up or Drop-off to sort by that column, and again to reverse it.</li>
           <li>
-            Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the last row.
+            The arrow at the left of a contract's bar hides its table, so the ship view comes up the page; the bar then
+            shows how many rows and SCU it holds. Click it again, or <strong>Add row</strong>, to show the table.
+          </li>
+          <li>
+            In each contract's table heading, click a size the contract doesn't hand out to turn it off: every size
+            above the max container size the game shows for it, and any it skips.
+          </li>
+          <li>
+            Enter the SCU on each row. Each row is split into the biggest container size its contract hands out first,
+            then the next size down, as the game hands a contract over. A row takes up to 9,999 SCU.
+          </li>
+          <li>
+            Click the arrow beside Cargo, Pick-up or Drop-off to sort that contract's rows by that column, and again to
+            reverse it.
+          </li>
+          <li>
+            Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the contract's
+            last row.
+          </li>
+          <li>
+            <strong>Delete contract</strong> removes a contract and its rows. Click it again to confirm.
           </li>
           <li>Your table is kept in this browser.</li>
         </ul>
@@ -45,7 +63,10 @@ export function Help() {
             To split a big delivery, turn on several grids: grids fill in the order you add them, and a later one only
             takes the room an earlier one left. Containers a grid's shape can't fit move on to the row's next grid.
           </li>
-          <li>Clear, in the Grids heading, takes every row out of its grids. Click it again to confirm.</li>
+          <li>
+            Reset, in a contract's Grids heading, takes that contract's rows out of their grids. Click it again to
+            confirm.
+          </li>
           <li>
             Δ (Remaining) shows the SCU not in a grid yet. While a row has some, its edge and SCU turn amber, and
             pointing at the SCU says why.

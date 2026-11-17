@@ -1,8 +1,9 @@
-import { asText, type Container } from "./cargo";
+import { asText } from "./cargo";
 import { collator } from "./format";
 
-/* The page's saved state: the chosen ship and layout, which container sizes
-   are on, the last sort and the cargo rows. Kept in localStorage. */
+/* The page's saved state: the chosen ship and layout, and the contracts,
+   each with its container sizes, its last sort and its cargo rows. Kept in
+   localStorage. */
 
 export type TextKey = "cargo" | "pickup" | "dropoff";
 export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
@@ -31,20 +32,32 @@ export type Row = Record<TextKey, string> & { id: number; scu: string; plan: Pla
 export type RowField = TextKey | "scu";
 export type SortDir = 1 | -1;
 export type Sort = { key: TextKey; dir: SortDir } | null;
+/* A contract: its deliveries, and the container sizes it hands out: every
+   size but those it skips. */
+export type Contract = {
+  id: number;
+  name: string; // "" shows as "Contract N"
+  enabled: Record<number, boolean>; // size → false when skipped; sizes not listed are on
+  sort: Sort;
+  /* Its table hidden, leaving just its bar, so the ship view comes up the page. */
+  collapsed: boolean;
+  rows: Row[];
+};
 export type State = {
   shipId: string; // "" means the first ship, by name
   layoutId: string; // "" means that ship's first layout
-  enabled: Record<number, boolean>; // size → false when unchecked; sizes not listed are on
-  sort: Sort;
-  rows: Row[];
+  /* At least one, in page order. */
+  contracts: Contract[];
 };
 
-/* Container sizes are on unless unchecked. */
-export const isEnabled = (enabled: State["enabled"], size: number): boolean => enabled[size] !== false;
-export const enabledContainers = (containers: Container[], enabled: State["enabled"]): Container[] =>
-  containers.filter((c) => isEnabled(enabled, c.size));
+/* Whether a contract hands out a size: every size it doesn't skip. */
+export const handsOut = (contract: Pick<Contract, "enabled">, size: number): boolean =>
+  contract.enabled[size] !== false;
 
-const STORE_KEY = "cargo-visualizer-v4";
+/* Every row, in table order. */
+export const allRows = (state: Pick<State, "contracts">): Row[] => state.contracts.flatMap((c) => c.rows);
+
+const STORE_KEY = "cargo-visualizer-v5";
 
 let nextId = 1;
 /* A row from saved or given values. Plan steps given without a ship and
@@ -85,21 +98,49 @@ export const rowsOn = (rows: Row[], at: LayoutRef): Row[] =>
 /* The order for a new plan step: after every step so far. */
 const nextOrder = (rows: Row[]) => 1 + Math.max(0, ...rows.flatMap((r) => r.plan.map((step) => step.order)));
 
+/* A contract from saved or given values; with no rows given, it has none. */
+export function makeContract(
+  values: { name?: unknown; enabled?: unknown; sort?: unknown; collapsed?: unknown; rows?: unknown } = {},
+  at: LayoutRef = NOWHERE,
+): Contract {
+  const enabled: Record<number, boolean> = {};
+  /* Sizes aren't known until containers.json is read, so keep every saved choice. */
+  for (const [size, on] of Object.entries((values.enabled as object) ?? {})) {
+    if (typeof on === "boolean") enabled[Number(size)] = on;
+  }
+  const rows = Array.isArray(values.rows) ? (values.rows as Record<string, unknown>[]) : [];
+  return {
+    id: nextId++,
+    name: asText(values.name),
+    enabled,
+    sort: readSort(values.sort),
+    collapsed: values.collapsed === true,
+    rows: rows.map((r) => makeRow(r ?? {}, at)),
+  };
+}
+
+/* A saved sort, if it's a valid one. */
+function readSort(value: unknown): Sort {
+  const sort = value as { key?: unknown; dir?: unknown } | null;
+  const key = sort?.key as TextKey;
+  return TEXT_KEYS.includes(key) && (sort?.dir === 1 || sort?.dir === -1) ? { key, dir: sort.dir } : null;
+}
+
 export function defaultState(): State {
   return {
     shipId: "",
     layoutId: "",
-    enabled: {},
-    sort: null,
-    rows: [
-      makeRow({ cargo: "Example A", scu: "57" }),
-      makeRow({ cargo: "Example B", scu: "100" }),
-      makeRow({ cargo: "Example C", scu: "13" }),
+    contracts: [
+      makeContract({
+        rows: [
+          { cargo: "Example A", scu: "57" },
+          { cargo: "Example B", scu: "100" },
+          { cargo: "Example C", scu: "13" },
+        ],
+      }),
     ],
   };
 }
-
-const isTextKey = (value: unknown): value is TextKey => TEXT_KEYS.includes(value as TextKey);
 
 /* The actual ship and layout a state's choice means ("" is the first of
    each), which only the ship list knows. */
@@ -112,16 +153,10 @@ export function hydrate(saved: unknown, resolve: ResolveLayout = asSaved): State
   const result = defaultState();
   if (!saved || typeof saved !== "object") return result;
   const s = saved as Record<string, unknown>;
-  const rows = Array.isArray(s.rows) ? (s.rows as Record<string, unknown>[]) : null;
+  const contracts = Array.isArray(s.contracts) ? (s.contracts as Record<string, unknown>[]) : [];
   result.shipId = asText(s.shipId);
   result.layoutId = asText(s.layoutId);
-  /* Sizes aren't known until containers.json is read, so keep every saved choice. */
-  for (const [size, on] of Object.entries((s.enabled as object) ?? {})) {
-    if (typeof on === "boolean") result.enabled[Number(size)] = on;
-  }
-  const sort = s.sort as { key?: unknown; dir?: unknown } | null;
-  if (isTextKey(sort?.key) && (sort?.dir === 1 || sort?.dir === -1)) result.sort = { key: sort.key, dir: sort.dir };
-  if (rows) result.rows = rows.map((r) => makeRow(r ?? {}, resolve(result)));
+  if (contracts.length) result.contracts = contracts.map((c) => makeContract(c ?? {}, resolve(result)));
   return result;
 }
 
@@ -133,74 +168,104 @@ export function loadState(resolve?: ResolveLayout): State {
   }
 }
 
-export function saveState({ shipId, layoutId, enabled, sort, rows }: State): void {
+export function saveState({ shipId, layoutId, contracts }: State): void {
   try {
-    const values = rows.map(({ id: _id, ...rest }) => rest);
-    localStorage.setItem(STORE_KEY, JSON.stringify({ shipId, layoutId, enabled, sort, rows: values }));
+    const values = contracts.map(({ id: _id, rows, ...contract }) => ({
+      ...contract,
+      rows: rows.map(({ id: _rowId, ...row }) => row),
+    }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ shipId, layoutId, contracts: values }));
   } catch {
     /* storage unavailable: the table still works for this visit */
   }
 }
 
 export type Action =
-  | { type: "addRow"; row: Row }
+  | { type: "addContract"; contract: Contract }
+  | { type: "deleteContract"; id: number }
+  | { type: "renameContract"; id: number; name: string }
+  /* Hide a contract's table, or show it again. */
+  | { type: "setCollapsed"; id: number; collapsed: boolean }
+  /* Skip a size in a contract, or hand it out again. */
+  | { type: "setSizeEnabled"; id: number; size: number; on: boolean }
+  | { type: "addRow"; contractId: number; row: Row }
   | { type: "deleteRow"; id: number }
   | { type: "updateRow"; id: number; field: RowField; value: string }
   /* Add a cargo grid to a row's plan, after every earlier step, or take it out. */
   | { type: "toggleGrid"; id: number; grid: GridRef }
-  /* Take every row out of one ship and layout's grids. */
-  | { type: "clearPlan"; at: LayoutRef }
-  | { type: "sortBy"; key: TextKey }
+  /* Take every row of one contract out of one ship and layout's grids. */
+  | { type: "clearPlan"; id: number; at: LayoutRef }
+  /* Sort one contract's rows. */
+  | { type: "sortBy"; id: number; key: TextKey }
   /* A new ship starts on its first layout. */
   | { type: "selectShip"; shipId: string }
   | { type: "selectLayout"; layoutId: string }
-  | { type: "setSizeEnabled"; size: number; on: boolean }
-  | { type: "clearRows"; row: Row };
+  /* Leave just this contract, which the caller makes with one blank row. */
+  | { type: "clearTable"; contract: Contract };
 
 export function reducer(state: State, action: Action): State {
+  /* Change one contract, by id. */
+  const contract = (id: number, change: (c: Contract) => Contract): State => ({
+    ...state,
+    contracts: state.contracts.map((c) => (c.id === id ? change(c) : c)),
+  });
+  /* Change every contract's rows. */
+  const rows = (change: (rows: Row[]) => Row[]): State => ({
+    ...state,
+    contracts: state.contracts.map((c) => ({ ...c, rows: change(c.rows) })),
+  });
   switch (action.type) {
+    case "addContract":
+      return { ...state, contracts: [...state.contracts, action.contract] };
+    case "deleteContract":
+      /* The haul always keeps one contract. */
+      if (state.contracts.length < 2) return state;
+      return { ...state, contracts: state.contracts.filter((c) => c.id !== action.id) };
+    case "renameContract":
+      return contract(action.id, (c) => ({ ...c, name: action.name }));
+    case "setCollapsed":
+      return contract(action.id, (c) => ({ ...c, collapsed: action.collapsed }));
+    case "setSizeEnabled":
+      return contract(action.id, (c) => ({ ...c, enabled: { ...c.enabled, [action.size]: action.on } }));
     case "addRow":
-      return { ...state, rows: [...state.rows, action.row] };
+      /* Shows the table, so the new row can be typed in. */
+      return contract(action.contractId, (c) => ({ ...c, collapsed: false, rows: [...c.rows, action.row] }));
     case "deleteRow":
-      return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
+      return rows((list) => list.filter((r) => r.id !== action.id));
     case "updateRow":
-      return {
-        ...state,
-        rows: state.rows.map((r) => (r.id === action.id ? { ...r, [action.field]: action.value } : r)),
-      };
+      return rows((list) => list.map((r) => (r.id === action.id ? { ...r, [action.field]: action.value } : r)));
     case "toggleGrid": {
       const { id, grid } = action;
-      const order = nextOrder(state.rows);
+      const order = nextOrder(allRows(state));
       const toggle = (plan: PlanStep[]) =>
         plan.some((step) => isGrid(step, grid))
           ? plan.filter((step) => !isGrid(step, grid))
           : [...plan, { ...grid, order }];
-      return { ...state, rows: state.rows.map((r) => (r.id === id ? { ...r, plan: toggle(r.plan) } : r)) };
+      return rows((list) => list.map((r) => (r.id === id ? { ...r, plan: toggle(r.plan) } : r)));
     }
     case "clearPlan": {
       /* Steps on other ships and layouts stay, for switching back. */
       const { at } = action;
-      return {
-        ...state,
-        rows: state.rows.map((r) => ({ ...r, plan: r.plan.filter((step) => !isOn(step, at)) })),
-      };
+      return contract(action.id, (c) => ({
+        ...c,
+        rows: c.rows.map((r) => ({ ...r, plan: r.plan.filter((step) => !isOn(step, at)) })),
+      }));
     }
     case "sortBy": {
-      /* Sorting reorders the rows once, like a spreadsheet; later edits don't
-         move rows. Sorting the same column again reverses the order. */
+      /* Sorting reorders a contract's rows once, like a spreadsheet; later
+         edits don't move rows. Sorting the same column again reverses the order. */
       const { key } = action;
-      const dir: SortDir = state.sort?.key === key ? (-state.sort.dir as SortDir) : 1;
-      const rows = [...state.rows].sort((a, b) => compareRows(a[key], b[key], dir));
-      return { ...state, sort: { key, dir }, rows };
+      return contract(action.id, (c) => {
+        const dir: SortDir = c.sort?.key === key ? (-c.sort.dir as SortDir) : 1;
+        return { ...c, sort: { key, dir }, rows: [...c.rows].sort((a, b) => compareRows(a[key], b[key], dir)) };
+      });
     }
     case "selectShip":
       return { ...state, shipId: action.shipId, layoutId: "" };
     case "selectLayout":
       return { ...state, layoutId: action.layoutId };
-    case "setSizeEnabled":
-      return { ...state, enabled: { ...state.enabled, [action.size]: action.on } };
-    case "clearRows":
-      return { ...state, rows: [action.row] };
+    case "clearTable":
+      return { ...state, contracts: [action.contract] };
   }
 }
 

@@ -9,26 +9,35 @@ the ship.
 ## Features
 
 - **Toolbar.** Type in the ship field to find a ship, or pick one from its list, and choose a layout when the ship
-  has more than one. **Add row** adds a row under the last one. The two copy icons copy the table for a spreadsheet
+  has more than one. **Add contract** adds a contract with one blank row. The two copy icons copy the table, with each row's contract first, for a spreadsheet
   (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**, at the top
   right, opens a short guide.
-- **Container split per delivery.** Each row is split into the biggest container size first, then the next size
-  down, as the game splits a contract delivery, whatever grids it goes in. A row takes up to 9,999 SCU. Click a
-  size in the table header to turn it off, for the sizes a contract skips or above its max container size. A
-  container that no grid's shape can take stays in Remaining rather than being split smaller.
+- **A table per contract.** Each contract has a bar with an optional name (blank shows "Contract 1", "Contract 2",
+  …), its own **Add row**, and **Delete contract** (with a second click), which removes it and its rows while
+  there's more than one. Under the bar is its table. The arrow at the bar's left hides the table, leaving the bar
+  with its row count and SCU, so the ship view needs less scrolling; it stays hidden after a reload, and Add row
+  shows it again. The size buttons in the table's heading turn a size off for
+  that contract: the sizes above its max container size and any it skips. A new contract starts with every size on.
+  Sorting and the Grids **Reset** act on that contract alone, and its foot totals that contract, so its SCU can be
+  checked against the game's.
+- **Container split per delivery.** Each row is split into the biggest container size its contract hands out
+  first, then the next size down, as the game splits a contract delivery, whatever grids it goes in. A row takes up
+  to 9,999 SCU. A size its contract doesn't hand out shows "–". A container that no grid's shape can take stays in
+  Remaining rather than being split smaller (see
+  [ADR 0001](docs/adr/0001-split-each-delivery-once.md)).
 - **A loading plan, in the order you choose.** Click a grid button on a row to add that cargo grid to the row's
   plan. Each button shows the SCU the grid has left. A grid takes only the containers it can actually place, so a
   grid can have SCU free and still have no spot left for a container's shape. A row can't add a grid when no
-  container turned on can go in it, when all of the row is in its grids already, or when none of the row's
+  container any contract hands out can go in it, when all of the row is in its grids already, or when none of the row's
   containers still to place can go in; point at a greyed-out button to see which. Add several to split a big
   delivery: grids fill in the order you add them, across all rows, so a later step never takes room an earlier one
   already claimed. Containers a grid can't place move on, whole, to the row's next grid.
-- **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
-  Grids heading, keeps the rows but takes every one out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
+- **Resetting, with a second click.** **Reset all** empties the page, leaving one contract with one blank row. **Reset**, in a
+  contract's Grids heading, keeps its rows but takes them out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
 - **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet,
-  because it has no grid or doesn't fit in its grids, with the table's total at the foot. While a row has some, its
-  edge and SCU turn amber; point at the SCU to see why. SCU that no size turned on can make up shows under Left over
+  because it has no grid or doesn't fit in its grids, with the contract's total at the foot. While a row has some, its
+  edge and SCU turn amber; point at the SCU to see why. SCU that no size its contract hands out can make up shows under Left over
   instead, and takes no grid room. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
@@ -89,7 +98,7 @@ and publishes `dist/client` to GitHub Pages. To publish without a push, run the 
 Three pieces in `src/components/` are shared by the page:
 
 - [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
-  showing Confirm in between. Clear table and the Grids Clear both use it.
+  showing Confirm in between. Reset all, Delete contract and the Grids Reset use it.
 - [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons.
 - [`pointing.ts`](src/components/pointing.ts): pointer and focus handlers for things that react while pointed at,
   such as the table's rows and grid buttons and the legend's buttons.
