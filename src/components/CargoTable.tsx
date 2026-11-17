@@ -146,20 +146,19 @@ function SortHead({
   const dir = sort?.key === sortKey ? sort.dir : 0;
   return (
     <th className="label sort-th" aria-sort={dir === 1 ? "ascending" : dir === -1 ? "descending" : "none"}>
-      {/* The arrow comes first, so it's seen before the label. */}
-      <div className="sortable">
-        <button
-          type="button"
-          className={`icon-btn sort-btn${dir ? " is-active" : ""}`}
-          id={id}
-          aria-label={`Sort by ${label}`}
-          title={`Sort by ${label}`}
-          onClick={() => onSort(sortKey)}
-        >
+      {/* The whole heading sorts: its arrow, first so it's seen before the label, and the label. */}
+      <button
+        type="button"
+        className={`sortable${dir ? " is-active" : ""}`}
+        id={id}
+        title={`Sort by ${label}`}
+        onClick={() => onSort(sortKey)}
+      >
+        <span className="sort-arrow" aria-hidden="true">
           {dir === 1 ? "↑" : dir === -1 ? "↓" : "↕"}
-        </button>
+        </span>
         {label}
-      </div>
+      </button>
     </th>
   );
 }

@@ -417,7 +417,7 @@ h2 {
   pointer-events: none;
 }
 
-/* Small square icon buttons: sort arrows and row delete */
+/* Small square icon buttons: row delete */
 .icon-btn {
   flex: none;
   font: inherit;
@@ -426,19 +426,6 @@ h2 {
   color: var(--off-fg);
   border-radius: var(--radius);
   cursor: pointer;
-}
-.sort-btn {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  width: var(--sort-size);
-  height: var(--sort-size);
-}
-.sort-btn:hover {
-  color: var(--fg);
-  background: var(--accent-soft);
-}
-.sort-btn.is-active {
-  color: var(--accent);
 }
 .row-del {
   font-size: 16px;
@@ -522,12 +509,47 @@ h2 {
 .grid .sort-th {
   padding-block: 4px;
   padding-left: 4px;
+  padding-right: 4px;
 }
+/* A sortable heading: one button across the cell, its arrow then its label. */
 .sortable {
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
   min-width: 8em;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 6px 0 0;
+  cursor: pointer;
+}
+.sort-arrow {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: var(--sort-size);
+  height: var(--sort-size);
+  color: var(--off-fg);
+}
+.sortable:hover {
+  color: var(--fg);
+  background: var(--accent-soft);
+}
+.sortable:hover .sort-arrow {
+  color: var(--fg);
+}
+.sortable.is-active .sort-arrow {
+  color: var(--accent);
+}
+.sortable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 /* Line the Cargo heading up with the text after each row's delete button
    and swatch; its sort button sits over them. */
@@ -831,7 +853,8 @@ select.field option {
 
 @media (prefers-reduced-motion: no-preference) {
   .btn,
-  .icon-btn {
+  .icon-btn,
+  .sortable {
     transition:
       background 120ms,
       border-color 120ms,

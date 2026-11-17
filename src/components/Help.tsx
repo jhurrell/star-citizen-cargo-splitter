@@ -40,7 +40,7 @@ export function Help() {
             then the next size down, as the game hands a contract over. A row takes up to 9,999 SCU.
           </li>
           <li>
-            Click the arrow beside Cargo, Pick-up or Drop-off to sort that contract's rows by that column, and again to
+            Click the Cargo, Pick-up or Drop-off heading to sort that contract's rows by that column, and again to
             reverse it.
           </li>
           <li>
