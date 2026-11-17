@@ -82,10 +82,11 @@ function packApart(position: Position, turns: Load<number>[][]): Packing<number>
   return unfitScu(pile) < unfitScu(apart) ? pile : apart;
 }
 
-/* A position's cargo: its SCU, the SCU it has free, whether that's too
-   little for any container turned on (so it's full), and where each
-   container sits, tagged with its row's id. */
-export type GridLoad = { scu: number; free: number; full: boolean; placed: Placed<number>[] };
+/* A position's cargo: its SCU, the SCU it has free, the sizes turned on
+   that fit its shape (largest first), whether its free SCU is too little for
+   any of them (so it's full), and where each container sits, tagged with its
+   row's id. */
+export type GridLoad = { scu: number; free: number; sizes: number[]; full: boolean; placed: Placed<number>[] };
 export type Calc = {
   byRow: Map<number, Fill>;
   splits: Map<number, Split>;
@@ -107,16 +108,20 @@ export function computeTable(
   positions: Position[],
 ): Calc {
   const usable = enabledContainers(containers, enabled);
+  const allSizes = usable.map((c) => c.size);
   const byName = new Map(positions.map((p) => [p.name, p]));
-  const sizesFor = (position: Position | undefined) =>
-    usable.filter((c) => !position || fitsInside(c, position)).map((c) => c.size);
 
   const splits = splitRows(rows, positions);
   /* Each position's loads, a list per row with the order the row picked it. */
   const loads = new Map<string, { order: number; load: Load<number>[] }[]>(positions.map((p) => [p.name, []]));
   const byPosition = new Map<string, GridLoad>(
-    positions.map((p) => [p.name, { scu: 0, free: p.capacity, full: false, placed: [] }]),
+    positions.map((p) => {
+      const sizes = usable.filter((c) => fitsInside(c, p)).map((c) => c.size);
+      return [p.name, { scu: 0, free: p.capacity, sizes, full: false, placed: [] }];
+    }),
   );
+  /* The sizes a share of a row can use: those that fit its position, or any. */
+  const sizesFor = (position: Position | undefined) => (position ? byPosition.get(position.name)!.sizes : allSizes);
   const byRow = new Map<number, Fill>();
   const totals: Calc["totals"] = {
     scu: 0,
@@ -159,7 +164,7 @@ export function computeTable(
   for (const position of positions) {
     const load = byPosition.get(position.name)!;
     load.free = position.capacity - load.scu;
-    load.full = !usable.some((c) => c.size <= load.free && fitsInside(c, position));
+    load.full = !load.sizes.some((size) => size <= load.free);
     /* Ties (from older saves) keep table order. The sort is stable. */
     const turns = loads
       .get(position.name)!
@@ -168,4 +173,20 @@ export function computeTable(
     load.placed = packApart(position, turns).placed;
   }
   return { byRow, splits, byPosition, totals, showLeftover: totals.leftover > 0 };
+}
+
+/* Why a row can't pick a grid it isn't in yet, or null if it can:
+   - "full": the grid has no room for any container.
+   - "allAssigned": all of the row is in its grids already.
+   - "tooSmall": the grid's free SCU is less than the smallest container the
+     row's unassigned SCU would need there (filled largest first with the
+     sizes that fit the grid), so none of them would go in.
+   A row with no SCU yet can pick any grid with room. */
+export type PickBlock = "full" | "allAssigned" | "tooSmall";
+export function pickBlock(rowScu: number, { unassigned }: Split, load: GridLoad): PickBlock | null {
+  if (load.full) return "full";
+  if (!unassigned) return rowScu > 0 ? "allAssigned" : null;
+  const { counts } = fillLargestFirst(unassigned, load.sizes);
+  const needed = load.sizes.filter((size) => counts[size] > 0);
+  return needed.length && Math.min(...needed) <= load.free ? null : "tooSmall";
 }

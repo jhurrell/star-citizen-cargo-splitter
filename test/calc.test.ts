@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
-import { computeTable, unassignedText, splitRows } from "../src/lib/calc";
+import { computeTable, pickBlock, unassignedText, splitRows } from "../src/lib/calc";
 import { sum } from "../src/lib/format";
-import { makeRow } from "../src/lib/state";
+import { makeRow, type Row } from "../src/lib/state";
 import { bay, containers, shipPositions } from "./helpers";
 
 describe("computeTable", () => {
@@ -218,5 +218,44 @@ describe("unassignedText", () => {
     );
     expect(unassignedText({ parts: [], unassigned: 57 })).toBe("57 SCU not in a grid yet. Choose a grid for it.");
     expect(unassignedText({ parts: [{ name: "A", scu: 8 }], unassigned: 0 })).toBe("");
+  });
+});
+
+describe("pickBlock", () => {
+  const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2), bay("Long", 2, 8, 2)];
+  const blocks = (rows: Row[]) => {
+    const calc = computeTable(rows, {}, containers, positions);
+    return (row: Row, name: string) =>
+      pickBlock(Number(row.scu) || 0, calc.splits.get(row.id)!, calc.byPosition.get(name)!);
+  };
+
+  test("a row with SCU left can pick a grid with room for its smallest container", () => {
+    const row = makeRow({ scu: "40" }); // 32 + 8 in Big; 8 × 5 in Small
+    const block = blocks([row]);
+    expect(block(row, "Big")).toBeNull();
+    expect(block(row, "Small")).toBeNull();
+  });
+
+  test("not once all of the row is in its grids", () => {
+    const row = makeRow({ scu: "8", picks: [{ name: "Big", order: 1 }] });
+    expect(blocks([row])(row, "Long")).toBe("allAssigned");
+  });
+
+  test("not a grid others have left too little room in for the row's containers", () => {
+    const other = makeRow({ scu: "25", picks: [{ name: "Big", order: 1 }] }); // leaves 7 free, room for 1s
+    const row = makeRow({ scu: "40" }); // a 32 and an 8
+    const block = blocks([other, row]);
+    expect(block(row, "Big")).toBe("tooSmall");
+    expect(block(row, "Long")).toBeNull();
+    const odd = makeRow({ scu: "41" }); // a 32, an 8 and a 1, which fits
+    expect(blocks([other, odd])(odd, "Big")).toBeNull();
+  });
+
+  test("not a full grid; a row with no SCU yet can pick any other", () => {
+    const filler = makeRow({ scu: "8", picks: [{ name: "Small", order: 1 }] });
+    const blank = makeRow();
+    const block = blocks([filler, blank]);
+    expect(block(blank, "Small")).toBe("full");
+    expect(block(blank, "Big")).toBeNull();
   });
 });

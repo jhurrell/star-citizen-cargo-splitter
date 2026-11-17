@@ -1,5 +1,5 @@
-import { unassignedText, type Calc, type Split } from "../lib/calc";
-import { isOverMaxScu, type Container, type Position } from "../lib/cargo";
+import { pickBlock, unassignedText, type Calc, type GridLoad, type PickBlock, type Split } from "../lib/calc";
+import { isOverMaxScu, parseScu, type Container, type Position } from "../lib/cargo";
 import type { Cargo } from "../lib/colors";
 import { fmt, initials, plural, sum } from "../lib/format";
 import type { Counts, Fill } from "../lib/packing";
@@ -34,9 +34,8 @@ type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onP
 
 /* A container size's column, on unless turned off in its header. */
 type SizeColumn = { size: number; on: boolean };
-/* A grid's button: its name, short tag, the SCU it has free, and whether
-   that's too little for any container, so other rows can't pick it. */
-type GridButton = { name: string; tag: string; free: number; full: boolean };
+/* A grid's button: its name, short tag and what's in the grid. */
+type GridButton = { name: string; tag: string; load: GridLoad };
 
 /* The editable cargo table: Cargo / Pick-up / Drop-off, SCU, Remaining (SCU
    not in a grid yet), a column per container size, Left over (only when some
@@ -54,13 +53,14 @@ export function CargoTable({
 }: Props) {
   const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: isEnabled(state.enabled, size) }));
   const tags = initials(positions.map((p) => p.name));
-  const grids: GridButton[] = positions.map(({ name }, i) => {
-    const { free, full } = calc.byPosition.get(name)!;
-    return { name, tag: tags[i], free, full };
-  });
+  const grids: GridButton[] = positions.map(({ name }, i) => ({
+    name,
+    tag: tags[i],
+    load: calc.byPosition.get(name)!,
+  }));
   const anyInGrid = [...calc.splits.values()].some((s) => s.parts.length > 0);
   /* Room still free across all the grids. */
-  const unused = sum(grids, (g) => g.free);
+  const unused = sum(grids, (g) => g.load.free);
   /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
   return (
@@ -235,7 +235,7 @@ function CargoRow({
         return (
           /* Pointing at (or tabbing to) Cargo, Pick-up or Drop-off picks out
              this row in the ship view. */
-          <td className="edit" key={key} {...pointHandlers((on) => onPointRows(on ? [row.id] : null))}>
+          <td className="edit" key={key} {...pointHandlers((pointed) => onPointRows(pointed ? [row.id] : null))}>
             {i > 0 ? (
               input
             ) : (
@@ -284,9 +284,17 @@ function CargoRow({
   );
 }
 
-/* The Grids cell: a toggle button per grid showing the SCU it has available,
-   disabled once the grid is full unless this row is in it. Pointing at (or
-   tabbing to) a button lights that grid up in the ship view. */
+/* Why a grid button is disabled, for its tooltip. */
+const BLOCK_TEXT: Record<PickBlock, string> = {
+  full: "Full: no room for another container",
+  allAssigned: "All of this row is in its grids",
+  tooSmall: "Too little room for this row's containers",
+};
+
+/* The Grids cell: a toggle button per grid showing the SCU it has available.
+   A grid this row isn't in is disabled when the row can't use it (see
+   pickBlock). Pointing at (or tabbing to) a button lights that grid up in the
+   ship view. */
 function GridPicks({
   row,
   split,
@@ -298,7 +306,8 @@ function GridPicks({
   split: Split;
   grids: GridButton[];
 }) {
-  const share = new Map(split.parts.map((p) => [p.name, p.scu]));
+  const picked = new Set(split.parts.map((p) => p.name));
+  const scu = parseScu(row.scu);
   return (
     <div className="grid-cell">
       {/* At most four buttons a line, so a ship with many grids stays narrow. */}
@@ -308,13 +317,11 @@ function GridPicks({
         aria-label="Grids for this row"
         style={{ gridTemplateColumns: `repeat(${Math.min(grids.length, 4)}, auto)` }}
       >
-        {grids.map(({ name, tag, free, full }) => {
-          const on = share.has(name);
-          const lines = [
-            name,
-            full && !on ? "Full: no room for another container" : `${fmt(free)} SCU available`,
-            ...(on && split.parts.length > 1 ? [`${fmt(share.get(name)!)} SCU of this row`] : []),
-          ];
+        {grids.map(({ name, tag, load }) => {
+          const on = picked.has(name);
+          /* A row that already has this grid can still give it up. */
+          const block = on ? null : pickBlock(scu, split, load);
+          const lines = [name, `${fmt(load.free)} SCU available`, ...(block ? [BLOCK_TEXT[block]] : [])];
           return (
             <button
               key={name}
@@ -323,13 +330,12 @@ function GridPicks({
               aria-pressed={on}
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
-              /* A row that already has this grid can still give it up. */
-              disabled={full && !on}
+              disabled={block !== null}
               onClick={() => onTogglePick(row.id, name)}
-              {...pointHandlers((on) => onHighlight(on ? name : null))}
+              {...pointHandlers((pointed) => onHighlight(pointed ? name : null))}
             >
               <span className="grid-tag">{tag}</span>
-              <span className="grid-free">{fmt(free)}</span>
+              <span className="grid-free">{fmt(load.free)}</span>
             </button>
           );
         })}

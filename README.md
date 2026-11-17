@@ -16,7 +16,9 @@ the ship.
   the next size down, until every SCU is placed. A row takes up to 9,999 SCU. Click a size in the table header to
   turn it off and skip it.
 - **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
-  the grid has left; once a grid has no room for another container, the other rows can't pick it. Pick several to
+  the grid has left. A row can't pick a grid when the grid has no room for another container, when all of the row
+  is in its grids already, or when the grid has less room than the smallest container the rest of the row needs
+  there; point at a greyed-out button to see which. Pick several to
   split a big delivery: grids fill in the order you pick them, across all rows, so a later pick never takes room an
   earlier one already claimed, and no grid is ever overloaded.
 - **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
