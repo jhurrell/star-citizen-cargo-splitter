@@ -801,7 +801,15 @@ select.field option {
   gap: 8px 16px;
 }
 
-/* ---------- Legend: a swatch and name per row ---------- */
+/* ---------- Legend: the view switch, then a swatch and name per drop-off, pick-up or row ---------- */
+.legend-views {
+  display: flex;
+  gap: 6px;
+}
+.legend-views .btn {
+  padding: 4px 10px;
+  font-size: 13px;
+}
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -815,8 +823,7 @@ select.field option {
 .legend:empty {
   display: none;
 }
-/* A row's legend button: plain while its containers show; faded with a
-   dashed edge while they're dimmed. */
+/* A legend button: plain, or lit while it's picked out. */
 .legend-btn {
   display: inline-flex;
   align-items: center;
@@ -837,13 +844,10 @@ select.field option {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.legend-btn[aria-pressed="false"] {
-  color: var(--muted);
-  border-style: dashed;
-  opacity: 0.55;
-}
-.legend-btn[aria-pressed="false"] .swatch {
-  opacity: 0.4;
+.legend-btn[aria-pressed="true"] {
+  color: var(--fg);
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 .swatch {
   flex: none;

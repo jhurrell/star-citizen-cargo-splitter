@@ -43,12 +43,21 @@ the ship.
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
     stays apart. A row's containers sit on the grid face or on its own containers while there's room, and on
     another row's only when there isn't.
-  - Each row has its own color, kept while the row has SCU, and each container shows its size in SCU. Past eight
-    rows, the rest share grey. The legend lists the rows with containers in the view, in the table's order, each
-    by its cargo and drop-off, "Gold (Lorville)", with its row number when another row has the same cargo and
-    drop-off; the grey ones share one "Other rows" button.
-  - Click a row in the legend to make its containers see-through, so the rest stand out. Point at a row in the
-    legend, or at its Cargo, Pick-up or Drop-off in the table, to make every other row see-through while you do.
+  - **Drop-off**, **Pick-up** and **Cargo**, beside the heading, choose what the colors and the legend follow. It
+    starts on Drop-off each visit:
+    - Drop-off: a color per drop-off, across every contract, so a stop's cargo reads as one color. Drop-offs
+      match whatever their case or spacing; rows without one share "No drop-off".
+    - Pick-up: the same per pick-up.
+    - Cargo: a color per row, named by its cargo and drop-off, "Gold (Lorville)", with its row number when
+      another row has the same cargo and drop-off.
+
+    Each color stays with its drop-off, pick-up or row while it has SCU. Past eight, the rest share grey and one
+    "Other …" button. The legend lists only what has containers in the view, in the table's order, and each
+    container shows its size in SCU.
+
+  - Click a legend button to pick it out: everything else turns see-through. Click more to pick them out too, and
+    click again to stop. Point at a legend button, or at a row's Cargo, Pick-up or Drop-off in the table, to make
+    everything else see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own

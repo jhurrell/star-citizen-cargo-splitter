@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { emphasize, type Slots } from "./emphasis";
+import { emphasize, type Slots, type View } from "./emphasis";
 import type { Haul } from "./haul";
 import type { Row } from "./state";
 
@@ -27,33 +27,39 @@ export function useTimedFlag(ms: number): [boolean, (on: boolean) => void] {
   return [on, setOn];
 }
 
-/* The page's emphasis (see emphasize), with the state it needs: the rows
-   turned off in the legend, the rows pointed at, and the colors handed out.
-   The colors are remembered from render to render, never saved. */
+/* The page's emphasis (see emphasize), with the state it needs: the view,
+   the legend entries picked out, the rows pointed at, and each view's colors
+   as handed out. None of it is saved: the view starts on Drop-off. */
 export function useEmphasis(rows: Row[], haul: Haul) {
-  const [turnedOff, setTurnedOff] = useState<ReadonlySet<number>>(() => new Set());
+  const [view, setView] = useState<View>("dropoff");
+  const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
   const [pointed, point] = useState<number[] | null>(null);
-  const [slots, setSlots] = useState<Slots>(() => new Map());
+  const [slotsByView, setSlotsByView] = useState<ReadonlyMap<View, Slots>>(() => new Map());
+  const slots = slotsByView.get(view) ?? NO_SLOTS;
   const inView = useMemo(() => new Set(haul.grids.flatMap((g) => g.placed.map((p) => p.tag))), [haul]);
   const emphasis = useMemo(
-    () => emphasize({ rows, inView, slots, turnedOff, pointed }),
-    [rows, inView, slots, turnedOff, pointed],
+    () => emphasize({ rows, inView, view, slots, picked, pointed }),
+    [rows, inView, view, slots, picked, pointed],
   );
   /* Remember newly handed-out colors; React re-renders straight away. */
-  if (emphasis.slots !== slots) setSlots(emphasis.slots);
+  if (emphasis.slots !== slots) setSlotsByView(new Map(slotsByView).set(view, emphasis.slots));
 
-  /* Turn rows off in the legend, or (with false) back on. */
-  const turnOff = useCallback(
-    (ids: number[], off: boolean) =>
-      setTurnedOff((before) => {
+  /* Switch the view; what was picked out was in the old one, so none is now. */
+  const changeView = useCallback((next: View) => {
+    setView(next);
+    setPicked(new Set());
+  }, []);
+  /* Pick a legend entry out, or (again) stop picking it out. */
+  const togglePicked = useCallback(
+    (key: string) =>
+      setPicked((before) => {
         const after = new Set(before);
-        for (const id of ids) {
-          if (off) after.add(id);
-          else after.delete(id);
-        }
+        if (!after.delete(key)) after.add(key);
         return after;
       }),
     [],
   );
-  return { ...emphasis, turnOff, point };
+  return { ...emphasis, view, changeView, togglePicked, point };
 }
+
+const NO_SLOTS: Slots = new Map();

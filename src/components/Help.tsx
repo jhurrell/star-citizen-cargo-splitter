@@ -79,8 +79,13 @@ export function Help() {
           <li>Each grid's grid face, where containers lock, is pale blue; containers stack away from it.</li>
           <li>Point at a container to see what it holds, or at a grid button in the table to light that grid up.</li>
           <li>
-            Click a row in the legend to dim its containers. Point at a row in the legend, or at its Cargo, Pick-up or
-            Drop-off in the table, to dim all the others.
+            Drop-off, Pick-up and Cargo, beside the heading, choose how containers are colored and what the legend
+            lists: each drop-off, from every contract; each pick-up; or each row. It starts on Drop-off.
+          </li>
+          <li>
+            Click an entry in the legend to pick it out, dimming everything else; click more to pick those out too, and
+            again to stop. Point at an entry, or at a row's Cargo, Pick-up or Drop-off in the table, to dim the rest
+            while you do.
           </li>
         </ul>
       </div>

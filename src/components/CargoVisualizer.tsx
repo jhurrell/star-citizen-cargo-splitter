@@ -267,7 +267,15 @@ export function CargoVisualizer() {
         {/* The heading and the legend share a line. */}
         <div className="section-head">
           <h2 id="ship-title">Ship view</h2>
-          {isMounted && <Legend entries={emphasis.legend} onTurnOff={emphasis.turnOff} onPointRows={emphasis.point} />}
+          {isMounted && (
+            <Legend
+              view={emphasis.view}
+              onView={emphasis.changeView}
+              entries={emphasis.legend}
+              onTogglePicked={emphasis.togglePicked}
+              onPointRows={emphasis.point}
+            />
+          )}
         </div>
         {layout && isMounted ? (
           <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>

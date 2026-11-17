@@ -1,20 +1,23 @@
 import { describe, expect, test } from "vite-plus/test";
-import { emphasize, OTHER_COLOR, type EmphasisInput, type Slots } from "../src/lib/emphasis";
+import { emphasize, OTHER_COLOR, OTHER_KEY, type EmphasisInput, type Slots } from "../src/lib/emphasis";
 import { makeRow, type Row } from "../src/lib/state";
 
-/* Emphasis with nothing turned off or pointed at, and every row in view,
-   unless the test says otherwise. */
+/* Emphasis in the Cargo view, with nothing picked out or pointed at, and
+   every row in view, unless the test says otherwise. */
 const emphasis = (rows: Row[], more: Partial<EmphasisInput> = {}) =>
   emphasize({
     rows,
     inView: new Set(rows.map((row) => row.id)),
+    view: "cargo",
     slots: new Map(),
-    turnedOff: new Set(),
+    picked: new Set(),
     pointed: null,
     ...more,
   });
 const loaded = (n: number) => Array.from({ length: n }, (_, i) => makeRow({ cargo: `M${i}`, scu: "1" }));
 const colorOf = (slots: Slots, rows: Row[], row: Row) => emphasis(rows, { slots }).byRow.get(row.id)?.color;
+/* The Cargo view's key for a row. */
+const keyOf = (row: Row) => `#${row.id}`;
 
 describe("colors", () => {
   test("one per row with SCU, by row age; past eight, grey in one Other entry", () => {
@@ -88,12 +91,58 @@ describe("legend", () => {
     expect(legend.map((e) => e.rowIds)).toEqual([[rows[2].id], [rows[0].id]]);
   });
 
-  test("an entry is on while any of its rows shows in full", () => {
+  test("an entry is on while it's picked out", () => {
     const rows = loaded(10);
-    const { legend } = emphasis(rows, { turnedOff: new Set([rows[0].id, rows[8].id]) });
-    expect(legend[0].on).toBe(false);
-    expect(legend[1].on).toBe(true);
-    expect(legend.at(-1)!.on).toBe(true); // Other rows: row 10 still shows
+    const { legend } = emphasis(rows, { picked: new Set([keyOf(rows[1]), OTHER_KEY]) });
+    expect(legend.map((e) => e.on).slice(0, 3)).toEqual([false, true, false]);
+    expect(legend.at(-1)).toMatchObject({ key: OTHER_KEY, on: true });
+  });
+});
+
+describe("drop-off and pick-up views", () => {
+  const rows = [
+    makeRow({ cargo: "Gold", pickup: "Area18", dropoff: "Lorville", scu: "1" }),
+    makeRow({ cargo: "Iron", pickup: "Area18", dropoff: "  lorville ", scu: "1" }),
+    makeRow({ cargo: "Tin", pickup: "Orison", dropoff: "Jackson's  Swap", scu: "1" }),
+    makeRow({ cargo: "Zinc", pickup: "", dropoff: "", scu: "1" }),
+  ];
+  const [gold, iron, tin, zinc] = rows.map((r) => r.id);
+
+  test("one entry per drop-off, matched whatever the case or spacing, named as first typed", () => {
+    const { legend, byRow } = emphasis(rows, { view: "dropoff" });
+    expect(legend.map(({ name, rowIds }) => ({ name, rowIds }))).toEqual([
+      { name: "Lorville", rowIds: [gold, iron] },
+      { name: "Jackson's Swap", rowIds: [tin] },
+      { name: "No drop-off", rowIds: [zinc] },
+    ]);
+    expect(byRow.get(gold)!.color).toBe(byRow.get(iron)!.color); // a drop-off's rows share its color
+    expect(byRow.get(gold)!.color).not.toBe(byRow.get(tin)!.color);
+    expect(byRow.get(iron)!.name).toBe("Iron (lorville)"); // a container still says what's in it
+  });
+
+  test("one entry per pick-up", () => {
+    expect(emphasis(rows, { view: "pickup" }).legend.map((e) => e.name)).toEqual(["Area18", "Orison", "No pick-up"]);
+  });
+
+  test("picking out a drop-off dims every other drop-off's rows, from any contract", () => {
+    const { legend, dimmed } = emphasis(rows, { view: "dropoff", picked: new Set(["@lorville"]) });
+    expect(legend[0].on).toBe(true);
+    expect([...dimmed]).toEqual([tin, zinc]);
+  });
+
+  test("a drop-off keeps its color when another drop-off goes", () => {
+    const { slots, byRow } = emphasis(rows, { view: "dropoff" });
+    const after = emphasis(rows.slice(2), { view: "dropoff", slots });
+    expect(after.byRow.get(tin)!.color).toBe(byRow.get(tin)!.color);
+  });
+
+  test("past eight drop-offs, the rest share grey in one Other drop-offs entry", () => {
+    const many = Array.from({ length: 9 }, (_, i) => makeRow({ dropoff: `D${i}`, scu: "1" }));
+    expect(emphasis(many, { view: "dropoff" }).legend.at(-1)).toMatchObject({
+      key: OTHER_KEY,
+      name: "Other drop-offs",
+      color: OTHER_COLOR,
+    });
   });
 });
 
@@ -101,22 +150,26 @@ describe("dimming", () => {
   const rows = loaded(3);
   const [a, b, c] = rows.map((r) => r.id);
 
-  test("with nothing pointed at, the rows turned off in the legend", () => {
-    expect([...emphasis(rows, { turnedOff: new Set([b]) }).dimmed]).toEqual([b]);
+  test("with nothing picked out or pointed at, none", () => {
+    expect([...emphasis(rows).dimmed]).toEqual([]);
   });
 
-  test("while rows in view are pointed at, every other row in view, turned off or not", () => {
-    expect([...emphasis(rows, { turnedOff: new Set([b]), pointed: [b] }).dimmed]).toEqual([a, c]);
+  test("with entries picked out, every row in view under another entry", () => {
+    expect([...emphasis(rows, { picked: new Set([keyOf(rows[1])]) }).dimmed]).toEqual([a, c]);
+  });
+
+  test("while rows in view are pointed at, every other row in view, picked out or not", () => {
+    expect([...emphasis(rows, { picked: new Set([keyOf(rows[1])]), pointed: [a] }).dimmed]).toEqual([b, c]);
     expect([...emphasis(rows, { pointed: [a, c] }).dimmed]).toEqual([b]); // a legend's "Other rows"
   });
 
   test("pointing at a row with nothing in view changes nothing", () => {
     const inView = new Set([a, b]);
-    expect([...emphasis(rows, { inView, turnedOff: new Set([b]), pointed: [c] }).dimmed]).toEqual([b]);
+    expect([...emphasis(rows, { inView, picked: new Set([keyOf(rows[1])]), pointed: [c] }).dimmed]).toEqual([a]);
   });
 
-  test("ids of rows since deleted count for nothing", () => {
-    expect([...emphasis(rows, { turnedOff: new Set([9]) }).dimmed]).toEqual([]);
+  test("keys of entries since gone and ids of rows since deleted count for nothing", () => {
+    expect([...emphasis(rows, { picked: new Set(["#999"]) }).dimmed]).toEqual([]);
     expect([...emphasis(rows, { pointed: [9] }).dimmed]).toEqual([]);
     expect([...emphasis(rows, { pointed: [9, a] }).dimmed]).toEqual([b, c]);
   });

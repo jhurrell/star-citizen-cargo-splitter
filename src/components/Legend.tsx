@@ -1,37 +1,55 @@
-import type { LegendEntry } from "../lib/emphasis";
+import { VIEWS, type LegendEntry, type View } from "../lib/emphasis";
 import { pointHandlers } from "./pointing";
 
 type Props = {
+  view: View;
+  onView: (view: View) => void;
   entries: LegendEntry[];
-  /* Turn the given rows off, or (with false) back on. */
-  onTurnOff: (rowIds: number[], off: boolean) => void;
+  /* Pick an entry out, or (again) stop picking it out. */
+  onTogglePicked: (key: string) => void;
   /* The rows a button is pointed at (or focused), for the ship view to pick
      out; null when none. */
   onPointRows: (rowIds: number[] | null) => void;
 };
 
-/* A toggle button per legend entry, with its swatch and name. Turning one off
-   dims its rows' containers in the ship view; pointing at one dims every
-   other row's. */
-export function Legend({ entries, onTurnOff, onPointRows }: Props) {
+/* The view switch (by drop-off, pick-up or cargo), then a toggle button per
+   legend entry, with its swatch and name. Picking entries out dims every
+   other entry's containers in the ship view; pointing at one dims every other
+   entry's while you do. */
+export function Legend({ view, onView, entries, onTogglePicked, onPointRows }: Props) {
   return (
-    <ul className="legend" aria-label="Rows in the ship view">
-      {entries.map(({ name, color, rowIds, on }) => (
-        <li key={rowIds.join()}>
+    <>
+      <div className="legend-views" role="group" aria-label="Color and pick out by">
+        {VIEWS.map(({ view: v, label }) => (
           <button
+            key={v}
             type="button"
-            className="legend-btn"
-            aria-pressed={on}
-            title={on ? `Dim ${name} in the ship view` : `Show ${name} in full in the ship view`}
-            onClick={() => onTurnOff(rowIds, on)}
-            {...pointHandlers((pointed) => onPointRows(pointed ? rowIds : null))}
+            className={`btn${v === view ? " primary" : ""}`}
+            aria-pressed={v === view}
+            onClick={() => onView(v)}
           >
-            <Swatch color={color} />
-            {name}
+            {label}
           </button>
-        </li>
-      ))}
-    </ul>
+        ))}
+      </div>
+      <ul className="legend" aria-label="In the ship view">
+        {entries.map(({ key, name, color, rowIds, on }) => (
+          <li key={key}>
+            <button
+              type="button"
+              className="legend-btn"
+              aria-pressed={on}
+              title={on ? `Stop picking out ${name}` : `Pick out ${name}, dimming the rest`}
+              onClick={() => onTogglePicked(key)}
+              {...pointHandlers((pointed) => onPointRows(pointed ? rowIds : null))}
+            >
+              <Swatch color={color} />
+              {name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
