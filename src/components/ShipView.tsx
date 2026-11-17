@@ -2,8 +2,8 @@ import { Line } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Color, DoubleSide, InstancedBufferAttribute, Matrix4, type InstancedMesh } from "three";
+import type { Layout } from "../lib/cargo";
 import type { HaulGrid } from "../lib/haul";
-import type { Position } from "../lib/cargo";
 import { OTHER_COLOR, type Cargo } from "../lib/emphasis";
 import { mountMatrix, type Vec3 } from "../lib/mount";
 import type { Placed } from "../lib/packing";
@@ -23,23 +23,23 @@ import { SizeMarks } from "./ship/SizeMarks";
 import { CameraRig, Directions, LabelTracker } from "./ship/Surroundings";
 
 const HOLD_EDGE = "#3d6a87";
-const FLOOR = "#54adf7";
+const FACE = "#54adf7";
 const LIT = "#ffffff"; // the grid pointed at in the cargo table
 /* A row turned off in the legend: its containers turn mostly see-through,
    without their sizes (which would show through from every face). */
 const DIM_OPACITY = 0.18;
 
-/* Every mounted position of the selected layout in 3D, placed and turned as
-   ships.json says, with its containers as packed. */
+/* Every mounted cargo grid of the selected layout in 3D, placed and turned
+   as ships.json says, with its containers as packed. */
 export default function ShipView({
-  positions,
+  layout,
   grids,
   cargoByRow,
   dimmed,
   highlight = null,
 }: {
-  positions: Position[];
-  /* Each position's packed containers. */
+  layout: Layout;
+  /* Each cargo grid's packed containers. */
   grids: HaulGrid[];
   cargoByRow: Map<number, Cargo>;
   /* Rows whose containers show dimmed. */
@@ -47,7 +47,7 @@ export default function ShipView({
   /* A grid's name to light up, seen through the others; null for none. */
   highlight?: string | null;
 }) {
-  const mounted = useMemo(() => positions.filter(isMounted), [positions]);
+  const mounted = useMemo(() => layout.grids.filter(isMounted), [layout]);
   const bounds = useMemo(() => boundsOf(mounted), [mounted]);
   const [view, setView] = useState<View>("3d");
   const [hover, setHover] = useState("");
@@ -84,14 +84,14 @@ export default function ShipView({
           <ambientLight intensity={1.1} />
           <directionalLight position={[30, 40, 80]} intensity={1.6} />
           <directionalLight position={[-40, -30, -20]} intensity={0.5} />
-          {mounted.map((position) => (
+          {mounted.map((grid) => (
             <GridMesh
-              key={position.name}
-              position={position}
-              placed={grids.find((g) => g.position === position)?.placed ?? []}
+              key={grid.name}
+              grid={grid}
+              placed={grids.find((g) => g.grid === grid)?.placed ?? []}
               cargoByRow={cargoByRow}
               dimmed={dimmed}
-              lit={position.name === highlight}
+              lit={grid.name === highlight}
               showSizes={showSizes}
               onHover={setHover}
             />
@@ -126,10 +126,10 @@ export default function ShipView({
   );
 }
 
-/* One position: its floor (pale blue, so you can tell which way it faces), the
-   outline of its hold, its name and its containers, each with its size. */
+/* One cargo grid: its grid face (pale blue, so you can tell which way it
+   faces), the outline of its hold and its containers, each with its size. */
 function GridMesh({
-  position,
+  grid,
   placed,
   cargoByRow,
   dimmed,
@@ -137,7 +137,7 @@ function GridMesh({
   showSizes,
   onHover,
 }: {
-  position: Mounted;
+  grid: Mounted;
   placed: Placed<number>[];
   cargoByRow: Map<number, Cargo>;
   dimmed: ReadonlySet<number>;
@@ -145,19 +145,19 @@ function GridMesh({
   showSizes: boolean;
   onHover: (text: string) => void;
 }) {
-  const { x: X, y: Y, z: Z } = position;
+  const { x: X, y: Y, z: Z } = grid;
   const [solid, faded] = useMemo(
     () => [placed.filter((b) => !dimmed.has(b.tag)), placed.filter((b) => dimmed.has(b.tag))],
     [placed, dimmed],
   );
-  const describe = (box: string) => onHover(box ? `${box} · ${position.name}` : "");
-  const matrix = useMemo(() => new Matrix4().fromArray(mountMatrix(position.mount, sizeOf(position))), [position]);
+  const describe = (box: string) => onHover(box ? `${box} · ${grid.name}` : "");
+  const matrix = useMemo(() => new Matrix4().fromArray(mountMatrix(grid.mount, sizeOf(grid))), [grid]);
   return (
     <group matrix={matrix} matrixAutoUpdate={false}>
       <mesh position={[X / 2, Y / 2, 0]}>
         <planeGeometry args={[X, Y]} />
         <meshBasicMaterial
-          color={lit ? LIT : FLOOR}
+          color={lit ? LIT : FACE}
           transparent
           opacity={lit ? 0.55 : 0.28}
           side={DoubleSide}
@@ -165,14 +165,14 @@ function GridMesh({
         />
       </mesh>
       <HoldOutline size={[X, Y, Z]} lit={lit} />
-      <Containers capacity={position.capacity} placed={solid} cargoByRow={cargoByRow} onHover={describe} />
-      <Containers capacity={position.capacity} placed={faded} cargoByRow={cargoByRow} dim onHover={describe} />
-      {showSizes && <SizeMarks placed={solid} mount={position.mount} />}
+      <Containers capacity={grid.capacity} placed={solid} cargoByRow={cargoByRow} onHover={describe} />
+      <Containers capacity={grid.capacity} placed={faded} cargoByRow={cargoByRow} dim onHover={describe} />
+      {showSizes && <SizeMarks placed={solid} mount={grid.mount} />}
     </group>
   );
 }
 
-/* The 12 edges of the position's hold; when lit, bright and drawn over everything. */
+/* The 12 edges of the cargo grid's hold; when lit, bright and drawn over everything. */
 function HoldOutline({ size: [X, Y, Z], lit }: { size: Vec3; lit: boolean }) {
   const points = useMemo(() => {
     const c = (x: number, y: number, z: number): Vec3 => [x * X, y * Y, z * Z];

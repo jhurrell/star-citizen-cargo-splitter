@@ -1,8 +1,8 @@
 import { asText, type Container } from "./cargo";
 import { collator } from "./format";
 
-/* The page's saved state: the chosen ship and grid, which container sizes are
-   on, the last sort and the cargo rows. Kept in localStorage. */
+/* The page's saved state: the chosen ship and layout, which container sizes
+   are on, the last sort and the cargo rows. Kept in localStorage. */
 
 export type TextKey = "cargo" | "pickup" | "dropoff";
 export const TEXT_COLUMNS: { key: TextKey; label: string }[] = [
@@ -14,26 +14,26 @@ const TEXT_KEYS = TEXT_COLUMNS.map((c) => c.key);
 
 /* A ship and one of its layouts, by id. */
 export type LayoutRef = { ship: string; layout: string };
-/* A grid (a ships.json position), by its name on a ship's layout. Names are
-   unique within a layout but not across ships. */
+/* A cargo grid, by its name on a ship's layout. Names are unique within a
+   layout but not across ships. */
 export type GridRef = LayoutRef & { name: string };
-/* A grid a row's cargo goes in. `order` says when it was picked: earlier
-   picks, across all rows, fill first. */
-export type GridPick = GridRef & { order: number };
+/* A cargo grid in a row's loading plan. `order` says when it was added:
+   earlier steps, across all rows, fill first. */
+export type PlanStep = GridRef & { order: number };
 
-const isOn = (pick: GridPick, at: LayoutRef) => pick.ship === at.ship && pick.layout === at.layout;
-const isGrid = (pick: GridPick, grid: GridRef) => isOn(pick, grid) && pick.name === grid.name;
+const isOn = (step: PlanStep, at: LayoutRef) => step.ship === at.ship && step.layout === at.layout;
+const isGrid = (step: PlanStep, grid: GridRef) => isOn(step, grid) && step.name === grid.name;
 /* No ship or layout: for rows made before any is known, and in tests. */
 const NOWHERE: LayoutRef = { ship: "", layout: "" };
-/* `picks` are the grids the row's cargo goes in, on every ship and layout;
-   several on one layout split it across them. */
-export type Row = Record<TextKey, string> & { id: number; scu: string; picks: GridPick[] };
+/* `plan` is the row's part of the loading plan: the cargo grids its cargo
+   goes in, on every ship and layout; several on one layout split it across them. */
+export type Row = Record<TextKey, string> & { id: number; scu: string; plan: PlanStep[] };
 export type RowField = TextKey | "scu";
 export type SortDir = 1 | -1;
 export type Sort = { key: TextKey; dir: SortDir } | null;
 export type State = {
   shipId: string; // "" means the first ship, by name
-  gridId: string; // "" means that ship's first grid
+  layoutId: string; // "" means that ship's first layout
   enabled: Record<number, boolean>; // size → false when unchecked; sizes not listed are on
   sort: Sort;
   rows: Row[];
@@ -44,23 +44,12 @@ export const isEnabled = (enabled: State["enabled"], size: number): boolean => e
 export const enabledContainers = (containers: Container[], enabled: State["enabled"]): Container[] =>
   containers.filter((c) => isEnabled(enabled, c.size));
 
-const STORE_KEY = "cargo-visualizer-v3";
-/* Position names saved before ships were selectable: the Hull B's relaxed grid. */
-const LEGACY_SHIP = { shipId: "ship-misc-hull-b", gridId: "relaxed" };
-const LEGACY_POSITIONS: Record<string, string> = {
-  "Left Upper": "Port - Upper",
-  "Left Lower": "Port - Lower",
-  "Right Upper": "Starboard - Upper",
-  "Right Lower": "Starboard - Lower",
-};
+const STORE_KEY = "cargo-visualizer-v4";
 
 let nextId = 1;
-/* A row from saved or given values. Saved picks that don't say which ship
-   and layout they're on (older saves) are taken to be on `at`. */
-export function makeRow(
-  values: Partial<Record<RowField | "picks" | "positions" | "position", unknown>> = {},
-  at: LayoutRef = NOWHERE,
-): Row {
+/* A row from saved or given values. Plan steps given without a ship and
+   layout are taken to be on `at`. */
+export function makeRow(values: Partial<Record<RowField | "plan", unknown>> = {}, at: LayoutRef = NOWHERE): Row {
   const text = (key: RowField) => asText(values[key]);
   return {
     id: nextId++,
@@ -68,49 +57,38 @@ export function makeRow(
     pickup: text("pickup"),
     dropoff: text("dropoff"),
     scu: text("scu"),
-    picks: readPicks(values, at),
+    plan: readPlan(values.plan, at),
   };
 }
 
-/* A row's picks, each grid once. Kept for every ship and layout, so
-   switching back restores them. Older saves list grid names, a "positions"
-   list or one "position", in the order picked within the row. */
-function readPicks(
-  { picks, positions, position }: Partial<Record<"picks" | "positions" | "position", unknown>>,
-  at: LayoutRef,
-): GridPick[] {
+/* A row's plan, each cargo grid once. Kept for every ship and layout, so
+   switching back restores it. */
+function readPlan(plan: unknown, at: LayoutRef): PlanStep[] {
   type Saved = { ship?: unknown; layout?: unknown; name?: unknown; order?: unknown } | null;
-  const saved = Array.isArray(picks)
-    ? picks.map((p: Saved) => ({
-        ship: asText(p?.ship) || at.ship,
-        layout: asText(p?.layout) || at.layout,
-        name: asText(p?.name),
-        order: Number(p?.order),
-      }))
-    : (Array.isArray(positions) ? positions : [position]).map((name, i) => ({
-        ...at,
-        name: asText(name),
-        order: i + 1,
-      }));
   const seen = new Set<string>();
-  const key = (p: GridRef) => JSON.stringify([p.ship, p.layout, p.name]);
-  return saved
-    .map((p) => ({ ...p, name: LEGACY_POSITIONS[p.name] ?? p.name }))
-    .filter((p) => p.name && Number.isFinite(p.order) && !seen.has(key(p)) && seen.add(key(p)));
+  const key = (step: GridRef) => JSON.stringify([step.ship, step.layout, step.name]);
+  return (Array.isArray(plan) ? plan : [])
+    .map((step: Saved) => ({
+      ship: asText(step?.ship) || at.ship,
+      layout: asText(step?.layout) || at.layout,
+      name: asText(step?.name),
+      order: Number(step?.order),
+    }))
+    .filter((step) => step.name && Number.isFinite(step.order) && !seen.has(key(step)) && seen.add(key(step)));
 }
 
-/* The rows with only their picks on one ship and layout, which is all the
+/* The rows with only their plan on one ship and layout, which is all the
    table and ship view work from. */
 export const rowsOn = (rows: Row[], at: LayoutRef): Row[] =>
-  rows.map((row) => ({ ...row, picks: row.picks.filter((p) => isOn(p, at)) }));
+  rows.map((row) => ({ ...row, plan: row.plan.filter((step) => isOn(step, at)) }));
 
-/* The order for a new pick: after every pick so far. */
-const nextOrder = (rows: Row[]) => 1 + Math.max(0, ...rows.flatMap((r) => r.picks.map((p) => p.order)));
+/* The order for a new plan step: after every step so far. */
+const nextOrder = (rows: Row[]) => 1 + Math.max(0, ...rows.flatMap((r) => r.plan.map((step) => step.order)));
 
 export function defaultState(): State {
   return {
     shipId: "",
-    gridId: "",
+    layoutId: "",
     enabled: {},
     sort: null,
     rows: [
@@ -125,22 +103,18 @@ const isTextKey = (value: unknown): value is TextKey => TEXT_KEYS.includes(value
 
 /* The actual ship and layout a state's choice means ("" is the first of
    each), which only the ship list knows. */
-export type ResolveLayout = (choice: Pick<State, "shipId" | "gridId">) => LayoutRef;
-const asSaved: ResolveLayout = ({ shipId, gridId }) => ({ ship: shipId, layout: gridId });
+export type ResolveLayout = (choice: Pick<State, "shipId" | "layoutId">) => LayoutRef;
+const asSaved: ResolveLayout = ({ shipId, layoutId }) => ({ ship: shipId, layout: layoutId });
 
 /* Build a valid state from whatever was saved, falling back to defaults field
-   by field. Picks saved without a ship and layout go on the saved choice's. */
+   by field. Plan steps saved without a ship and layout go on the saved choice's. */
 export function hydrate(saved: unknown, resolve: ResolveLayout = asSaved): State {
   const result = defaultState();
   if (!saved || typeof saved !== "object") return result;
   const s = saved as Record<string, unknown>;
   const rows = Array.isArray(s.rows) ? (s.rows as Record<string, unknown>[]) : null;
-  if (typeof s.shipId === "string") {
-    result.shipId = s.shipId;
-    result.gridId = asText(s.gridId);
-  } else if (rows?.some((r) => Object.hasOwn(LEGACY_POSITIONS, asText(r?.position)))) {
-    Object.assign(result, LEGACY_SHIP); // keep older saves on the grid they were made for
-  }
+  result.shipId = asText(s.shipId);
+  result.layoutId = asText(s.layoutId);
   /* Sizes aren't known until containers.json is read, so keep every saved choice. */
   for (const [size, on] of Object.entries((s.enabled as object) ?? {})) {
     if (typeof on === "boolean") result.enabled[Number(size)] = on;
@@ -159,10 +133,10 @@ export function loadState(resolve?: ResolveLayout): State {
   }
 }
 
-export function saveState({ shipId, gridId, enabled, sort, rows }: State): void {
+export function saveState({ shipId, layoutId, enabled, sort, rows }: State): void {
   try {
     const values = rows.map(({ id: _id, ...rest }) => rest);
-    localStorage.setItem(STORE_KEY, JSON.stringify({ shipId, gridId, enabled, sort, rows: values }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ shipId, layoutId, enabled, sort, rows: values }));
   } catch {
     /* storage unavailable: the table still works for this visit */
   }
@@ -172,14 +146,14 @@ export type Action =
   | { type: "addRow"; row: Row }
   | { type: "deleteRow"; id: number }
   | { type: "updateRow"; id: number; field: RowField; value: string }
-  /* Pick a grid for a row, after every earlier pick, or unpick it. */
-  | { type: "togglePick"; id: number; grid: GridRef }
+  /* Add a cargo grid to a row's plan, after every earlier step, or take it out. */
+  | { type: "toggleGrid"; id: number; grid: GridRef }
   /* Take every row out of one ship and layout's grids. */
-  | { type: "clearPicks"; at: LayoutRef }
+  | { type: "clearPlan"; at: LayoutRef }
   | { type: "sortBy"; key: TextKey }
   /* A new ship starts on its first layout. */
   | { type: "selectShip"; shipId: string }
-  | { type: "selectGrid"; gridId: string }
+  | { type: "selectLayout"; layoutId: string }
   | { type: "setSizeEnabled"; size: number; on: boolean }
   | { type: "clearRows"; row: Row };
 
@@ -194,17 +168,22 @@ export function reducer(state: State, action: Action): State {
         ...state,
         rows: state.rows.map((r) => (r.id === action.id ? { ...r, [action.field]: action.value } : r)),
       };
-    case "togglePick": {
+    case "toggleGrid": {
       const { id, grid } = action;
       const order = nextOrder(state.rows);
-      const toggle = (picks: GridPick[]) =>
-        picks.some((p) => isGrid(p, grid)) ? picks.filter((p) => !isGrid(p, grid)) : [...picks, { ...grid, order }];
-      return { ...state, rows: state.rows.map((r) => (r.id === id ? { ...r, picks: toggle(r.picks) } : r)) };
+      const toggle = (plan: PlanStep[]) =>
+        plan.some((step) => isGrid(step, grid))
+          ? plan.filter((step) => !isGrid(step, grid))
+          : [...plan, { ...grid, order }];
+      return { ...state, rows: state.rows.map((r) => (r.id === id ? { ...r, plan: toggle(r.plan) } : r)) };
     }
-    case "clearPicks": {
-      /* Picks on other ships and layouts stay, for switching back. */
+    case "clearPlan": {
+      /* Steps on other ships and layouts stay, for switching back. */
       const { at } = action;
-      return { ...state, rows: state.rows.map((r) => ({ ...r, picks: r.picks.filter((p) => !isOn(p, at)) })) };
+      return {
+        ...state,
+        rows: state.rows.map((r) => ({ ...r, plan: r.plan.filter((step) => !isOn(step, at)) })),
+      };
     }
     case "sortBy": {
       /* Sorting reorders the rows once, like a spreadsheet; later edits don't
@@ -215,9 +194,9 @@ export function reducer(state: State, action: Action): State {
       return { ...state, sort: { key, dir }, rows };
     }
     case "selectShip":
-      return { ...state, shipId: action.shipId, gridId: "" };
-    case "selectGrid":
-      return { ...state, gridId: action.gridId };
+      return { ...state, shipId: action.shipId, layoutId: "" };
+    case "selectLayout":
+      return { ...state, layoutId: action.layoutId };
     case "setSizeEnabled":
       return { ...state, enabled: { ...state.enabled, [action.size]: action.on } };
     case "clearRows":

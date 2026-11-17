@@ -5,7 +5,7 @@ import { parseContainers, parseShips } from "./cargo";
 /* Container sizes and ships, read once from containers.json and ships.json,
    which are bundled into the app. A JSON syntax error stops the build
    instead, with its line number. Whatever is usable is used: without sizes
-   all cargo shows as Left over, and without ships there are no positions. */
+   all cargo shows as Left over, and without ships there are no cargo grids. */
 export const containers = parseContainers(rawContainers);
 export const ships = parseShips(rawShips);
 

@@ -3,11 +3,11 @@
    around it, and where the camera looks from. Pure functions, so they can be
    unit tested; the components only hand the numbers to three.js. */
 
-import type { Position } from "../../lib/cargo";
+import type { CargoGrid } from "../../lib/cargo";
 import { rotationOf, toShip, type Mount, type Vec3 } from "../../lib/mount";
 import type { Box } from "../../lib/packing";
 
-export type Mounted = Position & { mount: Mount };
+export type Mounted = CargoGrid & { mount: Mount };
 /* A text label pinned to a ship point; drawn as HTML over the canvas. */
 export type Label = { key: string; text: string; at: Vec3; className: string };
 export type Bounds = { min: Vec3; max: Vec3; center: Vec3; radius: number };
@@ -30,7 +30,7 @@ export const GAP = 0.08; // between neighbouring containers, so each one shows
 const MARK_LIFT = 0.01; // a size number's gap off its face, so it doesn't flicker into it
 const MARK_SIZE = 0.7; // of the face's shorter edge
 
-export const sizeOf = (p: Position): Vec3 => [p.x, p.y, p.z];
+export const sizeOf = (g: CargoGrid): Vec3 => [g.x, g.y, g.z];
 
 /* A container's box in its grid's cells: its centre, and its size less GAP. */
 export function containerBox(b: Box): { center: Vec3; scale: Vec3 } {
@@ -87,14 +87,14 @@ export function sizeMarksOf(b: Box, mount: Mount): SizeMark[] {
     };
   });
 }
-export const isMounted = (p: Position): p is Mounted => p.mount !== null;
+export const isMounted = (g: CargoGrid): g is Mounted => g.mount !== null;
 
-/* The box around every mounted position, in ship coordinates. */
-export function boundsOf(positions: Mounted[]): Bounds {
-  if (!positions.length) return { min: [0, 0, 0], max: [0, 0, 0], center: [0, 0, 0], radius: 10 };
+/* The box around every mounted cargo grid, in ship coordinates. */
+export function boundsOf(grids: Mounted[]): Bounds {
+  if (!grids.length) return { min: [0, 0, 0], max: [0, 0, 0], center: [0, 0, 0], radius: 10 };
   const min: Vec3 = [Infinity, Infinity, Infinity];
   const max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const p of positions)
+  for (const p of grids)
     for (const x of [0, p.x])
       for (const y of [0, p.y])
         for (const z of [0, p.z])
@@ -107,7 +107,7 @@ export function boundsOf(positions: Mounted[]): Bounds {
   return { min, max, center, radius };
 }
 
-/* A position's name, over the middle of the far side of its hold. */
+/* A cargo grid's name, over the middle of the far side of its hold. */
 export const gridLabel = (p: Mounted): Label => ({
   key: `grid:${p.name}`,
   text: p.name,

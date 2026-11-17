@@ -3,11 +3,11 @@
     "id": "ship-misc-hull-b",
     "name": "MISC Hull B",
     "capacity": 512,
-    "grids": [
+    "layouts": [
       {
         "id": "relaxed",
         "name": "Relaxed",
-        "positions": [
+        "grids": [
           {
             "name": "Starboard - Upper",
             "x": 4,
@@ -48,11 +48,11 @@
     "id": "ship-misc-hull-c",
     "name": "MISC Hull C",
     "capacity": 4608,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Upper - Fore",
             "x": 8,
@@ -125,11 +125,11 @@
     "id": "ship-rsi-hermes",
     "name": "RSI Hermes",
     "capacity": 288,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 4,
@@ -152,11 +152,11 @@
     "id": "ship-argo-raft",
     "name": "Argo RAFT",
     "capacity": 192,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 8,
@@ -173,11 +173,11 @@
     "id": "ship-aegis-avenger-titan",
     "name": "Aegis Avenger Titan",
     "capacity": 8,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -193,11 +193,11 @@
     "id": "ship-aegis-hammerhead-tiburon",
     "name": "Aegis Hammerhead / Tiburon",
     "capacity": 64,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -213,11 +213,11 @@
     "id": "ship-aegis-idris-m",
     "name": "Aegis Idris-M",
     "capacity": 1326,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Hangar",
             "x": 8,
@@ -254,11 +254,11 @@
     "id": "ship-aegis-idris-p",
     "name": "Aegis Idris-P",
     "capacity": 1374,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Hangar",
             "x": 8,
@@ -302,11 +302,11 @@
     "id": "ship-aegis-reclaimer",
     "name": "Aegis Reclaimer",
     "capacity": 420,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Cargo Hold - Fore Port",
             "x": 3,
@@ -371,11 +371,11 @@
     "id": "ship-aegis-redeemer",
     "name": "Aegis Redeemer",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -391,11 +391,11 @@
     "id": "ship-aegis-retaliator-cargo-modules",
     "name": "Aegis Retaliator (Cargo Modules)",
     "capacity": 74,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Front Module",
             "x": 3,
@@ -425,11 +425,11 @@
     "id": "ship-anvil-asgard",
     "name": "Anvil Asgard",
     "capacity": 180,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 5,
@@ -445,11 +445,11 @@
     "id": "ship-anvil-carrack",
     "name": "Anvil Carrack",
     "capacity": 456,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Bay 1 - Port",
             "x": 4,
@@ -521,11 +521,11 @@
     "id": "ship-anvil-hornet-f7c-mk-ii",
     "name": "Anvil Hornet F7C Mk II",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -541,11 +541,11 @@
     "id": "ship-anvil-liberator",
     "name": "Anvil Liberator",
     "capacity": 400,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 8,
@@ -575,11 +575,11 @@
     "id": "ship-anvil-paladin",
     "name": "Anvil Paladin",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -595,11 +595,11 @@
     "id": "ship-anvil-pisces-c8-c8x",
     "name": "Anvil Pisces C8 / C8X",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -622,11 +622,11 @@
     "id": "ship-anvil-valkyrie",
     "name": "Anvil Valkyrie",
     "capacity": 90,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 5,
@@ -642,11 +642,11 @@
     "id": "ship-argo-csv-sm",
     "name": "Argo CSV-SM",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -662,11 +662,11 @@
     "id": "ship-argo-moth",
     "name": "Argo MOTH",
     "capacity": 224,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 4,
@@ -696,11 +696,11 @@
     "id": "ship-argo-mpuv-c",
     "name": "Argo MPUV-C",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -716,11 +716,11 @@
     "id": "ship-argo-mpuv-t",
     "name": "Argo MPUV-T",
     "capacity": 16,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -736,11 +736,11 @@
     "id": "ship-argo-srv",
     "name": "Argo SRV",
     "capacity": 12,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -756,11 +756,11 @@
     "id": "ship-consolidated-outland-mustang-alpha",
     "name": "Consolidated Outland Mustang Alpha",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -776,11 +776,11 @@
     "id": "ship-consolidated-outland-nomad",
     "name": "Consolidated Outland Nomad",
     "capacity": 24,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 3,
@@ -796,11 +796,11 @@
     "id": "ship-crusader-a2-hercules",
     "name": "Crusader A2 Hercules",
     "capacity": 216,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 6,
@@ -816,11 +816,11 @@
     "id": "ship-crusader-c1-spirit",
     "name": "Crusader C1 Spirit",
     "capacity": 64,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 2,
@@ -843,11 +843,11 @@
     "id": "ship-crusader-c2-hercules",
     "name": "Crusader C2 Hercules",
     "capacity": 696,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 9,
@@ -870,11 +870,11 @@
     "id": "ship-crusader-intrepid",
     "name": "Crusader Intrepid",
     "capacity": 8,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -897,11 +897,11 @@
     "id": "ship-crusader-m2-hercules",
     "name": "Crusader M2 Hercules",
     "capacity": 522,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 9,
@@ -924,11 +924,11 @@
     "id": "ship-crusader-mercury-star-runner",
     "name": "Crusader Mercury Star Runner",
     "capacity": 114,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 6,
@@ -951,11 +951,11 @@
     "id": "ship-drake-caterpillar",
     "name": "Drake Caterpillar",
     "capacity": 576,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Bow",
             "x": 6,
@@ -999,11 +999,11 @@
     "id": "ship-drake-clipper",
     "name": "Drake Clipper",
     "capacity": 12,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1019,11 +1019,11 @@
     "id": "ship-drake-corsair",
     "name": "Drake Corsair",
     "capacity": 72,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -1039,11 +1039,11 @@
     "id": "ship-drake-cutlass-black",
     "name": "Drake Cutlass Black",
     "capacity": 46,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Hold",
             "x": 4,
@@ -1073,11 +1073,11 @@
     "id": "ship-drake-cutlass-red-blue",
     "name": "Drake Cutlass Red / Blue",
     "capacity": 12,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -1100,11 +1100,11 @@
     "id": "ship-drake-cutter",
     "name": "Drake Cutter",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1120,11 +1120,11 @@
     "id": "ship-drake-cutter-scout-rambler",
     "name": "Drake Cutter Scout / Rambler",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1140,11 +1140,11 @@
     "id": "ship-drake-golem-ox",
     "name": "Drake Golem OX",
     "capacity": 64,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -1160,11 +1160,11 @@
     "id": "ship-drake-ironclad",
     "name": "Drake Ironclad",
     "capacity": 2200,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port Hold",
             "x": 6,
@@ -1208,11 +1208,11 @@
     "id": "ship-drake-ironclad-assault",
     "name": "Drake Ironclad Assault",
     "capacity": 1440,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port Hold",
             "x": 6,
@@ -1249,11 +1249,11 @@
     "id": "ship-drake-mule",
     "name": "Drake Mule",
     "capacity": 1,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1269,11 +1269,11 @@
     "id": "ship-drake-vulture",
     "name": "Drake Vulture",
     "capacity": 12,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 3,
@@ -1289,11 +1289,11 @@
     "id": "ship-esperia-prowler-utility",
     "name": "Esperia Prowler Utility",
     "capacity": 32,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 2,
@@ -1316,11 +1316,11 @@
     "id": "ship-gatac-hyun",
     "name": "Gatac Hyun",
     "capacity": 32,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1336,11 +1336,11 @@
     "id": "ship-gatac-railen",
     "name": "Gatac Railen",
     "capacity": 640,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Fore - Port",
             "x": 4,
@@ -1395,11 +1395,11 @@
     "id": "ship-gatac-syulen",
     "name": "Gatac Syulen",
     "capacity": 6,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 3,
@@ -1415,11 +1415,11 @@
     "id": "ship-gatac-tyilui",
     "name": "Gatac Tyilui",
     "capacity": 96,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Lower",
             "x": 4,
@@ -1442,11 +1442,11 @@
     "id": "ship-grey-s-market-shiv",
     "name": "Grey's Market Shiv",
     "capacity": 32,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1462,11 +1462,11 @@
     "id": "ship-greycat-utv",
     "name": "Greycat UTV",
     "capacity": 1,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1482,11 +1482,11 @@
     "id": "ship-misc-fortune",
     "name": "MISC Fortune",
     "capacity": 16,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 2,
@@ -1509,11 +1509,11 @@
     "id": "ship-misc-freelancer",
     "name": "MISC Freelancer",
     "capacity": 66,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 2,
@@ -1536,11 +1536,11 @@
     "id": "ship-misc-freelancer-dur-mis",
     "name": "MISC Freelancer DUR / MIS",
     "capacity": 36,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 2,
@@ -1563,11 +1563,11 @@
     "id": "ship-misc-freelancer-max",
     "name": "MISC Freelancer MAX",
     "capacity": 120,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 4,
@@ -1590,11 +1590,11 @@
     "id": "ship-misc-hull-a",
     "name": "MISC Hull A",
     "capacity": 64,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port - Lower",
             "x": 2,
@@ -1631,11 +1631,11 @@
     "id": "ship-misc-reliant-kore",
     "name": "MISC Reliant Kore",
     "capacity": 6,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -1658,11 +1658,11 @@
     "id": "ship-misc-reliant-tana",
     "name": "MISC Reliant Tana",
     "capacity": 1,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1678,11 +1678,11 @@
     "id": "ship-misc-starfarer-gemini",
     "name": "MISC Starfarer / Gemini",
     "capacity": 291,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Center Hold",
             "x": 4,
@@ -1733,11 +1733,11 @@
     "id": "ship-misc-starlancer-max",
     "name": "MISC Starlancer MAX",
     "capacity": 224,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port - Fore",
             "x": 2,
@@ -1774,11 +1774,11 @@
     "id": "ship-misc-starlancer-tac",
     "name": "MISC Starlancer TAC",
     "capacity": 96,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 2,
@@ -1801,11 +1801,11 @@
     "id": "ship-origin-100i-125a-m80",
     "name": "Origin 100i / 125a / M80",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1821,11 +1821,11 @@
     "id": "ship-origin-135c",
     "name": "Origin 135c",
     "capacity": 6,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -1841,11 +1841,11 @@
     "id": "ship-origin-300i",
     "name": "Origin 300i",
     "capacity": 8,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1861,11 +1861,11 @@
     "id": "ship-origin-315p",
     "name": "Origin 315p",
     "capacity": 12,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1881,11 +1881,11 @@
     "id": "ship-origin-325a-350r",
     "name": "Origin 325a / 350r",
     "capacity": 4,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -1901,11 +1901,11 @@
     "id": "ship-origin-400i",
     "name": "Origin 400i",
     "capacity": 42,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 3,
@@ -1921,11 +1921,11 @@
     "id": "ship-origin-600i-explorer",
     "name": "Origin 600i Explorer",
     "capacity": 44,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -1955,11 +1955,11 @@
     "id": "ship-origin-600i-touring",
     "name": "Origin 600i Touring",
     "capacity": 20,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 1,
@@ -1982,11 +1982,11 @@
     "id": "ship-origin-890-jump",
     "name": "Origin 890 Jump",
     "capacity": 388,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 6,
@@ -2044,11 +2044,11 @@
     "id": "ship-rsi-apollo-triage-medivac",
     "name": "RSI Apollo Triage / Medivac",
     "capacity": 32,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 2,
@@ -2071,11 +2071,11 @@
     "id": "ship-rsi-aurora-mk-i-cl-se",
     "name": "RSI Aurora Mk I CL / SE",
     "capacity": 6,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -2091,11 +2091,11 @@
     "id": "ship-rsi-aurora-mk-i-es-ln-lx-mr",
     "name": "RSI Aurora Mk I ES / LN / LX / MR",
     "capacity": 3,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -2111,11 +2111,11 @@
     "id": "ship-rsi-aurora-mk-ii",
     "name": "RSI Aurora Mk II",
     "capacity": 2,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -2131,11 +2131,11 @@
     "id": "ship-rsi-aurora-mk-ii-ts-module",
     "name": "RSI Aurora Mk II (TS Module)",
     "capacity": 8,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,
@@ -2158,11 +2158,11 @@
     "id": "ship-rsi-constellation-mk-iv-andromeda-aquila",
     "name": "RSI Constellation Mk IV Andromeda / Aquila",
     "capacity": 96,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -2178,11 +2178,11 @@
     "id": "ship-rsi-constellation-mk-iv-phoenix",
     "name": "RSI Constellation Mk IV Phoenix",
     "capacity": 80,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 5,
@@ -2198,11 +2198,11 @@
     "id": "ship-rsi-constellation-mk-iv-taurus",
     "name": "RSI Constellation Mk IV Taurus",
     "capacity": 174,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 4,
@@ -2225,11 +2225,11 @@
     "id": "ship-rsi-constellation-mk-v-centaurus",
     "name": "RSI Constellation Mk V Centaurus",
     "capacity": 240,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 6,
@@ -2245,11 +2245,11 @@
     "id": "ship-rsi-galaxy",
     "name": "RSI Galaxy",
     "capacity": 64,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port Bay",
             "x": 2,
@@ -2272,11 +2272,11 @@
     "id": "ship-rsi-galaxy-cargo-module",
     "name": "RSI Galaxy (Cargo Module)",
     "capacity": 720,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port Bay",
             "x": 2,
@@ -2327,11 +2327,11 @@
     "id": "ship-rsi-galaxy-medical-module",
     "name": "RSI Galaxy (Medical Module)",
     "capacity": 68,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port Bay",
             "x": 2,
@@ -2361,11 +2361,11 @@
     "id": "ship-rsi-perseus",
     "name": "RSI Perseus",
     "capacity": 96,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 8,
@@ -2381,11 +2381,11 @@
     "id": "ship-rsi-polaris",
     "name": "RSI Polaris",
     "capacity": 576,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Port",
             "x": 6,
@@ -2408,11 +2408,11 @@
     "id": "ship-rsi-salvation",
     "name": "RSI Salvation",
     "capacity": 6,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 2,
@@ -2428,11 +2428,11 @@
     "id": "ship-rsi-zeus-mk-ii-cl",
     "name": "RSI Zeus Mk II CL",
     "capacity": 128,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Main Hold",
             "x": 4,
@@ -2462,11 +2462,11 @@
     "id": "ship-rsi-zeus-mk-ii-es",
     "name": "RSI Zeus Mk II ES",
     "capacity": 32,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 4,
@@ -2482,11 +2482,11 @@
     "id": "ship-tumbril-cyclone",
     "name": "Tumbril Cyclone",
     "capacity": 1,
-    "grids": [
+    "layouts": [
       {
         "id": "default",
         "name": "Default",
-        "positions": [
+        "grids": [
           {
             "name": "Grid",
             "x": 1,

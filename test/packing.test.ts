@@ -22,7 +22,7 @@ describe("packContainers", () => {
   const scu8 = box(8, 2, 2, 2);
   const scu1 = box(1, 1, 1, 1);
 
-  test("a floor-axis sweep stacks each spot full height, and reverse starts at the far end", () => {
+  test("a face-axis sweep stacks each spot full height, and reverse starts at the far end", () => {
     const units = [{ container: scu1, count: 4, tag: 1 }];
     const space = { x: 2, y: 4, z: 2 };
     const cells = (sweep: Parameters<typeof packContainers>[2]) =>
@@ -62,7 +62,7 @@ describe("packContainers", () => {
     expect(cells.size).toBe(10 * 32 + 20 * 8 + 10);
   });
 
-  test("every container sits on the floor or fully on others", () => {
+  test("every container sits on the grid face or fully on others", () => {
     const { placed } = pack({ x: 2, y: 2, z: 4 }, [scu8, 1], [scu1, 4]);
     const on = (x: number, y: number, z: number) =>
       z < 0 || placed.some((p) => x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.d && z >= p.z && z < p.z + p.h);
@@ -89,10 +89,10 @@ describe("packInTurn", () => {
     expect(placed.map(({ tag, y }) => `${tag}@${y}`)).toEqual(["1@0", "2@6", "2@4", "2@2"]);
   });
 
-  test("a load goes on the floor or its own containers before on another load's", () => {
+  test("a load goes on the grid face or its own containers before on another load's", () => {
     const tall = { x: 2, y: 8, z: 4 };
     const at = ({ tag, y, z }: { tag: number; y: number; z: number }) => `${tag}@${y},${z}`;
-    /* Load 3 has floor at y 4, so it doesn't stack on load 2 at the far end. */
+    /* Load 3 has its grid face at y 4, so it doesn't stack on load 2 at the far end. */
     expect(packInTurn(tall, [turn(1, 1), turn(2, 1), turn(3, 1)], { axis: "y" }).placed.map(at)).toEqual([
       "1@0,0",
       "2@6,0",
@@ -104,7 +104,7 @@ describe("packInTurn", () => {
       "2@6,0",
       "2@6,2",
     ]);
-    /* With no floor left, it stacks on another load's. */
+    /* With no grid face left, it stacks on another load's. */
     expect(
       packInTurn(tall, [turn(1, 1), turn(2, 5), turn(3, 1)], { axis: "y" })
         .placed.map(at)
@@ -131,7 +131,7 @@ describe("loadGrid", () => {
   });
 
   test("repacks as one pile when that keeps everything and places more of the new load", () => {
-    /* Apart, the 1 sits on the floor and the 8 has nowhere to stand. */
+    /* Apart, the 1 sits on the grid face and the 8 has nowhere to stand. */
     const grid = loadGrid<number>({ x: 2, y: 2, z: 3 }, { axis: "y" });
     grid.add(load(1, [scu1, 1]));
     expect(grid.add(load(2, [scu8, 1]))).toEqual({});

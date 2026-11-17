@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { Grid } from "../lib/cargo";
+import type { Layout } from "../lib/cargo";
 import { copyText } from "../lib/clipboard";
 import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
-import { computeHaul, selectLayout } from "../lib/haul";
+import { computeHaul, layoutOf } from "../lib/haul";
 import { useEmphasis, useTimedMessage } from "../lib/hooks";
 import { loadState, makeRow, reducer, saveState, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
@@ -36,20 +36,20 @@ const COPY_FORMATS = [
 ];
 
 /* "512 SCU in 4 grids of 128 SCU": the layout's total, and each grid's size when they're all alike. */
-function gridSummary(grid: Grid): string {
-  const capacities = new Set(grid.positions.map((p) => p.capacity));
+function layoutSummary(layout: Layout): string {
+  const capacities = new Set(layout.grids.map((g) => g.capacity));
   const each = capacities.size === 1 ? ` of ${fmt([...capacities][0])} SCU` : "";
-  return `${fmt(sum(grid.positions, (p) => p.capacity))} SCU in ${plural(grid.positions.length, "grid")}${each}`;
+  return `${fmt(sum(layout.grids, (g) => g.capacity))} SCU in ${plural(layout.grids.length, "grid")}${each}`;
 }
 
 /* The whole tool. It reads localStorage, so it renders in the browser only. */
 export function CargoVisualizer() {
-  const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => selectLayout(ships, choice).at));
+  const [state, dispatch] = useReducer(reducer, undefined, () => loadState((choice) => layoutOf(ships, choice).at));
   const haul = useMemo(() => computeHaul(state, ships, containers), [state]);
-  const { ship, layout, at, positions } = haul;
+  const { ship, layout, at } = haul;
   /* Each row's color, the legend, and which rows show see-through. */
   const emphasis = useEmphasis(state.rows, haul);
-  const isMounted = positions.length > 0 && positions.every((p) => p.mount);
+  const isMounted = !!layout && layout.grids.every((g) => g.mount);
   /* The grid being pointed at in the cargo table, lit up in the ship view. */
   const [highlight, setHighlight] = useState<string | null>(null);
 
@@ -97,7 +97,7 @@ export function CargoVisualizer() {
 
   /* Take every row out of this layout's grids. */
   function clearGrids() {
-    dispatch({ type: "clearPicks", at });
+    dispatch({ type: "clearPlan", at });
     showStatus("Grids cleared");
   }
 
@@ -106,7 +106,7 @@ export function CargoVisualizer() {
     showStatus(ok ? done : "Copy isn't available here");
   }
 
-  const shipInfo = configError || (layout ? gridSummary(layout) : "");
+  const shipInfo = configError || (layout ? layoutSummary(layout) : "");
 
   return (
     <>
@@ -119,16 +119,16 @@ export function CargoVisualizer() {
             value={ship?.id ?? ""}
             onChange={(shipId) => dispatch({ type: "selectShip", shipId })}
           />
-          <label className="picker" hidden={(ship?.grids.length ?? 0) < 2}>
+          <label className="picker" hidden={(ship?.layouts.length ?? 0) < 2}>
             <span>Layout</span>
             <select
-              id="grid"
+              id="layout"
               value={layout?.id ?? ""}
-              onChange={(e) => dispatch({ type: "selectGrid", gridId: e.target.value })}
+              onChange={(e) => dispatch({ type: "selectLayout", layoutId: e.target.value })}
             >
-              {ship?.grids.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
+              {ship?.layouts.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
                 </option>
               ))}
             </select>
@@ -176,7 +176,7 @@ export function CargoVisualizer() {
           sort={state.sort}
           cargoByRow={emphasis.byRow}
           onUpdate={(id, field, value) => dispatch({ type: "updateRow", id, field, value })}
-          onTogglePick={(id, name) => dispatch({ type: "togglePick", id, grid: { ...at, name } })}
+          onToggleGrid={(id, name) => dispatch({ type: "toggleGrid", id, grid: { ...at, name } })}
           onHighlight={setHighlight}
           onPointRows={emphasis.point}
           onDelete={deleteRow}
@@ -193,10 +193,10 @@ export function CargoVisualizer() {
           <h2 id="ship-title">Ship view</h2>
           {isMounted && <Legend entries={emphasis.legend} onTurnOff={emphasis.turnOff} onPointRows={emphasis.point} />}
         </div>
-        {isMounted ? (
+        {layout && isMounted ? (
           <Suspense fallback={<p className="hint">Loading the 3D view…</p>}>
             <ShipView
-              positions={positions}
+              layout={layout}
               grids={haul.grids}
               cargoByRow={emphasis.byRow}
               dimmed={emphasis.dimmed}

@@ -8,8 +8,8 @@ type Cell = string | number;
 type Column = { label: string; numeric: boolean };
 export type ExportedTable = { columns: Column[]; rows: Cell[][]; totals: Cell[] };
 
-/* "Port - Upper", or for a split row (in pick order) "Port - Upper (128), Port - Lower (44)".
-   A pick that got nothing, as its grid was already full, is left out. */
+/* "Port - Upper", or for a split row (in plan order) "Port - Upper (128), Port - Lower (44)".
+   A plan step that got nothing, as its grid was already full, is left out. */
 export function gridText({ parts }: { parts: Part[] }): string {
   const used = parts.filter((p) => p.scu > 0);
   const shown = used.length ? used : parts.slice(-1);
@@ -36,7 +36,7 @@ export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): 
   const body = deliveries.map((delivery) => [
     ...TEXT_COLUMNS.map((c) => delivery.row[c.key]),
     delivery.scu,
-    delivery.unassigned,
+    delivery.remaining,
     ...cellsOf(delivery.cells),
     ...leftover(delivery.leftover),
     gridText(delivery),
@@ -45,7 +45,7 @@ export function exportTable({ sizes, deliveries, totals, showLeftover }: Haul): 
     "Total",
     ...TEXT_COLUMNS.slice(1).map(() => ""),
     totals.scu,
-    totals.unassigned,
+    totals.remaining,
     ...cellsOf(totals.cells),
     ...leftover(totals.leftover),
     "",

@@ -4,7 +4,7 @@ import { fmt, sum } from "../lib/format";
 import { filterByName, matchedParts } from "../lib/search";
 
 /* The most SCU a ship carries: its biggest layout's total. */
-const maxScu = (ship: Ship) => Math.max(0, ...ship.grids.map((g) => sum(g.positions, (p) => p.capacity)));
+const maxScu = (ship: Ship) => Math.max(0, ...ship.layouts.map((l) => sum(l.grids, (g) => g.capacity)));
 
 /* The ship, chosen by typing: the list narrows to ships with each typed word
    anywhere in their name, each shown with the most SCU it carries. Arrow keys

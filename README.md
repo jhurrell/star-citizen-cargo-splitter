@@ -16,13 +16,13 @@ the ship.
   down, as the game splits a contract delivery, whatever grids it goes in. A row takes up to 9,999 SCU. Click a
   size in the table header to turn it off, for the sizes a contract skips or above its max container size. A
   container that no grid's shape can take stays in Remaining rather than being split smaller.
-- **Grids, in the order you pick them.** Click a grid button on a row to load it there. Each button shows the SCU
-  the grid has left. A grid takes only the containers it can actually place, so a grid can have SCU free and still
-  have no spot left for a container's shape. A row can't pick a grid when no container turned on can go in it, when
-  all of the row is in its grids already, or when none of the row's containers still to place can go in; point at a
-  greyed-out button to see which. Pick several to split a big delivery: grids fill in the order you pick them,
-  across all rows, so a later pick never takes room an earlier one already claimed. Containers a grid can't place
-  move on, whole, to the row's next grid.
+- **A loading plan, in the order you choose.** Click a grid button on a row to add that cargo grid to the row's
+  plan. Each button shows the SCU the grid has left. A grid takes only the containers it can actually place, so a
+  grid can have SCU free and still have no spot left for a container's shape. A row can't add a grid when no
+  container turned on can go in it, when all of the row is in its grids already, or when none of the row's
+  containers still to place can go in; point at a greyed-out button to see which. Add several to split a big
+  delivery: grids fill in the order you add them, across all rows, so a later step never takes room an earlier one
+  already claimed. Containers a grid can't place move on, whole, to the row's next grid.
 - **Clearing, with a second click.** **Clear table** empties the table, leaving one blank row. **Clear**, in the
   Grids heading, keeps the rows but takes every one out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
@@ -32,7 +32,7 @@ the ship.
   instead, and takes no grid room. The foot of the Grids column shows how much grid space is still free.
 - **Ship view.** A 3D view of the ship's grids with every container placed:
   - The first delivery in a grid loads from the fore end; later ones load from the aft end, so each row's cargo
-    stays apart. A row's containers sit on the grid's floor or on its own containers while there's room, and on
+    stays apart. A row's containers sit on the grid face or on its own containers while there's room, and on
     another row's only when there isn't.
   - Each row has its own color, kept while the row has SCU, and each container shows its size in SCU. Past eight
     rows, the rest share grey. The legend lists the rows with containers in the view, in the table's order, each
@@ -42,8 +42,8 @@ the ship.
     legend, or at its Cargo, Pick-up or Drop-off in the table, to make every other row see-through while you do.
   - Point at a container to see what it holds, or at a grid button in the table to light that grid up.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
-- **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own grid
-  picks, so switching to another ship and back restores them.
+- **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own
+  loading plan, so switching to another ship and back restores it.
 
 Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
 RAFT are placed to match the ships; the rest have grid sizes and SCU from the ITG Cargo Grid Reference Guide, with
@@ -123,19 +123,19 @@ horizontal; any other may be turned any way to fit.
 
 ### Ships, layouts and grids
 
-[`ships.json`](src/config/ships.json) lists the ships. A ship has one or more layouts (`grids`), and each layout has its cargo
-grids (`positions`). Its `capacity` must equal each layout's total, which the tests check:
+[`ships.json`](src/config/ships.json) lists the ships. A ship has one or more `layouts`, and each layout has its cargo
+`grids`. Its `capacity` must equal each layout's total, which the tests check:
 
 ```json
 {
   "id": "ship-misc-hull-b",
   "name": "MISC Hull B",
   "capacity": 512,
-  "grids": [
+  "layouts": [
     {
       "id": "relaxed",
       "name": "Relaxed",
-      "positions": [
+      "grids": [
         {
           "name": "Starboard - Upper",
           "x": 4,
@@ -150,8 +150,8 @@ grids (`positions`). Its `capacity` must equal each layout's total, which the te
 }
 ```
 
-- `x`, `y`, `z`: the grid's size in SCU cells. Its floor is `x` × `y`, and containers stack up `z`.
-- `at`: where the centre of the grid's floor sits on the ship, in SCU. The ship's axes run port (−) to starboard
+- `x`, `y`, `z`: the grid's size in SCU cells. Its grid face is `x` × `y`, and containers stack up `z`.
+- `at`: where the centre of the grid face sits on the ship, in SCU. The ship's axes run port (−) to starboard
   (+) for x, aft (−) to fore (+) for y, and bottom (−) to top (+) for z.
 - `rotate` (optional): how the grid is turned, in degrees, applied in this order:
   - `roll`: about the fore–aft axis; positive tips its top toward starboard.

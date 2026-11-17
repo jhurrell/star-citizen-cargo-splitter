@@ -76,26 +76,26 @@ describe("parseContainers", () => {
 });
 
 describe("parseShips", () => {
-  test("drops malformed positions, empty grids and gridless ships, sorted by name", () => {
+  test("drops malformed cargo grids, empty layouts and ships without layouts, sorted by name", () => {
     const ships = parseShips([
       {
         id: "z",
         name: "Zeta",
-        grids: [
+        layouts: [
           {
-            id: "g",
-            positions: [
+            id: "l",
+            grids: [
               { name: "Bay", x: 2, y: 2, z: 2 },
               { name: "Bad", x: 2 },
             ],
           },
         ],
       },
-      { id: "a", name: "Alpha", grids: [{ id: "g", positions: [{ name: "Hold", x: 4, y: 4, z: 2 }] }] },
-      { id: "e", name: "Empty", grids: [{ id: "g", positions: [] }] },
+      { id: "a", name: "Alpha", layouts: [{ id: "l", grids: [{ name: "Hold", x: 4, y: 4, z: 2 }] }] },
+      { id: "e", name: "Empty", layouts: [{ id: "l", grids: [] }] },
     ]);
     expect(ships.map((s) => s.name)).toEqual(["Alpha", "Zeta"]);
-    expect(ships[1].grids[0].positions).toEqual([{ name: "Bay", x: 2, y: 2, z: 2, capacity: 8, mount: null }]);
+    expect(ships[1].layouts[0].grids).toEqual([{ name: "Bay", x: 2, y: 2, z: 2, capacity: 8, mount: null }]);
   });
 });
 
@@ -113,30 +113,30 @@ describe("containers.json and ships.json", () => {
     expect(parseShips(rawShips).length).toBeGreaterThan(0);
   });
 
-  test("every position takes at least one container size", () => {
+  test("every cargo grid takes at least one container size", () => {
     const containers = parseContainers(rawContainers);
     for (const ship of parseShips(rawShips))
-      for (const grid of ship.grids)
-        for (const position of grid.positions)
+      for (const layout of ship.layouts)
+        for (const grid of layout.grids)
           expect(
-            containers.some((c) => fitsInside(c, position)),
-            `${ship.name} / ${grid.name} / ${position.name}`,
+            containers.some((c) => fitsInside(c, grid)),
+            `${ship.name} / ${layout.name} / ${grid.name}`,
           ).toBe(true);
   });
 
-  test("grid names are unique within each layout, as picks rely on", () => {
+  test("grid names are unique within each layout, as plans rely on", () => {
     for (const ship of parseShips(rawShips))
-      for (const grid of ship.grids) {
-        const names = grid.positions.map((p) => p.name);
-        expect(new Set(names).size, `${ship.name} / ${grid.name}`).toBe(names.length);
+      for (const layout of ship.layouts) {
+        const names = layout.grids.map((g) => g.name);
+        expect(new Set(names).size, `${ship.name} / ${layout.name}`).toBe(names.length);
       }
   });
 
-  test("each ship's stated capacity matches every grid's volume", () => {
+  test("each ship's stated capacity matches every layout's volume", () => {
     for (const ship of rawShips)
-      for (const grid of ship.grids) {
-        const volume = grid.positions.reduce((total, p) => total + p.x * p.y * p.z, 0);
-        expect(volume, `${ship.name} / ${grid.name}`).toBe(ship.capacity);
+      for (const layout of ship.layouts) {
+        const volume = layout.grids.reduce((total, g) => total + g.x * g.y * g.z, 0);
+        expect(volume, `${ship.name} / ${layout.name}`).toBe(ship.capacity);
       }
   });
 });

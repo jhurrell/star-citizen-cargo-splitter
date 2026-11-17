@@ -560,11 +560,11 @@ select.field option {
 .grid-cell {
   padding: 4px;
 }
-.grid-picks {
+.grid-buttons {
   display: grid;
   gap: 2px;
 }
-.grid-pick {
+.grid-button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -578,16 +578,16 @@ select.field option {
   border-radius: var(--radius);
   cursor: pointer;
 }
-.grid-pick:hover:not(:disabled) {
+.grid-button:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--fg);
 }
-.grid-pick[aria-pressed="true"] {
+.grid-button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-fg);
 }
-.grid-pick:focus-visible {
+.grid-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -602,19 +602,19 @@ select.field option {
   font-weight: 600;
 }
 /* A full grid, on rows that aren't in it. */
-.grid-pick:disabled {
+.grid-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 /* A row with SCU in no grid yet: an amber edge down its left side, an amber
    SCU whose tooltip says why, and the amount under its grid buttons. */
-#cargo tr.has-unassigned > td:first-child {
+#cargo tr.has-remaining > td:first-child {
   box-shadow: inset 4px 0 0 var(--warn);
 }
-#cargo .scu-cell[data-unassigned] {
+#cargo .scu-cell[data-remaining] {
   background: var(--warn-soft);
 }
-#cargo .scu-cell[data-unassigned] .field {
+#cargo .scu-cell[data-remaining] .field {
   color: var(--warn);
 }
 

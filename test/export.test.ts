@@ -3,9 +3,9 @@ import { exportTable, gridText, tableAsMarkdown, tableAsTsv } from "../src/lib/e
 import { bay, haulOf, testRow } from "./helpers";
 
 describe("copy formats", () => {
-  const positions = [bay("Bay", 2, 8, 2)];
-  const rows = [testRow({ cargo: "Gold | Ore", pickup: "Area18", scu: "1,033", positions: ["Bay"] })];
-  const table = exportTable(haulOf(rows, positions));
+  const grids = [bay("Bay", 2, 8, 2)];
+  const rows = [testRow({ cargo: "Gold | Ore", pickup: "Area18", scu: "1,033", plan: [{ name: "Bay", order: 1 }] })];
+  const table = exportTable(haulOf(rows, grids));
 
   test("TSV has a header and one line per row", () => {
     expect(tableAsTsv(table).split("\n")).toEqual([
@@ -56,7 +56,7 @@ describe("copy formats", () => {
 
   test("a size turned off is left out", () => {
     const small = [bay("Small", 2, 2, 2)];
-    const haul = haulOf([testRow({ scu: "8", positions: ["Small"] })], small, { 1: false });
+    const haul = haulOf([testRow({ scu: "8", plan: [{ name: "Small", order: 1 }] })], small, { 1: false });
     expect(tableAsTsv(exportTable(haul)).split("\n")).toEqual([
       "Cargo\tPick-up\tDrop-off\tSCU\tRemaining\t32\t8\tGrids",
       "\t\t\t8\t0\t0\t1\tSmall",
@@ -81,6 +81,6 @@ describe("gridText", () => {
         { name: "B", scu: 10 },
       ],
     };
-    expect(gridText(full)).toBe("B"); // A was full when it was picked
+    expect(gridText(full)).toBe("B"); // A was full when it was added to the plan
   });
 });

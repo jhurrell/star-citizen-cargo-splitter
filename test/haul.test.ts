@@ -6,33 +6,33 @@ import { bay, haulOf, haulOnShip, shipRow, testRow } from "./helpers";
 
 /* The parts of a Haul a test looks at, found by row or grid. */
 const deliveryOf = (haul: Haul, row: Row) => haul.deliveries.find((d) => d.row.id === row.id)!;
-const gridOf = (haul: Haul, name: string) => haul.grids.find((g) => g.position.name === name)!;
+const gridOf = (haul: Haul, name: string) => haul.grids.find((g) => g.grid.name === name)!;
 /* Size cells in column order (32, 8, 1): a count or "off". */
 const show = (cells: SizeCell[]) => cells.map((cell) => (cell.kind === "count" ? cell.count : cell.kind));
-/* A row's picks, each [order, grid]. */
-const picks = (...list: [number, string][]) => list.map(([order, name]) => ({ name, order }));
+/* A row's plan, each step [order, grid]. */
+const plan = (...list: [number, string][]) => list.map(([order, name]) => ({ name, order }));
 
 describe("selection", () => {
-  test("picks the first ship and layout for an empty choice, and gives their ids", () => {
+  test("chooses the first ship and layout for an empty choice, and gives their ids", () => {
     const haul = haulOnShip("", []);
     expect(haul.at).toEqual({ ship: haul.ship!.id, layout: haul.layout!.id });
-    expect(haul.positions).toBe(haul.layout!.positions);
+    expect(haul.grids.map((g) => g.grid)).toEqual(haul.layout!.grids);
   });
 
-  test("counts only picks on the selected ship and layout", () => {
-    const row = shipRow("ship-misc-hull-b", { scu: "8", picks: picks([1, "Port - Upper"]) });
+  test("counts only plan steps on the selected ship and layout", () => {
+    const row = shipRow("ship-misc-hull-b", { scu: "8", plan: plan([1, "Port - Upper"]) });
     expect(deliveryOf(haulOnShip("ship-misc-hull-b", [row]), row).parts).toEqual([{ name: "Port - Upper", scu: 8 }]);
-    /* The Hull A has a grid of the same name, but the pick was made on the Hull B. */
+    /* The Hull A has a grid of the same name, but the plan step is on the Hull B. */
     expect(deliveryOf(haulOnShip("ship-misc-hull-a", [row]), row).parts).toEqual([]);
   });
 });
 
 describe("container sizes", () => {
-  const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
+  const cargoGrids = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
 
   test("splits each delivery largest first, whatever its grid, and totals them", () => {
-    const rows = [testRow({ scu: "8", picks: picks([1, "Small"]) }), testRow({ scu: "32", picks: picks([2, "Big"]) })];
-    const haul = haulOf(rows, positions);
+    const rows = [testRow({ scu: "8", plan: plan([1, "Small"]) }), testRow({ scu: "32", plan: plan([2, "Big"]) })];
+    const haul = haulOf(rows, cargoGrids);
     expect(show(deliveryOf(haul, rows[0]).cells)).toEqual([0, 1, 0]);
     expect(show(deliveryOf(haul, rows[1]).cells)).toEqual([1, 0, 0]);
     expect(show(haul.totals.cells)).toEqual([1, 1, 0]);
@@ -40,17 +40,17 @@ describe("container sizes", () => {
   });
 
   test("a grid never takes more than it holds; the rest is counted with any size", () => {
-    const row = testRow({ scu: "40", picks: picks([1, "Small"]) });
-    const haul = haulOf([row], positions);
+    const row = testRow({ scu: "40", plan: plan([1, "Small"]) });
+    const haul = haulOf([row], cargoGrids);
     expect(gridOf(haul, "Small").free).toBe(0);
-    expect(deliveryOf(haul, row)).toMatchObject({ unassigned: 32, unassignedReason: "outOfRoom", leftover: 0 });
+    expect(deliveryOf(haul, row)).toMatchObject({ remaining: 32, remainingReason: "outOfRoom", leftover: 0 });
     expect(show(deliveryOf(haul, row).cells)).toEqual([1, 1, 0]);
     expect(haul.totals.scu).toBe(40);
   });
 
   test("sizes turned off are skipped and leave a leftover when nothing smaller fits", () => {
     const row = testRow({ scu: "33" });
-    const haul = haulOf([row], positions, { 1: false });
+    const haul = haulOf([row], cargoGrids, { 1: false });
     expect(show(deliveryOf(haul, row).cells)).toEqual([1, 0, "off"]);
     expect(show(haul.totals.cells)).toEqual([1, 0, "off"]);
     expect(deliveryOf(haul, row).leftover).toBe(1);
@@ -60,74 +60,74 @@ describe("container sizes", () => {
 
   test("a container no grid's shape takes stays unplaced, never split smaller", () => {
     const grids = [bay("A", 2, 4, 2), bay("B", 2, 4, 2)]; // 16 SCU each, too short for a 32
-    const row = testRow({ scu: "32", picks: picks([1, "A"], [2, "B"]) });
+    const row = testRow({ scu: "32", plan: plan([1, "A"], [2, "B"]) });
     const haul = haulOf([row], grids);
     expect(show(deliveryOf(haul, row).cells)).toEqual([1, 0, 0]); // the game hands over one 32
-    expect(deliveryOf(haul, row)).toMatchObject({ unassigned: 32, unassignedReason: "outOfRoom" });
+    expect(deliveryOf(haul, row)).toMatchObject({ remaining: 32, remainingReason: "outOfRoom" });
     expect(haul.grids.map((g) => g.free)).toEqual([16, 16]);
     expect(haul.totals.scu).toBe(32);
   });
 });
 
 describe("grid room", () => {
-  const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
+  const cargoGrids = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2)];
 
   test("each grid has its free SCU, and is full when no size turned on can still go in", () => {
-    const tall = [bay("Tall", 2, 2, 3)]; // an 8 on the floor leaves a layer 1 SCU high
-    const rows = [testRow({ scu: "8", picks: picks([1, "Tall"]) })];
+    const tall = [bay("Tall", 2, 2, 3)]; // an 8 on the grid face leaves a layer 1 SCU high
+    const rows = [testRow({ scu: "8", plan: plan([1, "Tall"]) })];
     expect(gridOf(haulOf(rows, tall), "Tall")).toMatchObject({ free: 4, full: false }); // a 1 still fits
     expect(gridOf(haulOf(rows, tall, { 1: false }), "Tall")).toMatchObject({ free: 4, full: true });
-    expect(gridOf(haulOf(rows, positions), "Big")).toMatchObject({ free: 32, full: false });
+    expect(gridOf(haulOf(rows, cargoGrids), "Big")).toMatchObject({ free: 32, full: false });
   });
 
   test("full goes by what can still be placed, not the SCU free", () => {
-    /* Two 8s fill the floor; a third would stand 4 high, so 8 SCU is free but no 8 fits. */
+    /* Two 8s fill the grid face; a third would stand 4 high, so 8 SCU is free but no 8 fits. */
     const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)];
-    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"]) });
+    const row = testRow({ scu: "24", plan: plan([1, "Bay 1"]) });
     const haul = haulOf([row], bays, { 1: false });
     expect(gridOf(haul, "Bay 1")).toMatchObject({ free: 8, full: true });
     expect(deliveryOf(haul, row).grids.map((g) => g.block)).toEqual([null, null]);
   });
 
   test("left over SCU takes no room in its grid", () => {
-    const rows = [testRow({ scu: "6", picks: picks([1, "Small"]) })];
-    const haul = haulOf(rows, positions, { 1: false }); // 6 SCU with only 8s and 32s
+    const rows = [testRow({ scu: "6", plan: plan([1, "Small"]) })];
+    const haul = haulOf(rows, cargoGrids, { 1: false }); // 6 SCU with only 8s and 32s
     expect(gridOf(haul, "Small")).toMatchObject({ free: 8, placed: [] });
-    expect(deliveryOf(haul, rows[0])).toMatchObject({ leftover: 6, unassigned: 0, unassignedReason: null });
+    expect(deliveryOf(haul, rows[0])).toMatchObject({ leftover: 6, remaining: 0, remainingReason: null });
   });
 
   test("a grid with no size turned on that fits its shape is full, even when empty", () => {
-    const haul = haulOf([], positions, { 1: false, 8: false });
+    const haul = haulOf([], cargoGrids, { 1: false, 8: false });
     expect(gridOf(haul, "Small")).toMatchObject({ free: 8, full: true }); // 32 SCU is too long for it
     expect(gridOf(haul, "Big")).toMatchObject({ free: 32, full: false });
   });
 
   test("totals the SCU in no grid and the room free, and whether any row is in a grid", () => {
     const rows = [
-      testRow({ scu: "40", picks: picks([1, "Small"]) }), // 32 over
+      testRow({ scu: "40", plan: plan([1, "Small"]) }), // 32 over
       testRow({ scu: "5" }), // no grid
-      testRow({ scu: "4", picks: picks([2, "Big"]) }),
+      testRow({ scu: "4", plan: plan([2, "Big"]) }),
     ];
-    const haul = haulOf(rows, positions);
-    expect(haul.totals).toMatchObject({ unassigned: 37, free: 28 });
-    expect(haul.anyAssigned).toBe(true);
-    expect(haulOf([testRow({ scu: "5" })], positions).anyAssigned).toBe(false);
+    const haul = haulOf(rows, cargoGrids);
+    expect(haul.totals).toMatchObject({ remaining: 37, free: 28 });
+    expect(haul.anyPlanned).toBe(true);
+    expect(haulOf([testRow({ scu: "5" })], cargoGrids).anyPlanned).toBe(false);
   });
 });
 
 describe("splitting across grids", () => {
-  const positions = [bay("A", 2, 4, 2), bay("B", 2, 4, 2), bay("C", 2, 4, 2)]; // 16 SCU each
+  const cargoGrids = [bay("A", 2, 4, 2), bay("B", 2, 4, 2), bay("C", 2, 4, 2)]; // 16 SCU each
   const split = (haul: Haul, rows: Row[]) =>
     rows.map((row) => {
-      const { parts, unassigned } = deliveryOf(haul, row);
-      return { parts, unassigned };
+      const { parts, remaining } = deliveryOf(haul, row);
+      return { parts, remaining };
     });
 
-  test("an earlier pick keeps its room; a later one takes what's left, then moves on", () => {
+  test("an earlier plan step keeps its room; a later one takes what's left, then moves on", () => {
     const hull = "ship-misc-hull-b";
     const rows = [
-      shipRow(hull, { scu: "184", picks: picks([1, "Starboard - Upper"], [2, "Starboard - Lower"]) }),
-      shipRow(hull, { scu: "84", picks: picks([3, "Starboard - Lower"], [4, "Port - Lower"]) }),
+      shipRow(hull, { scu: "184", plan: plan([1, "Starboard - Upper"], [2, "Starboard - Lower"]) }),
+      shipRow(hull, { scu: "84", plan: plan([3, "Starboard - Lower"], [4, "Port - Lower"]) }),
     ];
     expect(split(haulOnShip(hull, rows), rows)).toEqual([
       {
@@ -135,61 +135,46 @@ describe("splitting across grids", () => {
           { name: "Starboard - Upper", scu: 128 },
           { name: "Starboard - Lower", scu: 56 },
         ],
-        unassigned: 0,
+        remaining: 0,
       },
       {
         parts: [
           { name: "Starboard - Lower", scu: 72 },
           { name: "Port - Lower", scu: 12 },
         ],
-        unassigned: 0,
+        remaining: 0,
       },
     ]);
   });
 
-  test("picks fill in the order they were made, not table order", () => {
-    const rows = [
-      testRow({ scu: "20", picks: picks([2, "C"], [3, "A"]) }),
-      testRow({ scu: "10", picks: picks([1, "A"]) }),
-    ];
-    expect(split(haulOf(rows, positions), rows)).toEqual([
+  test("plan steps fill in the order they were added, not table order", () => {
+    const rows = [testRow({ scu: "20", plan: plan([2, "C"], [3, "A"]) }), testRow({ scu: "10", plan: plan([1, "A"]) })];
+    expect(split(haulOf(rows, cargoGrids), rows)).toEqual([
       {
         parts: [
           { name: "C", scu: 16 },
           { name: "A", scu: 4 },
         ],
-        unassigned: 0,
+        remaining: 0,
       },
-      { parts: [{ name: "A", scu: 10 }], unassigned: 0 },
+      { parts: [{ name: "A", scu: 10 }], remaining: 0 },
     ]);
   });
 
-  test("a pick of a full grid gets nothing, and the row moves on to its next", () => {
-    const rows = [
-      testRow({ scu: "16", picks: picks([1, "A"]) }),
-      testRow({ scu: "10", picks: picks([2, "A"], [3, "B"]) }),
-    ];
-    expect(split(haulOf(rows, positions), rows)[1]).toEqual({
+  test("a plan step on a full grid gets nothing, and the row moves on to its next", () => {
+    const rows = [testRow({ scu: "16", plan: plan([1, "A"]) }), testRow({ scu: "10", plan: plan([2, "A"], [3, "B"]) })];
+    expect(split(haulOf(rows, cargoGrids), rows)[1]).toEqual({
       parts: [
         { name: "A", scu: 0 },
         { name: "B", scu: 10 },
       ],
-      unassigned: 0,
+      remaining: 0,
     });
-  });
-
-  test("ties from older saves go by table order", () => {
-    const rows = [testRow({ scu: "10", positions: ["A"] }), testRow({ scu: "10", positions: ["A", "B"] })];
-    /* The first row's 8 and two 1s leave A 6 SCU, too broken up for the second's 8. */
-    expect(split(haulOf(rows, positions), rows)[1].parts).toEqual([
-      { name: "A", scu: 2 },
-      { name: "B", scu: 8 },
-    ]);
   });
 
   test("containers a grid can't place move on to the row's next grid, whole", () => {
     const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)]; // 24 SCU each, but only two 8s
-    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"], [2, "Bay 2"]) });
+    const row = testRow({ scu: "24", plan: plan([1, "Bay 1"], [2, "Bay 2"]) });
     const haul = haulOf([row], bays);
     expect(split(haul, [row])).toEqual([
       {
@@ -197,65 +182,62 @@ describe("splitting across grids", () => {
           { name: "Bay 1", scu: 16 },
           { name: "Bay 2", scu: 8 },
         ],
-        unassigned: 0,
+        remaining: 0,
       },
     ]);
     expect(show(deliveryOf(haul, row).cells)).toEqual([0, 3, 0]); // still three 8s, not 4s
     expect(haul.grids.map((g) => g.placed.length)).toEqual([2, 1]);
   });
 
-  test("with no next grid, what can't be placed is unassigned", () => {
+  test("with no next grid, what can't be placed is remaining", () => {
     const bays = [bay("Bay 1", 4, 2, 3), bay("Bay 2", 4, 2, 3)];
-    const row = testRow({ scu: "24", picks: picks([1, "Bay 1"]) });
+    const row = testRow({ scu: "24", plan: plan([1, "Bay 1"]) });
     const delivery = deliveryOf(haulOf([row], bays), row);
-    expect(delivery).toMatchObject({ unassigned: 8, unassignedReason: "outOfRoom" });
+    expect(delivery).toMatchObject({ remaining: 8, remainingReason: "outOfRoom" });
     expect(delivery.grids.map((g) => g.block)).toEqual([null, null]); // Bay 2 can take it
   });
 
-  test("what there's no room for stays out of every grid and counts as unassigned", () => {
-    const rows = [
-      testRow({ scu: "40", picks: picks([1, "A"], [2, "B"]) }),
-      testRow({ scu: "20", picks: picks([3, "C"]) }),
-    ];
-    expect(split(haulOf(rows, positions, { 32: false }), rows)).toEqual([
+  test("what there's no room for stays out of every grid and counts as remaining", () => {
+    const rows = [testRow({ scu: "40", plan: plan([1, "A"], [2, "B"]) }), testRow({ scu: "20", plan: plan([3, "C"]) })];
+    expect(split(haulOf(rows, cargoGrids, { 32: false }), rows)).toEqual([
       {
         parts: [
           { name: "A", scu: 16 },
           { name: "B", scu: 16 },
         ],
-        unassigned: 8,
+        remaining: 8,
       },
-      { parts: [{ name: "C", scu: 16 }], unassigned: 4 },
+      { parts: [{ name: "C", scu: 16 }], remaining: 4 },
     ]);
   });
 
-  test("a later pick of a full grid gets nothing from it", () => {
-    const rows = [testRow({ scu: "16", picks: picks([1, "A"]) }), testRow({ scu: "4", picks: picks([2, "A"]) })];
-    expect(split(haulOf(rows, positions), rows)[1]).toEqual({ parts: [{ name: "A", scu: 0 }], unassigned: 4 });
+  test("a later plan step on a full grid gets nothing from it", () => {
+    const rows = [testRow({ scu: "16", plan: plan([1, "A"]) }), testRow({ scu: "4", plan: plan([2, "A"]) })];
+    expect(split(haulOf(rows, cargoGrids), rows)[1]).toEqual({ parts: [{ name: "A", scu: 0 }], remaining: 4 });
   });
 
-  test("a row with no grid on this layout is all unassigned", () => {
-    const rows = [testRow({ scu: "16" }), testRow({ scu: "9", picks: picks([1, "Elsewhere"]) }), testRow({ scu: "" })];
-    expect(split(haulOf(rows, positions), rows)).toEqual([
-      { parts: [], unassigned: 16 },
-      { parts: [], unassigned: 9 },
-      { parts: [], unassigned: 0 },
+  test("a row with no grid on this layout is all remaining", () => {
+    const rows = [testRow({ scu: "16" }), testRow({ scu: "9", plan: plan([1, "Elsewhere"]) }), testRow({ scu: "" })];
+    expect(split(haulOf(rows, cargoGrids), rows)).toEqual([
+      { parts: [], remaining: 16 },
+      { parts: [], remaining: 9 },
+      { parts: [], remaining: 0 },
     ]);
   });
 
-  test("a layout with no grids leaves nothing to assign", () => {
+  test("a layout with no grids leaves nothing to place", () => {
     const rows = [testRow({ scu: "16" })];
-    expect(split(haulOf(rows, []), rows)).toEqual([{ parts: [], unassigned: 0 }]);
+    expect(split(haulOf(rows, []), rows)).toEqual([{ parts: [], remaining: 0 }]);
   });
 
   test("says why some of a row is in no grid", () => {
     const rows = [
-      testRow({ scu: "20", picks: picks([1, "A"]) }), // 4 over
+      testRow({ scu: "20", plan: plan([1, "A"]) }), // 4 over
       testRow({ scu: "57" }),
-      testRow({ scu: "8", picks: picks([2, "B"]) }),
+      testRow({ scu: "8", plan: plan([2, "B"]) }),
     ];
-    const haul = haulOf(rows, positions);
-    expect(rows.map((row) => deliveryOf(haul, row).unassignedReason)).toEqual(["outOfRoom", "noGrid", null]);
+    const haul = haulOf(rows, cargoGrids);
+    expect(rows.map((row) => deliveryOf(haul, row).remainingReason)).toEqual(["outOfRoom", "noGrid", null]);
   });
 });
 
@@ -264,8 +246,8 @@ describe("loading order", () => {
 
   test("a grid's later cargo loads from aft, apart from what was there first", () => {
     const rows = [
-      shipRow(hull, { scu: "184", picks: picks([1, "Starboard - Upper"], [2, "Starboard - Lower"]) }),
-      shipRow(hull, { scu: "84", picks: picks([3, "Starboard - Lower"], [4, "Port - Lower"]) }),
+      shipRow(hull, { scu: "184", plan: plan([1, "Starboard - Upper"], [2, "Starboard - Lower"]) }),
+      shipRow(hull, { scu: "84", plan: plan([3, "Starboard - Lower"], [4, "Port - Lower"]) }),
     ];
     const { placed } = gridOf(haulOnShip(hull, rows), "Starboard - Lower");
     /* y runs aft to fore here. In each lane across the grid, the first row's
@@ -279,47 +261,47 @@ describe("loading order", () => {
   });
 
   test("a grid loads from its fore end", () => {
-    const rows = [shipRow(hull, { scu: "32", picks: picks([1, "Port - Upper"]) })];
+    const rows = [shipRow(hull, { scu: "32", plan: plan([1, "Port - Upper"]) })];
     const { placed } = gridOf(haulOnShip(hull, rows), "Port - Upper");
     expect(placed.map(({ y, d }) => [y, y + d])).toEqual([[8, 16]]);
   });
 });
 
 describe("grid choices", () => {
-  const positions = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2), bay("Long", 2, 8, 2)];
+  const cargoGrids = [bay("Small", 2, 2, 2), bay("Big", 2, 8, 2), bay("Long", 2, 8, 2)];
   const blocks = (rows: Row[], row: Row) =>
-    Object.fromEntries(deliveryOf(haulOf(rows, positions), row).grids.map((g) => [g.name, g.block]));
+    Object.fromEntries(deliveryOf(haulOf(rows, cargoGrids), row).grids.map((g) => [g.name, g.block]));
 
-  test("a row with SCU left can pick a grid with room for its smallest container", () => {
+  test("a row with SCU left can add a grid with room for its smallest container", () => {
     const row = testRow({ scu: "40" }); // 32 + 8 in Big; 8 × 5 in Small
     expect(blocks([row], row)).toEqual({ Small: null, Big: null, Long: null });
   });
 
   test("lists every grid, whether the row is in it, and none it's in is blocked", () => {
-    const row = testRow({ scu: "8", picks: picks([1, "Big"]) });
-    expect(deliveryOf(haulOf([row], positions), row).grids).toEqual([
-      { name: "Small", picked: false, block: "allAssigned" },
-      { name: "Big", picked: true, block: null },
-      { name: "Long", picked: false, block: "allAssigned" },
+    const row = testRow({ scu: "8", plan: plan([1, "Big"]) });
+    expect(deliveryOf(haulOf([row], cargoGrids), row).grids).toEqual([
+      { name: "Small", inPlan: false, block: "allPlaced" },
+      { name: "Big", inPlan: true, block: null },
+      { name: "Long", inPlan: false, block: "allPlaced" },
     ]);
   });
 
   test("not a grid others have left too little room in for the row's containers", () => {
-    const other = testRow({ scu: "25", picks: picks([1, "Big"]) }); // leaves 7 free, room for 1s
+    const other = testRow({ scu: "25", plan: plan([1, "Big"]) }); // leaves 7 free, room for 1s
     const row = testRow({ scu: "40" }); // a 32 and an 8
     expect(blocks([other, row], row)).toMatchObject({ Big: "tooSmall", Long: null });
     const odd = testRow({ scu: "41" }); // a 32, an 8 and a 1, which fits
     expect(blocks([other, odd], odd)).toMatchObject({ Big: null });
   });
 
-  test("not a full grid; a row with no SCU yet can pick any other", () => {
-    const filler = testRow({ scu: "8", picks: picks([1, "Small"]) });
+  test("not a full grid; a row with no SCU yet can add any other", () => {
+    const filler = testRow({ scu: "8", plan: plan([1, "Small"]) });
     const blank = testRow();
     expect(blocks([filler, blank], blank)).toEqual({ Small: "full", Big: null, Long: null });
   });
 
   test("the rows come out in table order with their text", () => {
     const rows = [testRow({ cargo: "Gold", scu: "1" }), makeRow({ cargo: "Tin" })];
-    expect(haulOf(rows, positions).deliveries.map((d) => d.row.cargo)).toEqual(["Gold", "Tin"]);
+    expect(haulOf(rows, cargoGrids).deliveries.map((d) => d.row.cargo)).toEqual(["Gold", "Tin"]);
   });
 });

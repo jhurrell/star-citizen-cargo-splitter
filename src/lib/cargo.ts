@@ -12,10 +12,12 @@ export const MAX_SCU = 9_999;
 export type Shape = { x: number; y: number; z: number };
 export type Placement = [w: number, d: number, h: number];
 export type Container = { size: number; placements: Placement[] };
-/* `mount` places it on the ship for the ship view; see mount.ts. */
-export type Position = Shape & { name: string; capacity: number; mount: Mount | null };
-export type Grid = { id: string; name: string; positions: Position[] };
-export type Ship = { id: string; name: string; grids: Grid[] };
+/* A cargo grid: where containers lock and stack. `mount` places it on the
+   ship for the ship view; see mount.ts. */
+export type CargoGrid = Shape & { name: string; capacity: number; mount: Mount | null };
+/* One arrangement of a ship's cargo grids. */
+export type Layout = { id: string; name: string; grids: CargoGrid[] };
+export type Ship = { id: string; name: string; layouts: Layout[] };
 
 /* Loosely typed data, as read from containers.json or ships.json. */
 type Raw = Record<string, unknown> | null | undefined;
@@ -73,31 +75,31 @@ export function parseContainers(items: unknown): Container[] {
   return [...bySize.values()].sort((a, b) => b.size - a.size);
 }
 
-/* A cargo grid position, or null if malformed. Its capacity is its volume in SCU. */
-function parsePosition(item: Raw): Position | null {
+/* A cargo grid, or null if malformed. Its capacity is its volume in SCU. */
+function parseCargoGrid(item: Raw): CargoGrid | null {
   const name = asText(item?.name);
   const shape = parseShape(item);
   return name && shape ? { name, ...shape, capacity: shape.x * shape.y * shape.z, mount: parseMount(item) } : null;
 }
 
-/* The ships from ships.json (a list), sorted by name. Malformed positions are
-   skipped, and so are grids left with no positions and ships with no grids. */
+/* The ships from ships.json (a list), sorted by name. Malformed cargo grids
+   are skipped, and so are layouts left with no grids and ships with no layouts. */
 export function parseShips(items: unknown): Ship[] {
   return list(items)
     .map((ship) => ({
       id: asText(ship?.id),
       name: asText(ship?.name ?? ship?.id),
-      grids: list(ship?.grids)
-        .map((grid) => ({
-          id: asText(grid?.id),
-          name: asText(grid?.name ?? grid?.id),
-          positions: list(grid?.positions)
-            .map(parsePosition)
-            .filter((p): p is Position => p !== null),
+      layouts: list(ship?.layouts)
+        .map((layout) => ({
+          id: asText(layout?.id),
+          name: asText(layout?.name ?? layout?.id),
+          grids: list(layout?.grids)
+            .map(parseCargoGrid)
+            .filter((g): g is CargoGrid => g !== null),
         }))
-        .filter((grid) => grid.id && grid.positions.length > 0),
+        .filter((layout) => layout.id && layout.grids.length > 0),
     }))
-    .filter((ship) => ship.id && ship.grids.length > 0)
+    .filter((ship) => ship.id && ship.layouts.length > 0)
     .sort((a, b) => collator.compare(a.name, b.name));
 }
 

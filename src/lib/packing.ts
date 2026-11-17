@@ -30,14 +30,14 @@ export function addCounts(into: Counts, extra: Counts): Counts {
 }
 
 /* Which way packing sweeps a space. "z" fills the bottom layer before the
-   next. "x" or "y" fills along that floor axis from 0 instead, each spot as
+   next. "x" or "y" fills along that face axis from 0 instead, each spot as
    high as it stacks before moving on; `reverse` then mirrors the result so it
    fills from the far end (the fore end, say). */
 export type Sweep = { axis: "x" | "y" | "z"; reverse?: boolean };
 
 /* Pack containers into a space of x × y × z SCU cells (z is height). `tag`
    says whose cargo each container is. Each container sits in one of its
-   placements (see placementsOf), on the floor or wholly on top of others.
+   placements (see placementsOf), on the grid face or wholly on top of others.
    Greedy: biggest first, each in the first spot that takes it, in `sweep`
    order. This can miss a packing that exists, so it may report a load as not
    fitting when a cleverer layout would. */
@@ -46,10 +46,10 @@ export function packContainers<Tag>(space: Shape, load: Load<Tag>[], sweep: Swee
 }
 
 /* Pack loads one after another, each biggest first, to keep them apart: the
-   first from the start of a floor-axis sweep, every later one from its far
+   first from the start of a face-axis sweep, every later one from its far
    end, so the first sits at one end and the rest build up from the other. A
    "z" sweep has no far end, so each just takes the next free spots. A load's
-   containers go on the floor or on its own containers where they can, and on
+   containers go on the grid face or on its own containers where they can, and on
    another load's only when there's nowhere else. */
 export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep = { axis: "z" }): Packing<Tag> {
   const packing = startPacking<Tag>(space, sweep);
@@ -66,7 +66,7 @@ export function packInTurn<Tag>(space: Shape, loads: Load<Tag>[][], sweep: Sweep
 export type GridLoad<Tag> = {
   /* Place what of a load fits, and say what doesn't, by size. */
   add(load: Load<Tag>[]): Counts;
-  /* Whether a container could still go in, on the floor or on others. */
+  /* Whether a container could still go in, on the grid face or on others. */
   canPlace(container: Container): boolean;
   placed(): Placed<Tag>[];
 };
@@ -137,7 +137,7 @@ function startPacking<Tag>(space: Shape, sweep: Sweep, from?: PackState<Tag>) {
     return true;
   };
   const isFree = (box: Box) => everyCell(box, (i) => !filled[i]);
-  /* On the floor or wholly on containers; with `turn`, only that load's. */
+  /* On the grid face or wholly on containers; with `turn`, only that load's. */
   const isSupported = (box: Box, turn?: number) =>
     box.z === 0 ||
     everyCell({ ...box, z: box.z - 1, h: 1 }, (i) => (turn === undefined ? filled[i] > 0 : filled[i] === turn + 1));
@@ -155,14 +155,14 @@ function startPacking<Tag>(space: Shape, sweep: Sweep, from?: PackState<Tag>) {
     isSupported(box, onTurn) &&
     isFree(box);
 
-  /* The first spot for a container, in sweep order, on the floor or on its
+  /* The first spot for a container, in sweep order, on the grid face or on its
      own load's containers; failing that, on any. */
   const findSpot = (container: Container, turn: number) =>
     findSpotOn(container, turn > 0, turn) ?? findSpotOn(container, turn > 0);
 
   /* The first spot that takes a container, in sweep order, resting only on
-     `onTurn`'s containers if given. For "z": each layer from the floor. For a
-     floor axis: each step along it, then up, then across; from its far end,
+     `onTurn`'s containers if given. For "z": each layer from the grid face. For a
+     face axis: each step along it, then up, then across; from its far end,
      the container's far edge goes at each step. */
   function findSpotOn({ placements }: Container, fromEnd: boolean, onTurn?: number): Box | null {
     if (sweep.axis === "z") {

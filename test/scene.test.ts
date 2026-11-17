@@ -11,9 +11,9 @@ import {
 } from "../src/components/ship/scene";
 import { rotationOf, type Mount, type Vec3 } from "../src/lib/mount";
 import type { Box } from "../src/lib/packing";
-import { allShips, shipPositions } from "./helpers";
+import { allShips, shipGrids } from "./helpers";
 
-/* A 2 × 4 × 1 grid whose floor is centred on the origin. */
+/* A 2 × 4 × 1 grid whose grid face is centred on the origin. */
 const flat: Mounted = {
   name: "Flat",
   x: 2,
@@ -24,7 +24,7 @@ const flat: Mounted = {
 };
 
 describe("boundsOf", () => {
-  test("boxes a grid from its floor centre up", () => {
+  test("boxes a grid from its grid face centre up", () => {
     expect(boundsOf([flat])).toMatchObject({ min: [-1, -2, 0], max: [1, 2, 1], center: [0, 0, 0.5] });
   });
 
@@ -33,7 +33,7 @@ describe("boundsOf", () => {
   });
 
   test("boxes every grid of a configured ship", () => {
-    const grids = shipPositions("ship-misc-hull-b").filter(isMounted);
+    const grids = shipGrids("ship-misc-hull-b").filter(isMounted);
     const { min, max } = boundsOf(grids);
     for (let i = 0; i < 3; i++) expect(max[i]).toBeGreaterThan(min[i]);
   });
@@ -74,8 +74,8 @@ describe("sizeMarksOf", () => {
   test("reads upright in the ship on every grid: sides top-up, tops and bottoms top-fore", () => {
     const wrong: string[] = [];
     for (const ship of allShips)
-      for (const layout of ship.grids)
-        for (const { name, mount } of layout.positions.filter(isMounted)) {
+      for (const layout of ship.layouts)
+        for (const { name, mount } of layout.grids.filter(isMounted)) {
           for (const mark of sizeMarksOf(box, mount)) {
             const facing = inShip(mount, mark.normal);
             const up = inShip(mount, mark.up);

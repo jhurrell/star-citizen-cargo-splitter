@@ -39,10 +39,10 @@ export function Help() {
         <ul>
           <li>
             Click a grid button to put a row in that grid. Each button shows the SCU the grid has available, and a full
-            grid can't be picked.
+            grid can't be added.
           </li>
           <li>
-            To split a big delivery, turn on several grids: grids fill in the order you pick them, and a later pick only
+            To split a big delivery, turn on several grids: grids fill in the order you add them, and a later one only
             takes the room an earlier one left. Containers a grid's shape can't fit move on to the row's next grid.
           </li>
           <li>Clear, in the Grids heading, takes every row out of its grids. Click it again to confirm.</li>
@@ -55,7 +55,7 @@ export function Help() {
         <h3>Ship view</h3>
         <ul>
           <li>Drag to turn, scroll to zoom, right-drag to pan.</li>
-          <li>The pale blue face of each grid is its floor; containers stack away from it.</li>
+          <li>Each grid's grid face, where containers lock, is pale blue; containers stack away from it.</li>
           <li>Point at a container to see what it holds, or at a grid button in the table to light that grid up.</li>
           <li>
             Click a row in the legend to dim its containers. Point at a row in the legend, or at its Cargo, Pick-up or

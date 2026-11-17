@@ -1,7 +1,7 @@
 import { isOverMaxScu } from "../lib/cargo";
 import type { Cargo } from "../lib/emphasis";
 import { fmt, initials, plural } from "../lib/format";
-import type { Delivery, Haul, HaulGrid, PickBlock, SizeCell, SizeColumn } from "../lib/haul";
+import type { Delivery, GridBlock, Haul, HaulGrid, SizeCell, SizeColumn } from "../lib/haul";
 import { TEXT_COLUMNS, type RowField, type Sort, type TextKey } from "../lib/state";
 import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
@@ -13,8 +13,8 @@ type Props = {
   /* Each row's color in the ship view, for its swatch. */
   cargoByRow: Map<number, Cargo>;
   onUpdate: (id: number, field: RowField, value: string) => void;
-  /* Pick a grid for a row (after every earlier pick), or unpick it. */
-  onTogglePick: (id: number, name: string) => void;
+  /* Add a cargo grid to a row's plan (after every earlier step), or take it out. */
+  onToggleGrid: (id: number, name: string) => void;
   /* The grid the pointer or focus is on, for the ship view; null when none. */
   onHighlight: (name: string | null) => void;
   /* The row whose Cargo, Pick-up or Drop-off the pointer or focus is in (as
@@ -27,7 +27,7 @@ type Props = {
   /* Take every row out of its grids (the Grids heading's Clear, once confirmed). */
   onClearGrids: () => void;
 };
-type RowActions = Pick<Props, "onUpdate" | "onTogglePick" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
+type RowActions = Pick<Props, "onUpdate" | "onToggleGrid" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
 
 /* A grid's button: its short tag and what's in the grid. */
 type GridButton = { tag: string; grid: HaulGrid };
@@ -37,7 +37,7 @@ type GridButton = { tag: string; grid: HaulGrid };
    SCU can't be made of the sizes turned on), Grids. */
 export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onClearGrids, ...rowActions }: Props) {
   const { sizes, deliveries, totals, showLeftover } = haul;
-  const tags = initials(haul.grids.map((g) => g.position.name));
+  const tags = initials(haul.grids.map((g) => g.grid.name));
   const grids: GridButton[] = haul.grids.map((grid, i) => ({ tag: tags[i], grid }));
   /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
   const columnCount = TEXT_COLUMNS.length + 2 + sizes.length + 1 + 1;
@@ -67,7 +67,7 @@ export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onCle
                 ariaLabel="Clear every row's grids"
                 confirmAriaLabel="Confirm clearing every row's grids"
                 className="clear-grids"
-                disabled={!haul.anyAssigned}
+                disabled={!haul.anyPlanned}
                 onConfirm={onClearGrids}
               />
             </div>
@@ -101,7 +101,7 @@ export function CargoTable({ haul, sort, cargoByRow, onSort, onToggleSize, onCle
             Total · {plural(deliveries.length, "row")}
           </td>
           <td className="foot-scu">{fmt(totals.scu)}</td>
-          <RemainingCell scu={totals.unassigned} />
+          <RemainingCell scu={totals.remaining} />
           <SizeCells cells={totals.cells} sizes={sizes} />
           <LeftoverCell scu={totals.leftover} shown={showLeftover} />
           <td
@@ -175,12 +175,12 @@ function SizeHead({
   );
 }
 
-/* What of a row isn't in a grid yet, and what to do about it. */
-function unassignedText({ unassigned, unassignedReason, parts }: Delivery): string | undefined {
-  if (!unassignedReason) return undefined;
-  if (unassignedReason === "noGrid") return `${fmt(unassigned)} SCU not in a grid yet. Choose a grid for it.`;
+/* A row's remaining SCU, and what to do about it. */
+function remainingText({ remaining, remainingReason, parts }: Delivery): string | undefined {
+  if (!remainingReason) return undefined;
+  if (remainingReason === "noGrid") return `${fmt(remaining)} SCU not in a grid yet. Choose a grid for it.`;
   const where = parts.length === 1 ? "this grid" : "these grids";
-  return `${fmt(unassigned)} SCU doesn't fit in ${where}. Choose another grid to split it.`;
+  return `${fmt(remaining)} SCU doesn't fit in ${where}. Choose another grid to split it.`;
 }
 
 function CargoRow({
@@ -190,7 +190,7 @@ function CargoRow({
   grids,
   showLeftover,
   onUpdate,
-  onTogglePick,
+  onToggleGrid,
   onHighlight,
   onPointRows,
   onDelete,
@@ -203,8 +203,8 @@ function CargoRow({
   grids: GridButton[];
   showLeftover: boolean;
 }) {
-  const { row, unassigned } = delivery;
-  const why = unassignedText(delivery);
+  const { row, remaining } = delivery;
+  const why = remainingText(delivery);
   const field = (key: RowField) => ({
     id: `r${row.id}-${key}`,
     value: row[key],
@@ -215,7 +215,7 @@ function CargoRow({
     },
   });
   return (
-    <tr className={unassigned ? "has-unassigned" : undefined}>
+    <tr className={remaining ? "has-remaining" : undefined}>
       {TEXT_COLUMNS.map(({ key, label }, i) => {
         const input = <input className="field" aria-label={label} {...field(key)} />;
         return (
@@ -246,7 +246,7 @@ function CargoRow({
         );
       })}
       {/* Amber while some of the row isn't in a grid; the tooltip says how much and why. */}
-      <td className="edit scu-cell" data-unassigned={unassigned ? "" : undefined} title={why}>
+      <td className="edit scu-cell" data-remaining={remaining ? "" : undefined} title={why}>
         <input
           className="field scu"
           inputMode="numeric"
@@ -261,32 +261,32 @@ function CargoRow({
           }}
         />
       </td>
-      <RemainingCell scu={unassigned} title={why} />
+      <RemainingCell scu={remaining} title={why} />
       <SizeCells cells={delivery.cells} sizes={sizes} />
       <LeftoverCell scu={delivery.leftover} shown={showLeftover} />
       <td className="edit sep">
-        <GridPicks delivery={delivery} grids={grids} onTogglePick={onTogglePick} onHighlight={onHighlight} />
+        <GridButtons delivery={delivery} grids={grids} onToggleGrid={onToggleGrid} onHighlight={onHighlight} />
       </td>
     </tr>
   );
 }
 
 /* Why a grid button is disabled, for its tooltip. */
-const BLOCK_TEXT: Record<PickBlock, string> = {
+const BLOCK_TEXT: Record<GridBlock, string> = {
   full: "Full: no room for another container",
-  allAssigned: "All of this row is in its grids",
+  allPlaced: "All of this row is in its grids",
   tooSmall: "Too little room for this row's containers",
 };
 
 /* The Grids cell: a toggle button per grid showing the SCU it has available,
-   disabled when the row can't pick it. Pointing at (or tabbing to) a button
+   disabled when the row can't add it to its plan. Pointing at (or tabbing to) a button
    lights that grid up in the ship view. */
-function GridPicks({
+function GridButtons({
   delivery,
   grids,
-  onTogglePick,
+  onToggleGrid,
   onHighlight,
-}: Pick<RowActions, "onTogglePick" | "onHighlight"> & {
+}: Pick<RowActions, "onToggleGrid" | "onHighlight"> & {
   delivery: Delivery;
   grids: GridButton[];
 }) {
@@ -294,24 +294,24 @@ function GridPicks({
     <div className="grid-cell">
       {/* At most four buttons a line, so a ship with many grids stays narrow. */}
       <div
-        className="grid-picks"
+        className="grid-buttons"
         role="group"
         aria-label="Grids for this row"
         style={{ gridTemplateColumns: `repeat(${Math.min(grids.length, 4)}, auto)` }}
       >
-        {delivery.grids.map(({ name, picked, block }, i) => {
+        {delivery.grids.map(({ name, inPlan, block }, i) => {
           const { tag, grid } = grids[i];
           const lines = [name, `${fmt(grid.free)} SCU available`, ...(block ? [BLOCK_TEXT[block]] : [])];
           return (
             <button
               key={name}
               type="button"
-              className="grid-pick"
-              aria-pressed={picked}
+              className="grid-button"
+              aria-pressed={inPlan}
               aria-label={lines.join(", ")}
               title={lines.join("\n")}
               disabled={block !== null}
-              onClick={() => onTogglePick(delivery.row.id, name)}
+              onClick={() => onToggleGrid(delivery.row.id, name)}
               {...pointHandlers((pointed) => onHighlight(pointed ? name : null))}
             >
               <span className="grid-tag">{tag}</span>
