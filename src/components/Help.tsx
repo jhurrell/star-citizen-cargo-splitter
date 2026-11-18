@@ -21,38 +21,34 @@ export function Help() {
           </button>
         </div>
 
-        <h3>The table</h3>
+        <h3>Contracts Tables</h3>
         <ul>
           <li>
-            Click <strong>Add contract</strong> for each contract you accept, and give it a row per delivery. Its{" "}
-            <strong>Add cargo row</strong> adds another.
+            Click <strong>Add contract</strong> for each contract you accept, and give it a row per delivery. This
+            allows you to stack and visualize multiple contracts. Give the contract name if you want or just leave it.
+          </li>
+          <li>
+            Click <strong>Delete contract</strong> if you want to remove a contract and its rows. Click it again to
+            confirm. Clicked <strong>Delete contract</strong> by mistake, just wait a few seconds and the{" "}
+            <strong>Confirm</strong> mode goes away.
+          </li>
+          <li>
+            Click <strong>Add cargo row</strong> to add a new cargo row to a contract. Fill in the cargo name, pick-up,
+            drop-off and SCU. Each row is split into the biggest container size its contract hands out first, then the
+            next size down, as the game hands a contract over. We've capped it at 9,999 SCU for now until we get bigger
+            ships.
+          </li>
+          <li>
+            Toggle the SCU size buttons to disable or enable a container size for the entire contract. The tool will
+            automatically recalculate the distribution of containers based on the total SCU and the max container sizes
+            described for that contract. Just like in <strong>Star Citizen</strong>, the{" "}
+            <strong>Cargo Visualizer</strong> splits cargo into the largest SCU containers first until all cargo is
+            accounted for.
           </li>
           <li>
             The arrow at the left of a contract's bar hides its table, so the ship view comes up the page; the bar then
-            shows how many rows and SCU it holds, and how much SCU remains to put in a grid. Click it again, or{" "}
-            <strong>Add cargo row</strong>, to show the table.
+            shows how many rows and SCU it holds, and how much SCU remains to be locked onto a grid.
           </li>
-          <li>
-            In each contract's table heading, click a size the contract doesn't hand out to turn it off: every size
-            above the max container size the game shows for it, and any it skips.
-          </li>
-          <li>
-            Enter the SCU on each row. Each row is split into the biggest container size its contract hands out first,
-            then the next size down, as the game hands a contract over. A row takes up to 9,999 SCU.
-          </li>
-          <li>
-            Click the Cargo, Pick-up or Drop-off heading to sort that contract's rows by that column, and again to
-            reverse it.
-          </li>
-          <li>
-            Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the contract's
-            last row.
-          </li>
-          <li>
-            <strong>Delete contract</strong> removes a contract and its rows. Click it again to confirm.
-          </li>
-          <li>Your table is kept in this browser.</li>
-          <li>The site counts visits anonymously with Cloudflare Web Analytics, which uses no cookies.</li>
         </ul>
 
         <h3>Grids</h3>
@@ -91,6 +87,12 @@ export function Help() {
             again to stop. Point at an entry, or at a row's Cargo, Pick-up or Drop-off in the table, to dim the rest
             while you do.
           </li>
+        </ul>
+
+        <h3>Privacy</h3>
+        <ul>
+          <li>Your data is kept in this browser.</li>
+          <li>The site counts visits anonymously with Cloudflare Web Analytics, which uses no cookies.</li>
         </ul>
       </div>
     </>
