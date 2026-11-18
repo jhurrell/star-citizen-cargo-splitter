@@ -110,7 +110,7 @@ export function CargoVisualizer() {
   }
 
   /* Focus the next row in the deleted row's contract, or the one before, or
-     the contract's Add row when it was the last. */
+     the contract's Add cargo row when it was the last. */
   function deleteRow(id: number) {
     const { contract, index } = findRow(id);
     const next = neighbour(contract.rows, index);
@@ -208,10 +208,10 @@ export function CargoVisualizer() {
         {status}
       </p>
 
-      {/* Each contract: a bar with its show/hide toggle, name, Add row and Delete
+      {/* Each contract: a bar with its show/hide toggle, name, Add cargo row and Delete
           contract, over its table. */}
       <div className="contracts">
-        {haul.contracts.map((table, i) => (
+        {haul.contracts.map((table) => (
           <section key={table.id} className="contract" aria-label={table.label}>
             <div className="contract-bar">
               <button
@@ -229,12 +229,12 @@ export function CargoVisualizer() {
                 className="contract-name"
                 id={`c${table.id}-name`}
                 aria-label="Contract name"
-                placeholder={`Contract ${i + 1}`}
+                placeholder="Contract Name"
                 value={table.name}
                 onChange={(e) => dispatch({ type: "renameContract", id: table.id, name: e.target.value })}
               />
               <button type="button" className="btn" id={`c${table.id}-add-row`} onClick={() => addRow(table.id)}>
-                Add row
+                Add cargo row
               </button>
               {haul.contracts.length > 1 && (
                 <ConfirmButton
@@ -245,10 +245,13 @@ export function CargoVisualizer() {
                   onConfirm={() => deleteContract(table.id)}
                 />
               )}
-              {/* While the table is hidden, what's in it. */}
+              {/* While the table is hidden, what's in it, and how much of it isn't in a grid yet. */}
               {table.collapsed && (
                 <span className="contract-summary">
-                  {plural(table.deliveries.length, "row")} · {fmt(table.totals.scu)} SCU
+                  {plural(table.deliveries.length, "row")} · {fmt(table.totals.scu)} SCU ·{" "}
+                  <span className={table.totals.remaining ? "is-remaining" : undefined}>
+                    {fmt(table.totals.remaining)} SCU remaining
+                  </span>
                 </span>
               )}
             </div>

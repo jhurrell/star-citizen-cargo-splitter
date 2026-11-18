@@ -94,7 +94,7 @@ export function CargoTable({
         {deliveries.length === 0 ? (
           <tr className="empty-row">
             <td colSpan={columnCount}>
-              No rows yet. Click <strong>Add row</strong> to start.
+              No rows yet. Click <strong>Add cargo row</strong> to start.
             </td>
           </tr>
         ) : (
@@ -232,7 +232,10 @@ function CargoRow({
   return (
     <tr className={remaining ? "has-remaining" : undefined}>
       {TEXT_COLUMNS.map(({ key, label }, i) => {
-        const input = <input className="field" aria-label={label} {...field(key)} />;
+        /* The placeholder, "Enter cargo" and so on, shows an empty cell can be typed in. */
+        const input = (
+          <input className="field" aria-label={label} placeholder={`Enter ${label.toLowerCase()}`} {...field(key)} />
+        );
         return (
           /* Pointing at (or tabbing to) Cargo, Pick-up or Drop-off picks out
              this row in the ship view. */

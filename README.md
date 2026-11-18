@@ -12,11 +12,11 @@ the ship.
   has more than one. **Add contract** adds a contract with one blank row. The two copy icons copy the table, with each row's contract first, for a spreadsheet
   (tab-separated) or as a Markdown table; point at either one to see which is which. **How to use**, at the top
   right, opens a short guide.
-- **A table per contract.** Each contract has a bar with an optional name (blank shows "Contract 1", "Contract 2",
-  …), its own **Add row**, and **Delete contract** (with a second click), which removes it and its rows while
+- **A table per contract.** Each contract has a bar with an optional name (left blank, it's "Contract 1",
+  "Contract 2", … in the copied table), its own **Add cargo row**, and **Delete contract** (with a second click), which removes it and its rows while
   there's more than one. Under the bar is its table. The arrow at the bar's left hides the table, leaving the bar
-  with its row count and SCU, so the ship view needs less scrolling; it stays hidden after a reload, and Add row
-  shows it again. The size buttons in the table's heading turn a size off for
+  with its row count, SCU and remaining SCU (amber while any remains), so the ship view needs less scrolling; it
+  stays hidden after a reload, and Add cargo row shows it again. The size buttons in the table's heading turn a size off for
   that contract: the sizes above its max container size and any it skips. A new contract starts with every size on.
   Sorting and the Grids **Reset** act on that contract alone, and its foot totals that contract, so its SCU can be
   checked against the game's.

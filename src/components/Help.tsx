@@ -25,11 +25,12 @@ export function Help() {
         <ul>
           <li>
             Click <strong>Add contract</strong> for each contract you accept, and give it a row per delivery. Its{" "}
-            <strong>Add row</strong> adds another.
+            <strong>Add cargo row</strong> adds another.
           </li>
           <li>
             The arrow at the left of a contract's bar hides its table, so the ship view comes up the page; the bar then
-            shows how many rows and SCU it holds. Click it again, or <strong>Add row</strong>, to show the table.
+            shows how many rows and SCU it holds, and how much SCU remains to put in a grid. Click it again, or{" "}
+            <strong>Add cargo row</strong>, to show the table.
           </li>
           <li>
             In each contract's table heading, click a size the contract doesn't hand out to turn it off: every size

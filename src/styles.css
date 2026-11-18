@@ -326,7 +326,7 @@ h2 {
   white-space: nowrap;
 }
 
-/* ---------- Contracts: each a bar (its name, Add row and Delete contract) over its table ---------- */
+/* ---------- Contracts: each a bar (its name, Add cargo row and Delete contract) over its table ---------- */
 .contracts {
   display: grid;
   gap: 20px;
@@ -365,6 +365,10 @@ h2 {
 .contract-summary {
   color: var(--off-fg);
   font-variant-numeric: tabular-nums;
+}
+/* Amber while some SCU isn't in a grid yet, like Remaining in the table. */
+.contract-summary .is-remaining {
+  color: var(--warn);
 }
 .frame[hidden] {
   display: none;
