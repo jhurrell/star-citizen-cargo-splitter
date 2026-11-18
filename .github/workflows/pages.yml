@@ -1,6 +1,6 @@
 # Builds the site and publishes it to GitHub Pages on every push to main.
-# Pages serves it under the repository's name (/star-citizen-cargo-visualizer/),
-# so the build uses that as its base path.
+# The build uses the base path Pages reports: "/" on the custom domain set in
+# the repository's Pages settings, or the repository's name without one.
 name: Deploy to GitHub Pages
 
 on:

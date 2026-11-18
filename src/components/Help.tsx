@@ -52,6 +52,7 @@ export function Help() {
             <strong>Delete contract</strong> removes a contract and its rows. Click it again to confirm.
           </li>
           <li>Your table is kept in this browser.</li>
+          <li>The site counts visits anonymously with Cloudflare Web Analytics, which uses no cookies.</li>
         </ul>
 
         <h3>Grids</h3>

@@ -4,7 +4,7 @@ A cargo planner for Star Citizen haulers. Enter each delivery's SCU and Cargo Vi
 sizes to use, splits large deliveries across your ship's cargo grids, and shows how it all packs in a 3D view of
 the ship.
 
-**Use it at [jhurrell.github.io/star-citizen-cargo-visualizer](https://jhurrell.github.io/star-citizen-cargo-visualizer/).**
+**Use it at [sc-cargovisualizer.space](https://sc-cargovisualizer.space/).**
 
 ## Features
 
@@ -64,6 +64,9 @@ the ship.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own
   loading plan, so switching to another ship and back restores it.
+- **Visit counts.** The built site loads [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/),
+  which counts visits without cookies; its token is in [`src/routes/__root.tsx`](src/routes/__root.tsx). The dev
+  server leaves it out.
 
 Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
 RAFT are placed to match the ships; the rest have grid sizes and SCU from the ITG Cargo Grid Reference Guide, with
@@ -92,8 +95,9 @@ vp dev
 ### Publishing
 
 Every push to `main` runs [`.github/workflows/pages.yml`](.github/workflows/pages.yml): it checks and tests the
-code, builds it with the repository's name as its base path (Pages serves it at `/star-citizen-cargo-visualizer/`),
-and publishes `dist/client` to GitHub Pages. To publish without a push, run the workflow from the Actions tab.
+code, builds it with the base path Pages reports (`/` on the custom domain, sc-cargovisualizer.space, set in the
+repository's Pages settings), and publishes `dist/client` to GitHub Pages. To publish without a push, run the
+workflow from the Actions tab.
 
 ### Project layout
 
