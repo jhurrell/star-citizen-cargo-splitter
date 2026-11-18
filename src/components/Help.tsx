@@ -39,11 +39,19 @@ export function Help() {
             ships.
           </li>
           <li>
+            Press <kbd>Enter</kbd> in the SCU column to jump to the next row, or add one if you're on the contract's
+            last row.
+          </li>
+          <li>
             Toggle the SCU size buttons to disable or enable a container size for the entire contract. The tool will
             automatically recalculate the distribution of containers based on the total SCU and the max container sizes
             described for that contract. Just like in <strong>Star Citizen</strong>, the{" "}
             <strong>Cargo Visualizer</strong> splits cargo into the largest SCU containers first until all cargo is
             accounted for.
+          </li>
+          <li>
+            Click the Cargo, Pick-up or Drop-off heading to sort that contract's rows by that column, and again to
+            reverse it.
           </li>
           <li>
             The arrow at the left of a contract's bar hides its table, so the ship view comes up the page; the bar then
