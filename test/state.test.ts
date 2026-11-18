@@ -91,9 +91,9 @@ describe("reducer contracts", () => {
   test("skips a size in one contract only, and hands it out again", () => {
     let state = withContracts([], []);
     const { id } = state.contracts[0];
-    state = reducer(state, { type: "setSizeEnabled", id, size: 24, on: false });
+    state = reducer(state, { type: "setHandsOut", id, size: 24, on: false });
     expect(state.contracts.map((c) => c.enabled)).toEqual([{ 24: false }, {}]);
-    state = reducer(state, { type: "setSizeEnabled", id, size: 24, on: true });
+    state = reducer(state, { type: "setHandsOut", id, size: 24, on: true });
     expect(state.contracts[0].enabled).toEqual({ 24: true });
   });
 

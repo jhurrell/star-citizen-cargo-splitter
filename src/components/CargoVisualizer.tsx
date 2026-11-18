@@ -5,7 +5,7 @@ import { configError, containers, ships } from "../lib/config";
 import { exportTable, tableAsMarkdown, tableAsTsv } from "../lib/export";
 import { fmt, plural, sum } from "../lib/format";
 import { computeHaul, layoutOf } from "../lib/haul";
-import { useEmphasis, useTimedMessage } from "../lib/hooks";
+import { useEmphasis, useTimedMessage } from "./hooks";
 import { allRows, loadState, makeContract, makeRow, reducer, saveState, type Contract, type Row } from "../lib/state";
 import { CargoTable } from "./CargoTable";
 import { ConfirmButton } from "./ConfirmButton";
@@ -34,6 +34,12 @@ const COPY_FORMATS = [
     Icon: MarkdownIcon,
   },
 ];
+
+/* The item after the one at `index`, or the one before, for focus to move to
+   when that one is deleted; undefined when it's the only one. */
+function neighbour<T>(list: T[], index: number): T | undefined {
+  return list[index + 1] ?? list[index - 1];
+}
 
 /* "512 SCU in 4 grids of 128 SCU": the layout's total, and each grid's size when they're all alike. */
 function layoutSummary(layout: Layout): string {
@@ -86,9 +92,13 @@ export function CargoVisualizer() {
     dispatch({ type: "addContract", contract: newContract() });
   }
 
+  /* Focus the next contract's name, or the one before, or Add contract when
+     it was the last. */
   function deleteContract(id: number) {
-    const index = state.contracts.findIndex((c) => c.id === id);
-    const next = state.contracts[index + 1] ?? state.contracts[index - 1];
+    const next = neighbour(
+      state.contracts,
+      state.contracts.findIndex((c) => c.id === id),
+    );
     focusNext.current = next ? `c${next.id}-name` : "add-contract";
     dispatch({ type: "deleteContract", id });
   }
@@ -103,7 +113,7 @@ export function CargoVisualizer() {
      the contract's Add row when it was the last. */
   function deleteRow(id: number) {
     const { contract, index } = findRow(id);
-    const next = contract.rows[index + 1] ?? contract.rows[index - 1];
+    const next = neighbour(contract.rows, index);
     if (next) focusCargo(next);
     else focusNext.current = `c${contract.id}-add-row`;
     dispatch({ type: "deleteRow", id });
@@ -254,7 +264,7 @@ export function CargoVisualizer() {
                 onPointRows={emphasis.point}
                 onDelete={deleteRow}
                 onSort={(key) => dispatch({ type: "sortBy", id: table.id, key })}
-                onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", id: table.id, size, on })}
+                onSetHandsOut={(size, on) => dispatch({ type: "setHandsOut", id: table.id, size, on })}
                 onScuEnter={focusNextScu}
                 onResetGrids={() => resetGrids(table.id)}
               />

@@ -57,26 +57,34 @@ export type EmphasisInput = {
   pointed: readonly number[] | null;
 };
 
-/* The key of the legend's grey entry. */
-export const OTHER_KEY = "other";
-
 /* A location as typed, tidied: trimmed, with runs of spaces made one. */
 const tidy = (text: string) => text.trim().replace(/\s+/g, " ");
 
-/* How each view groups a row: its group's key (the same for the same
-   location, whatever its case or spacing) and the group's name. */
-const GROUPING: Record<View, { key: (row: Row) => string; name: (row: Row) => string; other: string }> = {
-  dropoff: {
-    key: (row) => `@${tidy(row.dropoff).toLowerCase()}`,
-    name: (row) => tidy(row.dropoff) || "No drop-off",
-    other: "Other drop-offs",
-  },
-  pickup: {
-    key: (row) => `@${tidy(row.pickup).toLowerCase()}`,
-    name: (row) => tidy(row.pickup) || "No pick-up",
-    other: "Other pick-ups",
-  },
-  cargo: { key: (row) => `#${row.id}`, name: () => "", other: "Other rows" },
+/* Every legend key is made here. They're text, so they serve as React keys
+   and set members as they are; the first character says what kind each is:
+   "@" and a location, tidied and lower-cased, so the same place matches
+   whatever its case or spacing; "#" and a row's id; or "other", the grey
+   entry. */
+export const legendKey = {
+  location: (text: string) => `@${tidy(text).toLowerCase()}`,
+  row: (row: Pick<Row, "id">) => `#${row.id}`,
+  other: "other",
+};
+
+/* How a view groups rows: each group's key and name, and the grey entry's name. */
+type Grouping = { key: (row: Row) => string; name: (row: Row) => string; other: string };
+
+/* Grouping by a location: "drop-off" or "pick-up", by that field. */
+const byLocation = (field: "dropoff" | "pickup", label: string): Grouping => ({
+  key: (row) => legendKey.location(row[field]),
+  name: (row) => tidy(row[field]) || `No ${label}`,
+  other: `Other ${label}s`,
+});
+
+const GROUPING: Record<View, Grouping> = {
+  dropoff: byLocation("dropoff", "drop-off"),
+  pickup: byLocation("pickup", "pick-up"),
+  cargo: { key: legendKey.row, name: () => "", other: "Other rows" },
 };
 
 /* A group keeps its color while it has a row with SCU, so sorting, deleting
@@ -99,7 +107,7 @@ export function emphasize({ rows, inView, view, slots: before, picked, pointed }
 
   /* The legend entry each row in the view is under. */
   const shown = loaded.filter((row) => inView.has(row.id));
-  const entryOf = (row: Row) => (slots.get(grouping.key(row)) === null ? OTHER_KEY : grouping.key(row));
+  const entryOf = (row: Row) => (slots.get(grouping.key(row)) === null ? legendKey.other : grouping.key(row));
   const entries = new Map<string, LegendEntry>();
   for (const row of shown) {
     const key = entryOf(row);
@@ -114,10 +122,10 @@ export function emphasize({ rows, inView, view, slots: before, picked, pointed }
         on: picked.has(key),
       });
   }
-  const other = entries.get(OTHER_KEY);
+  const other = entries.get(legendKey.other);
   if (other) {
-    entries.delete(OTHER_KEY);
-    entries.set(OTHER_KEY, { ...other, name: grouping.other });
+    entries.delete(legendKey.other);
+    entries.set(legendKey.other, { ...other, name: grouping.other });
   }
   const legend = [...entries.values()];
 

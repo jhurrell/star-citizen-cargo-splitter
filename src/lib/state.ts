@@ -37,7 +37,10 @@ export type Sort = { key: TextKey; dir: SortDir } | null;
 export type Contract = {
   id: number;
   name: string; // "" shows as "Contract N"
-  enabled: Record<number, boolean>; // size → false when skipped; sizes not listed are on
+  /* The sizes it hands out (see handsOut): size → false when skipped; sizes
+     not listed are on. Named "enabled" because that's its name in saved
+     tables, kept so saves still load. */
+  enabled: Record<number, boolean>;
   sort: Sort;
   /* Its table hidden, leaving just its bar, so the ship view comes up the page. */
   collapsed: boolean;
@@ -187,7 +190,7 @@ export type Action =
   /* Hide a contract's table, or show it again. */
   | { type: "setCollapsed"; id: number; collapsed: boolean }
   /* Skip a size in a contract, or hand it out again. */
-  | { type: "setSizeEnabled"; id: number; size: number; on: boolean }
+  | { type: "setHandsOut"; id: number; size: number; on: boolean }
   | { type: "addRow"; contractId: number; row: Row }
   | { type: "deleteRow"; id: number }
   | { type: "updateRow"; id: number; field: RowField; value: string }
@@ -225,7 +228,7 @@ export function reducer(state: State, action: Action): State {
       return contract(action.id, (c) => ({ ...c, name: action.name }));
     case "setCollapsed":
       return contract(action.id, (c) => ({ ...c, collapsed: action.collapsed }));
-    case "setSizeEnabled":
+    case "setHandsOut":
       return contract(action.id, (c) => ({ ...c, enabled: { ...c.enabled, [action.size]: action.on } }));
     case "addRow":
       /* Shows the table, so the new row can be typed in. */

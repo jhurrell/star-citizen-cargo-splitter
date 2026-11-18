@@ -28,7 +28,7 @@ type Props = {
   /* Sort this contract's rows. */
   onSort: (key: TextKey) => void;
   /* Skip a size in this contract, or hand it out again. */
-  onToggleSize: (size: number, on: boolean) => void;
+  onSetHandsOut: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
   /* Take this contract's rows out of their grids (the Grids heading's Reset, once confirmed). */
   onResetGrids: () => void;
@@ -48,7 +48,7 @@ export function CargoTable({
   free,
   cargoByRow,
   onSort,
-  onToggleSize,
+  onSetHandsOut,
   onResetGrids,
   ...rowActions
 }: Props) {
@@ -70,7 +70,7 @@ export function CargoTable({
             Δ
           </th>
           {sizes.map(({ size, on }, i) => (
-            <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onToggleSize} />
+            <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onSetHandsOut} />
           ))}
           <th className="label num sep leftover" hidden={!showLeftover}>
             Left over

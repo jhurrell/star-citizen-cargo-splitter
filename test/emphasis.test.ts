@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
-import { emphasize, OTHER_COLOR, OTHER_KEY, type EmphasisInput, type Slots } from "../src/lib/emphasis";
+import { emphasize, legendKey, OTHER_COLOR, type EmphasisInput, type Slots } from "../src/lib/emphasis";
 import { makeRow, type Row } from "../src/lib/state";
 
 /* Emphasis in the Cargo view, with nothing picked out or pointed at, and
@@ -16,8 +16,6 @@ const emphasis = (rows: Row[], more: Partial<EmphasisInput> = {}) =>
   });
 const loaded = (n: number) => Array.from({ length: n }, (_, i) => makeRow({ cargo: `M${i}`, scu: "1" }));
 const colorOf = (slots: Slots, rows: Row[], row: Row) => emphasis(rows, { slots }).byRow.get(row.id)?.color;
-/* The Cargo view's key for a row. */
-const keyOf = (row: Row) => `#${row.id}`;
 
 describe("colors", () => {
   test("one per row with SCU, by row age; past eight, grey in one Other entry", () => {
@@ -93,9 +91,9 @@ describe("legend", () => {
 
   test("an entry is on while it's picked out", () => {
     const rows = loaded(10);
-    const { legend } = emphasis(rows, { picked: new Set([keyOf(rows[1]), OTHER_KEY]) });
+    const { legend } = emphasis(rows, { picked: new Set([legendKey.row(rows[1]), legendKey.other]) });
     expect(legend.map((e) => e.on).slice(0, 3)).toEqual([false, true, false]);
-    expect(legend.at(-1)).toMatchObject({ key: OTHER_KEY, on: true });
+    expect(legend.at(-1)).toMatchObject({ key: legendKey.other, on: true });
   });
 });
 
@@ -125,7 +123,7 @@ describe("drop-off and pick-up views", () => {
   });
 
   test("picking out a drop-off dims every other drop-off's rows, from any contract", () => {
-    const { legend, dimmed } = emphasis(rows, { view: "dropoff", picked: new Set(["@lorville"]) });
+    const { legend, dimmed } = emphasis(rows, { view: "dropoff", picked: new Set([legendKey.location(" Lorville")]) });
     expect(legend[0].on).toBe(true);
     expect([...dimmed]).toEqual([tin, zinc]);
   });
@@ -139,7 +137,7 @@ describe("drop-off and pick-up views", () => {
   test("past eight drop-offs, the rest share grey in one Other drop-offs entry", () => {
     const many = Array.from({ length: 9 }, (_, i) => makeRow({ dropoff: `D${i}`, scu: "1" }));
     expect(emphasis(many, { view: "dropoff" }).legend.at(-1)).toMatchObject({
-      key: OTHER_KEY,
+      key: legendKey.other,
       name: "Other drop-offs",
       color: OTHER_COLOR,
     });
@@ -155,21 +153,23 @@ describe("dimming", () => {
   });
 
   test("with entries picked out, every row in view under another entry", () => {
-    expect([...emphasis(rows, { picked: new Set([keyOf(rows[1])]) }).dimmed]).toEqual([a, c]);
+    expect([...emphasis(rows, { picked: new Set([legendKey.row(rows[1])]) }).dimmed]).toEqual([a, c]);
   });
 
   test("while rows in view are pointed at, every other row in view, picked out or not", () => {
-    expect([...emphasis(rows, { picked: new Set([keyOf(rows[1])]), pointed: [a] }).dimmed]).toEqual([b, c]);
+    expect([...emphasis(rows, { picked: new Set([legendKey.row(rows[1])]), pointed: [a] }).dimmed]).toEqual([b, c]);
     expect([...emphasis(rows, { pointed: [a, c] }).dimmed]).toEqual([b]); // a legend's "Other rows"
   });
 
   test("pointing at a row with nothing in view changes nothing", () => {
     const inView = new Set([a, b]);
-    expect([...emphasis(rows, { inView, picked: new Set([keyOf(rows[1])]), pointed: [c] }).dimmed]).toEqual([a]);
+    expect([...emphasis(rows, { inView, picked: new Set([legendKey.row(rows[1])]), pointed: [c] }).dimmed]).toEqual([
+      a,
+    ]);
   });
 
   test("keys of entries since gone and ids of rows since deleted count for nothing", () => {
-    expect([...emphasis(rows, { picked: new Set(["#999"]) }).dimmed]).toEqual([]);
+    expect([...emphasis(rows, { picked: new Set([legendKey.row({ id: 999 })]) }).dimmed]).toEqual([]);
     expect([...emphasis(rows, { pointed: [9] }).dimmed]).toEqual([]);
     expect([...emphasis(rows, { pointed: [9, a] }).dimmed]).toEqual([b, c]);
   });

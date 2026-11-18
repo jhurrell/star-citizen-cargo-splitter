@@ -119,7 +119,10 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
   );
 
   const anyHandsOut = (size: number) => contracts.some((c) => handsOut(c, size));
-  const sizes: SizeColumn[] = containers.map(({ size }) => ({ size, on: anyHandsOut(size) }));
+  /* A column per container size, on for each size `on` says is handed out. */
+  const columnsOf = (on: (size: number) => boolean): SizeColumn[] =>
+    containers.map(({ size }) => ({ size, on: on(size) }));
+  const sizes = columnsOf(anyHandsOut);
   const usable = containers.filter((c) => anyHandsOut(c.size));
   /* The sizes some contract hands out that fit each cargo grid's shape, largest first. */
   const fitting = new Map(cargoGrids.map((g) => [g.name, usable.filter((c) => fitsInside(c, g)).map((c) => c.size)]));
@@ -189,15 +192,16 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
   const tables: ContractTable[] = contracts.map((contract, i) => {
     const label = contract.name.trim() || `Contract ${i + 1}`;
     const deliveries = contract.rows.map((row) => deliveryOf(row, contract, label));
+    const itHandsOut = (size: number) => handsOut(contract, size);
     return {
       id: contract.id,
       name: contract.name,
       label,
       sort: contract.sort,
       collapsed: contract.collapsed,
-      sizes: containers.map(({ size }) => ({ size, on: handsOut(contract, size) })),
+      sizes: columnsOf(itHandsOut),
       deliveries,
-      totals: totalsOf(deliveries, (size) => handsOut(contract, size)),
+      totals: totalsOf(deliveries, itHandsOut),
       showLeftover: deliveries.some((d) => d.leftover > 0),
       anyPlanned: deliveries.some((d) => d.parts.length > 0),
     };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { emphasize, type Slots, type View } from "./emphasis";
-import type { Haul } from "./haul";
-import type { Row } from "./state";
+import { emphasize, type Slots, type View } from "../lib/emphasis";
+import type { Haul } from "../lib/haul";
+import type { Row } from "../lib/state";
 
 /* A message that clears itself `ms` after it was last shown. */
 export function useTimedMessage(ms: number): [string, (message: string) => void] {

@@ -1,4 +1,4 @@
-import { useTimedFlag } from "../lib/hooks";
+import { useTimedFlag } from "./hooks";
 
 const DISARM_MS = 3000; // how long it waits for the second click
 

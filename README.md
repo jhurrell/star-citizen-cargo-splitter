@@ -104,10 +104,13 @@ and publishes `dist/client` to GitHub Pages. To publish without a push, run the 
 | `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                                                                   |
 | `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                                                              |
 
-Three pieces in `src/components/` are shared by the page:
+Four pieces in `src/components/` are shared by the page:
 
 - [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
   showing Confirm in between. Reset all, Delete contract and the Grids Reset use it.
+- [`hooks.ts`](src/components/hooks.ts): the page's React state that isn't saved: the ship view's emphasis
+  (its view, what's picked out or pointed at, and the colors handed out, worked out by `src/lib/emphasis.ts`) and
+  the timed status message and confirm flag.
 - [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons and the contract bar's show/hide arrow.
 - [`pointing.ts`](src/components/pointing.ts): pointer and focus handlers for things that react while pointed at,
   such as the table's rows and grid buttons and the legend's buttons.
