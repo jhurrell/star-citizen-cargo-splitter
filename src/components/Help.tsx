@@ -81,7 +81,9 @@ export function Help() {
           <li>Point at a container to see what it holds, or at a grid button in the table to light that grid up.</li>
           <li>
             Drop-off, Pick-up and Cargo, beside the heading, choose how containers are colored and what the legend
-            lists: each drop-off, from every contract; each pick-up; or each row. It starts on Drop-off.
+            lists: each drop-off, from every contract; each pick-up; or each row. It starts on Drop-off. In Cargo, each
+            button names its row's cargo and route by initials, &ldquo;Gold (PC to JS)&rdquo;; point at it to see the
+            SCU and the pick-up and drop-off in full.
           </li>
           <li>
             Click an entry in the legend to pick it out, dimming everything else; click more to pick those out too, and

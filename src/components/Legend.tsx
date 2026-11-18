@@ -33,13 +33,15 @@ export function Legend({ view, onView, entries, onTogglePicked, onPointRows }: P
         ))}
       </div>
       <ul className="legend" aria-label="In the ship view">
-        {entries.map(({ key, name, color, rowIds, on }) => (
+        {entries.map(({ key, name, details, color, rowIds, on }) => (
           <li key={key}>
             <button
               type="button"
               className="legend-btn"
               aria-pressed={on}
-              title={on ? `Stop picking out ${name}` : `Pick out ${name}, dimming the rest`}
+              title={[details, on ? `Stop picking out ${name}` : `Pick out ${name}, dimming the rest`]
+                .filter(Boolean)
+                .join("\n")}
               onClick={() => onTogglePicked(key)}
               {...pointHandlers((pointed) => onPointRows(pointed ? rowIds : null))}
             >

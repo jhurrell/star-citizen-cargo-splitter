@@ -6,6 +6,7 @@
    tested through emphasize. */
 
 import { parseScu } from "./cargo";
+import { fmt, initialsOf } from "./format";
 import type { Row } from "./state";
 
 /* A validated categorical set for this page's background; past eight, groups
@@ -25,8 +26,16 @@ export const VIEWS: { view: View; label: string }[] = [
 export type Cargo = { name: string; color: string };
 
 /* A legend button: a drop-off, a pick-up or a row, or the "Other …" entry for
-   every group in grey. On while it's picked out. */
-export type LegendEntry = { key: string; name: string; color: string; rowIds: number[]; on: boolean };
+   every group in grey. On while it's picked out. A row's entry has details,
+   for its tooltip: its cargo and SCU, and its pick-up and drop-off in full. */
+export type LegendEntry = {
+  key: string;
+  name: string;
+  details?: string;
+  color: string;
+  rowIds: number[];
+  on: boolean;
+};
 
 /* Which of CARGO_COLORS each group with SCU has, by group key; null for grey. */
 export type Slots = ReadonlyMap<string, number | null>;
@@ -98,7 +107,10 @@ export function emphasize({ rows, inView, view, slots: before, picked, pointed }
   const loaded = rows.filter((row) => parseScu(row.scu));
   const slots = assignSlots(loaded, grouping.key, before);
   const cargo = (row: Row) => row.cargo.trim() || "No cargo";
-  const names = rowNames(loaded, cargo, new Map(rows.map((row, i) => [row.id, i + 1])));
+  const rowNumber = new Map(rows.map((row, i) => [row.id, i + 1]));
+  const names = rowNames(loaded, cargo, (row) => tidy(row.dropoff), rowNumber);
+  /* The legend's own row names, short enough for a button: "Gold (AS to L)". */
+  const shortNames = rowNames(loaded, cargo, route, rowNumber);
   const colorOf = (row: Row) => {
     const slot = slots.get(grouping.key(row))!;
     return slot === null ? OTHER_COLOR : CARGO_COLORS[slot];
@@ -116,7 +128,9 @@ export function emphasize({ rows, inView, view, slots: before, picked, pointed }
     else
       entries.set(key, {
         key,
-        name: view === "cargo" ? names.get(row.id)! : grouping.name(row),
+        ...(view === "cargo"
+          ? { name: shortNames.get(row.id)!, details: rowDetails(row, cargo(row)) }
+          : { name: grouping.name(row) }),
         color: colorOf(row),
         rowIds: [row.id],
         on: picked.has(key),
@@ -125,7 +139,7 @@ export function emphasize({ rows, inView, view, slots: before, picked, pointed }
   const other = entries.get(legendKey.other);
   if (other) {
     entries.delete(legendKey.other);
-    entries.set(legendKey.other, { ...other, name: grouping.other });
+    entries.set(legendKey.other, { ...other, name: grouping.other, details: undefined });
   }
   const legend = [...entries.values()];
 
@@ -163,17 +177,40 @@ function assignSlots(loaded: Row[], keyOf: (row: Row) => string, before: Slots):
   return slots.size === before.size && kept.length === before.size ? before : slots;
 }
 
-/* Each row's name: its cargo, then its drop-off, "Gold (Lorville)". Rows
-   with the same cargo and drop-off (or both without one) add their row
-   number in the table, "Gold (Lorville #3)" or "Gold (#3)". */
-function rowNames(rows: Row[], cargoOf: (row: Row) => string, rowNumber: Map<number, number>) {
-  const key = (row: Row) => `${cargoOf(row).toLowerCase()}\n${row.dropoff.trim().toLowerCase()}`;
+/* A row's pick-up and drop-off by their initials, as far as it has them:
+   "AS to L", "from AS", "to L", or "" with neither. */
+function route(row: Row) {
+  const from = initialsOf(row.pickup);
+  const to = initialsOf(row.dropoff);
+  return from && to ? `${from} to ${to}` : from ? `from ${from}` : to ? `to ${to}` : "";
+}
+
+/* A row's legend tooltip: "Gold · 184 SCU", then its pick-up and drop-off in
+   full, a line each. */
+function rowDetails(row: Row, cargo: string) {
+  return [
+    `${cargo} · ${fmt(parseScu(row.scu))} SCU`,
+    `Pick-up: ${tidy(row.pickup) || "none"}`,
+    `Drop-off: ${tidy(row.dropoff) || "none"}`,
+  ].join("\n");
+}
+
+/* Each row's name: its cargo, then a tag in brackets, such as its drop-off,
+   "Gold (Lorville)". Rows with the same cargo and tag (or both without one)
+   add their row number in the table, "Gold (Lorville #3)" or "Gold (#3)". */
+function rowNames(
+  rows: Row[],
+  cargoOf: (row: Row) => string,
+  tagOf: (row: Row) => string,
+  rowNumber: Map<number, number>,
+) {
+  const key = (row: Row) => `${cargoOf(row).toLowerCase()}\n${tagOf(row).toLowerCase()}`;
   const counts = new Map<string, number>();
   for (const row of rows) counts.set(key(row), (counts.get(key(row)) ?? 0) + 1);
   return new Map(
     rows.map((row) => {
       const number = counts.get(key(row))! > 1 ? `#${rowNumber.get(row.id)}` : "";
-      const tag = [row.dropoff.trim(), number].filter(Boolean).join(" ");
+      const tag = [tagOf(row), number].filter(Boolean).join(" ");
       return [row.id, tag ? `${cargoOf(row)} (${tag})` : cargoOf(row)];
     }),
   );

@@ -48,8 +48,10 @@ the ship.
     - Drop-off: a color per drop-off, across every contract, so a stop's cargo reads as one color. Drop-offs
       match whatever their case or spacing; rows without one share "No drop-off".
     - Pick-up: the same per pick-up.
-    - Cargo: a color per row, named by its cargo and drop-off, "Gold (Lorville)", with its row number when
-      another row has the same cargo and drop-off.
+    - Cargo: a color per row. Its button names its cargo and route by the places' initials, "Gold (PC to JS)"
+      for Patch City to Jackson's Swap ("from PC" or "to JS" when it has only one), with its row number when
+      another row's would read the same. Point at the button to see the row's SCU and its pick-up and drop-off in
+      full.
 
     Each color stays with its drop-off, pick-up or row while it has SCU. Past eight, the rest share grey and one
     "Other …" button. The legend lists only what has containers in the view, in the table's order, and each

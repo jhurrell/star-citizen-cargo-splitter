@@ -58,27 +58,48 @@ describe("colors", () => {
 });
 
 describe("names", () => {
-  test("cargo and drop-off, with the row number when another has the same cargo and drop-off", () => {
-    const rows = [
-      makeRow({ cargo: "Gold", pickup: "Area18", dropoff: " Lorville ", scu: "1" }),
-      makeRow({ cargo: "gold ", pickup: "New Babbage", dropoff: "Orison", scu: "1" }),
-      makeRow({ cargo: "Gold", pickup: "Area18", dropoff: "", scu: "1" }),
-      makeRow({ cargo: "Gold", pickup: "Crusader", dropoff: "Hurston", scu: "1" }),
-      makeRow({ cargo: "Gold", pickup: "ArcCorp", dropoff: "hurston", scu: "1" }),
-      makeRow({ cargo: "Iron", pickup: "Area18", dropoff: "Lorville", scu: "1" }),
-      makeRow({ cargo: "", scu: "1" }),
-      makeRow({ cargo: "", scu: "1" }),
-    ];
-    expect(emphasis(rows).legend.map((e) => e.name)).toEqual([
+  const rows = [
+    makeRow({ cargo: "Gold", pickup: "Area18", dropoff: " Lorville ", scu: "1" }),
+    makeRow({ cargo: "gold ", pickup: "New Babbage", dropoff: "Orison", scu: "1" }),
+    makeRow({ cargo: "Gold", pickup: "Area18", dropoff: "", scu: "1" }),
+    makeRow({ cargo: "Gold", pickup: "Patch City", dropoff: "Jackson's Swap", scu: "1" }),
+    makeRow({ cargo: "Gold", pickup: "port city", dropoff: "jumptown station", scu: "1" }),
+    makeRow({ cargo: "Iron", pickup: "", dropoff: "Lorville", scu: "1,234" }),
+    makeRow({ cargo: "", scu: "1" }),
+    makeRow({ cargo: "", scu: "1" }),
+  ];
+
+  test("a container's: cargo and drop-off, with the row number when another has the same cargo and drop-off", () => {
+    expect(rows.map((row) => emphasis(rows).byRow.get(row.id)!.name)).toEqual([
       "Gold (Lorville)",
       "gold (Orison)",
       "Gold", // the only Gold with no drop-off
-      "Gold (Hurston #4)",
-      "Gold (hurston #5)",
+      "Gold (Jackson's Swap)",
+      "Gold (jumptown station)",
       "Iron (Lorville)",
       "No cargo (#7)",
       "No cargo (#8)",
     ]);
+  });
+
+  test("a legend button's: cargo and its route by initials, with the row number when another has the same", () => {
+    expect(emphasis(rows).legend.map((e) => e.name)).toEqual([
+      "Gold (A to L)",
+      "gold (NB to O)",
+      "Gold (from A)",
+      "Gold (PC to JS #4)",
+      "Gold (PC to JS #5)", // a different route with the same initials
+      "Iron (to L)",
+      "No cargo (#7)",
+      "No cargo (#8)",
+    ]);
+  });
+
+  test("a legend button's details: the cargo and SCU, then the pick-up and drop-off in full", () => {
+    const { legend } = emphasis(rows);
+    expect(legend[3].details).toBe("Gold · 1 SCU\nPick-up: Patch City\nDrop-off: Jackson's Swap");
+    expect(legend[5].details).toBe("Iron · 1,234 SCU\nPick-up: none\nDrop-off: Lorville");
+    expect(emphasis(rows, { view: "dropoff" }).legend[0].details).toBeUndefined();
   });
 });
 
