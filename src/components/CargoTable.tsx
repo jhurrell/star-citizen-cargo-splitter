@@ -65,9 +65,9 @@ export function CargoTable({
             <SortHead key={key} id={`c${id}-sort-${key}`} sortKey={key} label={label} sort={sort} onSort={onSort} />
           ))}
           <th className="label num narrow">SCU</th>
-          {/* Δ for Remaining, to keep the column narrow. */}
+          {/* REM for Remaining, to keep the column narrow. */}
           <th className="label num narrow" aria-label="Remaining" title="Remaining: SCU not in a grid yet">
-            Δ
+            Rem
           </th>
           {sizes.map(({ size, on }, i) => (
             <SizeHead key={size} size={size} first={i === 0} on={on} onToggle={onSetHandsOut} />

@@ -35,7 +35,7 @@ the ship.
 - **Resetting, with a second click.** **Reset all** empties the page, leaving one contract with one blank row. **Reset**, in a
   contract's Grids heading, keeps its rows but takes them out of this ship's grids; it's greyed out while no row is in a grid. Either turns to an amber
   **Confirm** for three seconds and acts only if you click it again, and keeps its width, so nothing moves.
-- **Remaining SCU.** The Remaining column (headed Δ), beside SCU, shows how much of each row isn't in a grid yet,
+- **Remaining SCU.** The Remaining column (headed REM), beside SCU, shows how much of each row isn't in a grid yet,
   because it has no grid or doesn't fit in its grids, with the contract's total at the foot. While a row has some, its
   edge and SCU turn amber; point at the SCU to see why. SCU that no size its contract hands out can make up shows under Left over
   instead, and takes no grid room. The foot of the Grids column shows how much grid space is still free.

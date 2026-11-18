@@ -69,7 +69,7 @@ export function Help() {
             confirm.
           </li>
           <li>
-            Δ (Remaining) shows the SCU not in a grid yet. While a row has some, its edge and SCU turn amber, and
+            REM (Remaining) shows the SCU not in a grid yet. While a row has some, its edge and SCU turn amber, and
             pointing at the SCU says why.
           </li>
         </ul>
