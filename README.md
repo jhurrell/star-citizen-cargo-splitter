@@ -108,7 +108,7 @@ Three pieces in `src/components/` are shared by the page:
 
 - [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
   showing Confirm in between. Reset all, Delete contract and the Grids Reset use it.
-- [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons.
+- [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons and the contract bar's show/hide arrow.
 - [`pointing.ts`](src/components/pointing.ts): pointer and focus handlers for things that react while pointed at,
   such as the table's rows and grid buttons and the legend's buttons.
 

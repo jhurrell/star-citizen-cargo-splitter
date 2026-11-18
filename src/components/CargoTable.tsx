@@ -1,7 +1,7 @@
 import { isOverMaxScu } from "../lib/cargo";
 import type { Cargo } from "../lib/emphasis";
 import { fmt, initials, plural } from "../lib/format";
-import type { ContractSection, Delivery, GridBlock, HaulGrid, SizeCell, SizeColumn } from "../lib/haul";
+import type { ContractTable, Delivery, GridBlock, HaulGrid, SizeCell, SizeColumn } from "../lib/haul";
 import { TEXT_COLUMNS, type RowField, type Sort, type TextKey } from "../lib/state";
 import { ConfirmButton } from "./ConfirmButton";
 import { Swatch } from "./Legend";
@@ -9,7 +9,7 @@ import { pointHandlers } from "./pointing";
 
 type Props = {
   /* The contract this table shows. */
-  section: ContractSection;
+  table: ContractTable;
   /* Every cargo grid on the layout, in layout order. */
   grids: HaulGrid[];
   /* SCU free across all the grids. */
@@ -31,7 +31,7 @@ type Props = {
   onToggleSize: (size: number, on: boolean) => void;
   onScuEnter: (id: number) => void;
   /* Take this contract's rows out of their grids (the Grids heading's Reset, once confirmed). */
-  onClearGrids: () => void;
+  onResetGrids: () => void;
 };
 type RowActions = Pick<Props, "onUpdate" | "onToggleGrid" | "onHighlight" | "onPointRows" | "onDelete" | "onScuEnter">;
 
@@ -43,16 +43,16 @@ type GridButton = { tag: string; grid: HaulGrid };
    heading turns the size on or off for this contract, Left over (only when
    some SCU can't be made of the sizes it hands out), Grids. */
 export function CargoTable({
-  section,
+  table,
   grids: haulGrids,
   free,
   cargoByRow,
   onSort,
   onToggleSize,
-  onClearGrids,
+  onResetGrids,
   ...rowActions
 }: Props) {
-  const { id, label, sort, sizes, deliveries, totals, showLeftover } = section;
+  const { id, label, sort, sizes, deliveries, totals, showLeftover } = table;
   const tags = initials(haulGrids.map((g) => g.grid.name));
   const grids: GridButton[] = haulGrids.map((grid, i) => ({ tag: tags[i], grid }));
   /* Cargo, Pick-up and Drop-off; SCU; Remaining; the sizes; Left over; Grids. */
@@ -82,9 +82,9 @@ export function CargoTable({
                 label="Reset"
                 ariaLabel={`Reset the grids of every row in ${label}`}
                 confirmAriaLabel={`Confirm resetting the grids of every row in ${label}`}
-                className="clear-grids"
-                disabled={!section.anyPlanned}
-                onConfirm={onClearGrids}
+                className="reset-grids"
+                disabled={!table.anyPlanned}
+                onConfirm={onResetGrids}
               />
             </div>
           </th>

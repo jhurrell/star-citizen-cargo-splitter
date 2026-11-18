@@ -110,8 +110,8 @@ describe("grid room", () => {
     ];
     const haul = haulOf(rows, cargoGrids);
     expect(haul.totals).toMatchObject({ remaining: 37, free: 28 });
-    expect(haul.anyPlanned).toBe(true);
-    expect(haulOf([testRow({ scu: "5" })], cargoGrids).anyPlanned).toBe(false);
+    expect(haul.contracts[0].anyPlanned).toBe(true);
+    expect(haulOf([testRow({ scu: "5" })], cargoGrids).contracts[0].anyPlanned).toBe(false);
   });
 });
 
@@ -322,7 +322,7 @@ describe("contracts", () => {
     expect(haul.sizes.map((s) => s.on)).toEqual([false, true, true]);
   });
 
-  test("each section has its label, sizes and totals", () => {
+  test("each contract's table has its label, sizes and totals", () => {
     const haul = haulOfContracts(
       [
         contractOf([testRow({ scu: "40" }), testRow({ scu: "9" })], {

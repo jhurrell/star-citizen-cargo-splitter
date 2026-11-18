@@ -118,14 +118,14 @@ export function CargoVisualizer() {
     else addRow(contract.id);
   }
 
-  function clearTable() {
-    dispatch({ type: "clearTable", contract: newContract() });
+  function resetAll() {
+    dispatch({ type: "resetAll", contract: newContract() });
     showStatus("All reset");
   }
 
   /* Take a contract's rows out of this layout's grids. */
-  function clearGrids(id: number) {
-    dispatch({ type: "clearPlan", id, at });
+  function resetGrids(id: number) {
+    dispatch({ type: "resetPlan", id, at });
     showStatus("Grids reset");
   }
 
@@ -188,12 +188,12 @@ export function CargoVisualizer() {
           <ConfirmButton
             label="Reset all"
             confirmAriaLabel="Confirm resetting all contracts"
-            className="clear-table"
-            onConfirm={clearTable}
+            className="reset-all"
+            onConfirm={resetAll}
           />
         </div>
       </div>
-      {/* Copy and clear messages, as a toast at the foot of the window, so they never move the page. */}
+      {/* Copy and reset messages, as a toast at the foot of the window, so they never move the page. */}
       <p className="status" aria-live="polite" hidden={!status}>
         {status}
       </p>
@@ -201,50 +201,50 @@ export function CargoVisualizer() {
       {/* Each contract: a bar with its show/hide toggle, name, Add row and Delete
           contract, over its table. */}
       <div className="contracts">
-        {haul.contracts.map((section, i) => (
-          <section key={section.id} className="contract" aria-label={section.label}>
+        {haul.contracts.map((table, i) => (
+          <section key={table.id} className="contract" aria-label={table.label}>
             <div className="contract-bar">
               <button
                 type="button"
-                className={`btn icon contract-toggle${section.collapsed ? " is-collapsed" : ""}`}
-                aria-expanded={!section.collapsed}
-                aria-controls={`c${section.id}-table`}
-                aria-label={`${section.label}'s table`}
-                data-tip={section.collapsed ? "Show table" : "Hide table"}
-                onClick={() => dispatch({ type: "setCollapsed", id: section.id, collapsed: !section.collapsed })}
+                className={`btn icon contract-toggle${table.collapsed ? " is-collapsed" : ""}`}
+                aria-expanded={!table.collapsed}
+                aria-controls={`c${table.id}-table`}
+                aria-label={`${table.label}'s table`}
+                data-tip={table.collapsed ? "Show table" : "Hide table"}
+                onClick={() => dispatch({ type: "setCollapsed", id: table.id, collapsed: !table.collapsed })}
               >
                 <ChevronIcon />
               </button>
               <input
                 className="contract-name"
-                id={`c${section.id}-name`}
+                id={`c${table.id}-name`}
                 aria-label="Contract name"
                 placeholder={`Contract ${i + 1}`}
-                value={section.name}
-                onChange={(e) => dispatch({ type: "renameContract", id: section.id, name: e.target.value })}
+                value={table.name}
+                onChange={(e) => dispatch({ type: "renameContract", id: table.id, name: e.target.value })}
               />
-              <button type="button" className="btn" id={`c${section.id}-add-row`} onClick={() => addRow(section.id)}>
+              <button type="button" className="btn" id={`c${table.id}-add-row`} onClick={() => addRow(table.id)}>
                 Add row
               </button>
               {haul.contracts.length > 1 && (
                 <ConfirmButton
                   label="Delete contract"
-                  ariaLabel={`Delete ${section.label} and its rows`}
-                  confirmAriaLabel={`Confirm deleting ${section.label} and its rows`}
+                  ariaLabel={`Delete ${table.label} and its rows`}
+                  confirmAriaLabel={`Confirm deleting ${table.label} and its rows`}
                   className="delete-contract"
-                  onConfirm={() => deleteContract(section.id)}
+                  onConfirm={() => deleteContract(table.id)}
                 />
               )}
               {/* While the table is hidden, what's in it. */}
-              {section.collapsed && (
+              {table.collapsed && (
                 <span className="contract-summary">
-                  {plural(section.deliveries.length, "row")} · {fmt(section.totals.scu)} SCU
+                  {plural(table.deliveries.length, "row")} · {fmt(table.totals.scu)} SCU
                 </span>
               )}
             </div>
-            <div className="frame" id={`c${section.id}-table`} hidden={section.collapsed}>
+            <div className="frame" id={`c${table.id}-table`} hidden={table.collapsed}>
               <CargoTable
-                section={section}
+                table={table}
                 grids={haul.grids}
                 free={haul.totals.free}
                 cargoByRow={emphasis.byRow}
@@ -253,10 +253,10 @@ export function CargoVisualizer() {
                 onHighlight={setHighlight}
                 onPointRows={emphasis.point}
                 onDelete={deleteRow}
-                onSort={(key) => dispatch({ type: "sortBy", id: section.id, key })}
-                onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", id: section.id, size, on })}
+                onSort={(key) => dispatch({ type: "sortBy", id: table.id, key })}
+                onToggleSize={(size, on) => dispatch({ type: "setSizeEnabled", id: table.id, size, on })}
                 onScuEnter={focusNextScu}
-                onClearGrids={() => clearGrids(section.id)}
+                onResetGrids={() => resetGrids(table.id)}
               />
             </div>
           </section>

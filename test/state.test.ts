@@ -126,9 +126,9 @@ describe("reducer contracts", () => {
     expect(state.contracts[0].collapsed).toBe(false);
   });
 
-  test("clearing the table leaves just the contract given", () => {
+  test("resetting all leaves just the contract given", () => {
     const contract = makeContract({ rows: [{}] });
-    const state = reducer(withContracts([makeRow()], [makeRow()]), { type: "clearTable", contract });
+    const state = reducer(withContracts([makeRow()], [makeRow()]), { type: "resetAll", contract });
     expect(state.contracts).toEqual([contract]);
   });
 });
@@ -189,13 +189,13 @@ describe("reducer toggleGrid", () => {
   });
 });
 
-describe("reducer clearPlan", () => {
+describe("reducer resetPlan", () => {
   test("takes one contract's rows out of one ship and layout's grids, keeping the rest", () => {
     const a = makeRow({ plan: [{ name: "Port - Upper", order: 1 }] }, hullA);
     const b = makeRow({ plan: [{ name: "Port - Upper", order: 2 }] }, hullB);
     const c = makeRow({ plan: [{ name: "Port - Lower", order: 3 }] }, hullA);
     const start = withContracts([a, b], [c]);
-    const state = reducer(start, { type: "clearPlan", id: start.contracts[0].id, at: hullA });
+    const state = reducer(start, { type: "resetPlan", id: start.contracts[0].id, at: hullA });
     expect(planNames(state, hullA)).toEqual([[], [], ["Port - Lower"]]); // the other contract keeps its grid
     expect(planNames(state, hullB)).toEqual([[], ["Port - Upper"], []]); // so does the other ship
   });

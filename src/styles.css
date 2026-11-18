@@ -321,7 +321,7 @@ h2 {
   cursor: default;
 }
 /* Wide enough for "Reset all", so turning to "Confirm" moves nothing. */
-.btn.clear-table {
+.btn.reset-all {
   width: 10em;
   white-space: nowrap;
 }
@@ -770,7 +770,7 @@ select.field option {
   gap: 6px;
 }
 /* Wide enough for "Confirm", so it doesn't move when it changes. */
-.grids-head .clear-grids {
+.grids-head .reset-grids {
   width: 6.4em;
   padding: 2px 0;
   font-size: 11px;

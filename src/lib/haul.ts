@@ -62,7 +62,7 @@ export type HaulGrid = { grid: CargoGrid; free: number; full: boolean; placed: P
 export type Totals = { scu: number; remaining: number; cells: SizeCell[]; leftover: number };
 
 /* One contract's table. */
-export type ContractSection = {
+export type ContractTable = {
   id: number;
   name: string;
   /* Its name, or "Contract N" by its place on the page. */
@@ -84,20 +84,18 @@ export type ContractSection = {
 export type Haul = {
   ship: Ship | undefined;
   layout: Layout | undefined;
-  /* The selected ship and layout's ids, for adding grids to plans and clearing them. */
+  /* The selected ship and layout's ids, for adding grids to plans and resetting them. */
   at: LayoutRef;
   sizes: SizeColumn[];
-  contracts: ContractSection[];
-  /* Every row, in table order. */
+  contracts: ContractTable[];
+  /* Every row, in page order. */
   deliveries: Delivery[];
   /* One per cargo grid on the layout, in layout order. */
   grids: HaulGrid[];
   /* The whole haul's totals, and the SCU free across all the grids. */
   totals: Totals & { free: number };
-  /* Whether any row has leftover, so the Left over column shows. */
+  /* Whether any row has leftover, so the copy formats' Left over column shows. */
   showLeftover: boolean;
-  /* Whether any row is in a grid, so there's something to clear. */
-  anyPlanned: boolean;
 };
 
 /* The ship and layout a state's choice selects ("" is the first of each),
@@ -188,7 +186,7 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
     ),
     leftover: sum(deliveries, (d) => d.leftover),
   });
-  const sections: ContractSection[] = contracts.map((contract, i) => {
+  const tables: ContractTable[] = contracts.map((contract, i) => {
     const label = contract.name.trim() || `Contract ${i + 1}`;
     const deliveries = contract.rows.map((row) => deliveryOf(row, contract, label));
     return {
@@ -204,19 +202,18 @@ export function computeHaul(state: State, ships: Ship[], containers: Container[]
       anyPlanned: deliveries.some((d) => d.parts.length > 0),
     };
   });
-  const deliveries = sections.flatMap((c) => c.deliveries);
+  const deliveries = tables.flatMap((c) => c.deliveries);
   const totals = totalsOf(deliveries, anyHandsOut);
   return {
     ship,
     layout,
     at,
     sizes,
-    contracts: sections,
+    contracts: tables,
     deliveries,
     grids,
     totals: { ...totals, free: sum(grids, (g) => g.free) },
     showLeftover: totals.leftover > 0,
-    anyPlanned: deliveries.some((d) => d.parts.length > 0),
   };
 }
 

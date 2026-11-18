@@ -54,7 +54,7 @@ export type State = {
 export const handsOut = (contract: Pick<Contract, "enabled">, size: number): boolean =>
   contract.enabled[size] !== false;
 
-/* Every row, in table order. */
+/* Every row, in page order. */
 export const allRows = (state: Pick<State, "contracts">): Row[] => state.contracts.flatMap((c) => c.rows);
 
 const STORE_KEY = "cargo-visualizer-v5";
@@ -194,14 +194,14 @@ export type Action =
   /* Add a cargo grid to a row's plan, after every earlier step, or take it out. */
   | { type: "toggleGrid"; id: number; grid: GridRef }
   /* Take every row of one contract out of one ship and layout's grids. */
-  | { type: "clearPlan"; id: number; at: LayoutRef }
+  | { type: "resetPlan"; id: number; at: LayoutRef }
   /* Sort one contract's rows. */
   | { type: "sortBy"; id: number; key: TextKey }
   /* A new ship starts on its first layout. */
   | { type: "selectShip"; shipId: string }
   | { type: "selectLayout"; layoutId: string }
   /* Leave just this contract, which the caller makes with one blank row. */
-  | { type: "clearTable"; contract: Contract };
+  | { type: "resetAll"; contract: Contract };
 
 export function reducer(state: State, action: Action): State {
   /* Change one contract, by id. */
@@ -243,7 +243,7 @@ export function reducer(state: State, action: Action): State {
           : [...plan, { ...grid, order }];
       return rows((list) => list.map((r) => (r.id === id ? { ...r, plan: toggle(r.plan) } : r)));
     }
-    case "clearPlan": {
+    case "resetPlan": {
       /* Steps on other ships and layouts stay, for switching back. */
       const { at } = action;
       return contract(action.id, (c) => ({
@@ -264,7 +264,7 @@ export function reducer(state: State, action: Action): State {
       return { ...state, shipId: action.shipId, layoutId: "" };
     case "selectLayout":
       return { ...state, layoutId: action.layoutId };
-    case "clearTable":
+    case "resetAll":
       return { ...state, contracts: [action.contract] };
   }
 }
