@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { SiteFooter } from "../components/SiteFooter";
 import appCss from "../styles.css?url";
 
 const FONTS =
@@ -30,6 +31,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <SiteFooter />
         <Scripts />
         {/* Only in the built site, so local testing isn't counted. */}
         {import.meta.env.PROD && (

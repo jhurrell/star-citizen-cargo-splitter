@@ -64,13 +64,17 @@ the ship.
   - Camera presets: 3D, top, bottom, port, starboard, fore and aft.
 - **Kept in your browser.** The table, ship and settings are saved in local storage. Each ship keeps its own
   loading plan, so switching to another ship and back restores it.
+- **Footer.** A footer at the bottom of the window, on every page, links to the visualizer and the **About** page
+  (what the tool is, where the ship data comes from, your data, feedback and a fan-site disclaimer). The current
+  page's link is highlighted.
 - **Visit counts.** The built site loads [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/),
   which counts visits without cookies; its token is in [`src/routes/__root.tsx`](src/routes/__root.tsx). The dev
   server leaves it out.
 
 Ships included: 87, from the Aegis Avenger Titan to the Drake Ironclad. The MISC Hull B and C, RSI Hermes and Argo
-RAFT are placed to match the ships; the rest have grid sizes and SCU from the ITG Cargo Grid Reference Guide, with
-grids laid out roughly as its drawings show.
+RAFT are placed to match the ships; the rest have grid sizes and SCU from the
+[ITG Cargo Grid Reference Guide](https://github.com/frosty024/Cargo_Grid_Reference_Guide), with grids laid out roughly
+as its drawings show.
 
 ## Running it
 
@@ -107,10 +111,10 @@ workflow from the Actions tab.
 | `src/lib/`             | The logic, as pure functions: reading the config, state, packing, the copy formats, and `haul.ts`, whose `computeHaul` works out everything the table and ship view show |
 | `src/components/`      | The page: the ship picker, cargo table, legend and 3D ship view (`ShipView.tsx`), plus the shared pieces below                                                           |
 | `src/components/ship/` | The 3D ship view's parts, below                                                                                                                                          |
-| `src/routes/`          | TanStack Start routes; the tool is the one page at `/`                                                                                                                   |
+| `src/routes/`          | TanStack Start routes: the tool at `/` and the About page at `/about`, each prerendered as its own HTML file                                                             |
 | `test/`                | Unit tests for `src/lib` and the ship view's scene geometry                                                                                                              |
 
-Four pieces in `src/components/` are shared by the page:
+Five pieces in `src/components/` are shared by the pages:
 
 - [`ConfirmButton.tsx`](src/components/ConfirmButton.tsx): a button that asks for a second click within 3 seconds,
   showing Confirm in between. Reset all, Delete contract and the Grids Reset use it.
@@ -118,6 +122,8 @@ Four pieces in `src/components/` are shared by the page:
   (its view, what's picked out or pointed at, and the colors handed out, worked out by `src/lib/emphasis.ts`) and
   the timed status message and confirm flag.
 - [`icons.tsx`](src/components/icons.tsx): the copy buttons' icons and the contract bar's show/hide arrow.
+- [`SiteFooter.tsx`](src/components/SiteFooter.tsx): the footer on every page, with a link to each; add a page's
+  link to its `PAGES` list.
 - [`pointing.ts`](src/components/pointing.ts): pointer and focus handlers for things that react while pointed at,
   such as the table's rows and grid buttons and the legend's buttons.
 
